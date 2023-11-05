@@ -1,0 +1,433 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>printf用法详解 | Youngkx</title><meta name="author" content="Youngkx"><meta name="copyright" content="Youngkx"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="printf用法详解printf简介printf是C语言中的格式化输出函数，由于它灵活的格式化输出功能，在C++代码编写时也很常用。printf包含于头文件iostream或stdio.h中。 printf的函数原型： 1int printf(const char *restrict format, ...);  printf的调用格式： 1printf(&quot;%[flags][width]">
+<meta property="og:type" content="article">
+<meta property="og:title" content="printf用法详解">
+<meta property="og:url" content="http://example.com/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="Youngkx">
+<meta property="og:description" content="printf用法详解printf简介printf是C语言中的格式化输出函数，由于它灵活的格式化输出功能，在C++代码编写时也很常用。printf包含于头文件iostream或stdio.h中。 printf的函数原型： 1int printf(const char *restrict format, ...);  printf的调用格式： 1printf(&quot;%[flags][width]">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/img/head.png">
+<meta property="article:published_time" content="2023-11-05T04:12:12.000Z">
+<meta property="article:modified_time" content="2023-11-05T06:03:21.758Z">
+<meta property="article:author" content="Youngkx">
+<meta property="article:tag" content="OI, C++">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/img/head.png"><link rel="shortcut icon" href="/img/head.png"><link rel="canonical" href="http://example.com/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'printf用法详解',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-11-05 14:03:21'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/bounce.css"><meta name="generator" content="Hexo 6.3.0"></head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+document.addEventListener('pjax:send', () => {
+  Pace.restart()
+})
+</script><link rel="stylesheet" href="/css/bounce.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/head.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">3</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/back.jpg')"><nav id="nav"><span id="blog-info"><a href="/" title="Youngkx"><span class="site-name">Youngkx</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">printf用法详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-11-05T04:12:12.000Z" title="发表于 2023-11-05 12:12:12">2023-11-05</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2023-11-05T06:03:21.758Z" title="更新于 2023-11-05 14:03:21">2023-11-05</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/OI/">OI</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="printf用法详解"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="printf用法详解"><a href="#printf用法详解" class="headerlink" title="printf用法详解"></a>printf用法详解</h1><h2 id="printf简介"><a href="#printf简介" class="headerlink" title="printf简介"></a>printf简介</h2><p>printf是C语言中的<strong>格式化输出函数</strong>，由于它灵活的格式化输出功能，在C++代码编写时也很常用。<br>printf包含于头文件<code>iostream</code>或<code>stdio.h</code>中。</p>
+<p>printf的函数原型：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">printf</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *restrict format, ...)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>printf的调用格式：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%[flags][width][.precision][length]type&quot;</span>, ...)；</span><br></pre></td></tr></table></figure>
+<p>即：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%[标志][最小宽度][.精度][类型长度]类型&quot;</span>, ...);</span><br></pre></td></tr></table></figure>
+
+<p>这里的”%[标志][最小宽度][.精度][类型长度]类型”指的是<strong>格式控制字符串</strong>，请参见下一部分。</p>
+<hr>
+<h2 id="格式控制字符串"><a href="#格式控制字符串" class="headerlink" title="格式控制字符串"></a>格式控制字符串</h2><p>格式控制字符串是printf函数中的第一个部分，它本质作为字符串，由<code>&quot;&quot;</code>括起，其中包含以<code>%</code>开头、后面接各种控制字符的占位符，例如<code>%d</code>、<code>%lf%</code>。</p>
+<h3 id="类型（type）"><a href="#类型（type）" class="headerlink" title="类型（type）"></a>类型（type）</h3><p>使用printf时首先要说明类型，因为类型是格式控制字符串必不可少的组成部分，其它的选项都是可选的。类型用于规定输出数据的类型，常用的含义如下：</p>
+<table>
+<thead>
+<tr>
+<th align="center">类型</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">%hd、%d、%ld</td>
+<td align="center">以十进制、有符号的形式输出 short、int、long 类型的整数</td>
+</tr>
+<tr>
+<td align="center">%f、%lf</td>
+<td align="center">以十进制的形式输出 float、double 类型的小数</td>
+</tr>
+<tr>
+<td align="center">%e、%le<br>%E、%lE</td>
+<td align="center">以指数的形式输出 float、double 类型的小数。输出结果中的 e 或 E 的大小写与格式控制符保持一致</td>
+</tr>
+<tr>
+<td align="center">%s</td>
+<td align="center">输出一个字符串</td>
+</tr>
+<tr>
+<td align="center">%c</td>
+<td align="center">输出一个 char 类型的单一字符</td>
+</tr>
+</tbody></table>
+<p>还有一些不常用的：</p>
+<table>
+<thead>
+<tr>
+<th align="center">类型</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">%hu、%u、%lu</td>
+<td align="center">以十进制、无符号的形式输出 short、int、long 类型的整数</td>
+</tr>
+<tr>
+<td align="center">%ho、%o、%lo</td>
+<td align="center">以八进制、不带前缀、无符号的形式输出 short、int、long 类型的整数</td>
+</tr>
+<tr>
+<td align="center">%#ho、%#o、%#lo</td>
+<td align="center">以八进制、带前缀、无符号的形式输出 short、int、long 类型的整数</td>
+</tr>
+<tr>
+<td align="center">%hx、%x、%lx<br>%hX、%X、%lX</td>
+<td align="center">以十六进制、不带前缀、无符号的形式输出 short、int、long 类型的整数。输出结果中的 x 或 X 的大小写与格式控制符保持一致</td>
+</tr>
+<tr>
+<td align="center">%#hx、%#x、%#lx<br>%#hX、%#X、%#lX</td>
+<td align="center">以十六进制、带前缀、无符号的形式输出 short、int、long 类型的整数。输出结果中的 x 或 X 的大小写与格式控制符保持一致</td>
+</tr>
+</tbody></table>
+<hr>
+<p>示例1：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%d&quot;</span>, <span class="number">5</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="输出："><a href="#输出：" class="headerlink" title="输出："></a>输出：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">5</span></span><br></pre></td></tr></table></figure></h2><p>示例2：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%d%d&quot;</span>, <span class="number">5</span>, <span class="number">10</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="输出：-1"><a href="#输出：-1" class="headerlink" title="输出："></a>输出：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">510</span></span><br></pre></td></tr></table></figure></h2><p>示例3：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%lf&quot;</span>, <span class="number">5.123</span>);</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">5.123000</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意：使用<code>%f</code>或<code>%lf</code>时如果不指明精度会默认输出保留到小数点后6位</p>
+</blockquote>
+<hr>
+<h3 id="标志（flags）"><a href="#标志（flags）" class="headerlink" title="标志（flags）"></a>标志（flags）</h3><table>
+<thead>
+<tr>
+<th align="center">标志</th>
+<th align="center">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">-</td>
+<td align="center">在给定的字段宽度内左对齐，右边填充空格（默认右对齐）</td>
+</tr>
+<tr>
+<td align="center">+</td>
+<td align="center">强制在结果之前显示加号或减号（+ 或 -），即正数前面会强制显示 + 号</td>
+</tr>
+<tr>
+<td align="center">（空格）</td>
+<td align="center">输出值为正时加上空格，为负时加上负号</td>
+</tr>
+<tr>
+<td align="center">#</td>
+<td align="center">类型是 o、x、X 时，增加前缀 0、0x、0X；<br>类型是 e、E、f、g、G 时，一定使用小数点；<br>类型是 g、G 时，尾部的 0 保留</td>
+</tr>
+<tr>
+<td align="center">0</td>
+<td align="center">对于所有的数字格式，使用前导零填充字段宽度（如果出现了减号标志或者指定了精度，则忽略该标志）</td>
+</tr>
+</tbody></table>
+<hr>
+<p>示例4：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">10</span>; ++i) <span class="built_in">printf</span>(<span class="string">&quot;%-5d&quot;</span>, i);</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>    <span class="number">2</span>    <span class="number">3</span>    <span class="number">4</span>    <span class="number">5</span>    <span class="number">6</span>    <span class="number">7</span>    <span class="number">8</span>    <span class="number">9</span>    <span class="number">10</span>   </span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>示例5：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">10</span>; ++i) <span class="built_in">printf</span>(<span class="string">&quot;%5d&quot;</span>, i);</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>    <span class="number">2</span>    <span class="number">3</span>    <span class="number">4</span>    <span class="number">5</span>    <span class="number">6</span>    <span class="number">7</span>    <span class="number">8</span>    <span class="number">9</span>   <span class="number">10</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>示例6：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">10</span>; ++i) <span class="built_in">printf</span>(<span class="string">&quot;%05d&quot;</span>, i);</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">00001000020000300004000050000600007000080000900010</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="输出最小宽度（width）"><a href="#输出最小宽度（width）" class="headerlink" title="输出最小宽度（width）"></a>输出最小宽度（width）</h3><p>用十进制整数来表示输出的最少位数。若实际位数多于指定的宽度，则按实际位数输出，若实际位数少于定义的宽度则补以空格或0。一些例子在示例4、示例5、示例6均已体现。</p>
+<table>
+<thead>
+<tr>
+<th align="center">输出最小宽度</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">数值</td>
+<td align="center">十进制整数</td>
+</tr>
+<tr>
+<td align="center">*</td>
+<td align="center">星号。不显示指明输出最小宽度，而是以星号代替，在printf的输出参数列表中给出</td>
+</tr>
+</tbody></table>
+<hr>
+<p>示例7：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%0*d&quot;</span>, <span class="number">6</span>, <span class="number">1000</span>); <span class="comment">//此时的 * 指的就是 6</span></span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">001000</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="精度（-precision）"><a href="#精度（-precision）" class="headerlink" title="精度（.precision）"></a>精度（.precision）</h3><p>精度格式符以<code>.</code>开头，后接十进制整数。</p>
+<table>
+<thead>
+<tr>
+<th align="center">精度</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">.数值</td>
+<td align="center">对于整数说明符（d、i、o、u、x、X）：precision 指定了要打印的数字的最小位数。如果写入的值短于该数，结果会用前导零来填充。如果写入的值长于该数，结果不会被截断。精度为 0 意味着不写入任何字符；<br>对于 e、E 和 f 说明符：要在小数点后输出的小数位数；<br>对于 g 和 G 说明符：要输出的最大有效位数；对于 s 说明符：<br>要输出的最大字符数。默认情况下，所有字符都会被输出，直到遇到末尾的空字符；<br>对于 c 说明符：没有任何影响；<br>当未指定任何精度时，默认为 1。如果指定时只使用点而不带有一个显式值，则标识其后跟随一个 0。</td>
+</tr>
+<tr>
+<td align="center">.*</td>
+<td align="center">用 * 代替数值，用法与输出最小宽度（width）中 * 的用法一样</td>
+</tr>
+</tbody></table>
+<hr>
+<p>示例8：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%.6f&quot;</span>, <span class="number">3.1415926</span>);</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">3.141593</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意：浮点数和整数会四舍五入。</p>
+</blockquote>
+<hr>
+<p>示例9：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%.8s&quot;</span>, “abcdefghij”);</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">abcdefgh</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="转义字符"><a href="#转义字符" class="headerlink" title="转义字符"></a>转义字符</h3><table>
+<thead>
+<tr>
+<th align="center">转义字符</th>
+<th align="center">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">\n</td>
+<td align="center">换行符</td>
+</tr>
+<tr>
+<td align="center">\a</td>
+<td align="center">警报（响铃）符</td>
+</tr>
+<tr>
+<td align="center">\b</td>
+<td align="center">回退符</td>
+</tr>
+<tr>
+<td align="center">\f</td>
+<td align="center">换页符</td>
+</tr>
+<tr>
+<td align="center">\r</td>
+<td align="center">回车符</td>
+</tr>
+<tr>
+<td align="center">\t</td>
+<td align="center">横向制表符</td>
+</tr>
+<tr>
+<td align="center">\v</td>
+<td align="center">纵向制表符</td>
+</tr>
+<tr>
+<td align="center">\\</td>
+<td align="center">反斜杠</td>
+</tr>
+<tr>
+<td align="center">\”</td>
+<td align="center">双引号</td>
+</tr>
+</tbody></table>
+<hr>
+<p>示例10：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, <span class="number">123</span>);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;%d&quot;</span>, <span class="number">456</span>);</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">123</span></span><br><span class="line"><span class="number">456</span></span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><h3 id="打印较长字符串"><a href="#打印较长字符串" class="headerlink" title="打印较长字符串"></a>打印较长字符串</h3><p>有时printf语句很长，不能在一行被放下，影响代码美观，那么下面提供2种分割字符串的方式。</p>
+<ol>
+<li><p>使用反斜杠<code>\</code>和回车的方式分割，回车后下一行要从最左侧开始；</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello \</span></span><br><span class="line"><span class="string">World!&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 输出：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Hello World!</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用字符串拼接，可以换行或者空格：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello &quot;</span></span><br><span class="line">            <span class="string">&quot;World!&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 输出：</p>
+ <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Hello World!</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="对printf的理解"><a href="#对printf的理解" class="headerlink" title="对printf的理解"></a>对printf的理解</h3><p>我们通过下面这个示例通俗地理解一下printf的底层逻辑：</p>
+<p>示例11：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;There is %d,then is %d.&quot;</span>, <span class="number">123</span>, <span class="number">456</span>);</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">There is <span class="number">123</span>,then is <span class="number">456.</span></span><br></pre></td></tr></table></figure>
+
+<p>事实上，printf函数输出的就是最前面的那段用<code>&quot;&quot;</code>括起来的字符串，<code>%</code>以及后面接的各种格式控制字符串指向了输出表列的地址，程序通过检测<code>%</code>寻找占位符，并根据不同的占位符将后面输出表列的内容当作字符串输出。<br><br>也就是说，在上面示例11中，第一个<code>&amp;d</code>其实就相当于<code>123</code>，第二个<code>&amp;d</code>其实就相当于<code>456</code>。</p>
+<hr>
+<p>以上就是全部关于printf函数的详细用法了，感谢你的阅读，再见！</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://example.com">Youngkx</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/">http://example.com/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">Youngkx</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/OI-C/">OI, C++</a></div><div class="post_share"><div class="social-share" data-image="/img/head.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2023/11/04/OI%E8%A6%81%E5%AD%A6%E4%BB%80%E4%B9%88%EF%BC%9F/" title="信息学竞赛要学什么？"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">信息学竞赛要学什么？</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/head.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Youngkx</div><div class="author-info__description">我是一个怀揣泥土的人</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">3</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content"></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.</span> <span class="toc-text">printf用法详解</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#printf%E7%AE%80%E4%BB%8B"><span class="toc-number">1.1.</span> <span class="toc-text">printf简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%BC%E5%BC%8F%E6%8E%A7%E5%88%B6%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="toc-number">1.2.</span> <span class="toc-text">格式控制字符串</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B1%BB%E5%9E%8B%EF%BC%88type%EF%BC%89"><span class="toc-number">1.2.1.</span> <span class="toc-text">类型（type）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BE%93%E5%87%BA%EF%BC%9A"><span class="toc-number">1.3.</span> <span class="toc-text">输出：15</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BE%93%E5%87%BA%EF%BC%9A-1"><span class="toc-number">1.4.</span> <span class="toc-text">输出：1510</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%87%E5%BF%97%EF%BC%88flags%EF%BC%89"><span class="toc-number">1.4.1.</span> <span class="toc-text">标志（flags）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%87%BA%E6%9C%80%E5%B0%8F%E5%AE%BD%E5%BA%A6%EF%BC%88width%EF%BC%89"><span class="toc-number">1.4.2.</span> <span class="toc-text">输出最小宽度（width）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B2%BE%E5%BA%A6%EF%BC%88-precision%EF%BC%89"><span class="toc-number">1.4.3.</span> <span class="toc-text">精度（.precision）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BD%AC%E4%B9%89%E5%AD%97%E7%AC%A6"><span class="toc-number">1.4.4.</span> <span class="toc-text">转义字符</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B6%E4%BB%96"><span class="toc-number">1.5.</span> <span class="toc-text">其他</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%89%93%E5%8D%B0%E8%BE%83%E9%95%BF%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="toc-number">1.5.1.</span> <span class="toc-text">打印较长字符串</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%B9printf%E7%9A%84%E7%90%86%E8%A7%A3"><span class="toc-number">1.5.2.</span> <span class="toc-text">对printf的理解</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/" title="printf用法详解">printf用法详解</a><time datetime="2023-11-05T04:12:12.000Z" title="发表于 2023-11-05 12:12:12">2023-11-05</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/04/OI%E8%A6%81%E5%AD%A6%E4%BB%80%E4%B9%88%EF%BC%9F/" title="信息学竞赛要学什么？">信息学竞赛要学什么？</a><time datetime="2023-11-04T04:12:12.000Z" title="发表于 2023-11-04 12:12:12">2023-11-04</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路"><img src="/img/wdoi_z.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="我的OI之路"/></a><div class="content"><a class="title" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路">我的OI之路</a><time datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time></div></div></div></div></div></div></main><footer id="footer" style="background: linear-gradient(135deg,"><div id="footer-wrap"><div class="copyright">&copy;2023 By Youngkx</div><div class="footer_custom_text">Welcome.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script defer="defer" id="fluttering_ribbon" mobile="true" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-fluttering-ribbon.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="I,LOVE,YOU" data-fontsize="10px" data-random="false" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
