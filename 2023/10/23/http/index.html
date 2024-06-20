@@ -1,0 +1,250 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>My http | Youngkx</title><meta name="author" content="Youngkx"><meta name="copyright" content="Youngkx"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="1. 什么是HTTPHTTP（HyperText Transfer Protocol，超文本传输协议）是互联网上应用最为广泛的一种网络协议。它是一种简单的请求-响应协议，常用于从WWW服务器传输超文本到本地浏览器的浏览器。HTTP协议是客户端和服务器端请求和应答的标准，它基于TCP&#x2F;IP通信协议来传递数据。 2. HTTP请求方法HTTP请求方法用于指定请求的操作类型，常见的请求方法有G">
+<meta property="og:type" content="article">
+<meta property="og:title" content="My http">
+<meta property="og:url" content="http://example.com/2023/10/23/http/index.html">
+<meta property="og:site_name" content="Youngkx">
+<meta property="og:description" content="1. 什么是HTTPHTTP（HyperText Transfer Protocol，超文本传输协议）是互联网上应用最为广泛的一种网络协议。它是一种简单的请求-响应协议，常用于从WWW服务器传输超文本到本地浏览器的浏览器。HTTP协议是客户端和服务器端请求和应答的标准，它基于TCP&#x2F;IP通信协议来传递数据。 2. HTTP请求方法HTTP请求方法用于指定请求的操作类型，常见的请求方法有G">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/img/head.png">
+<meta property="article:published_time" content="2023-10-23T04:12:12.000Z">
+<meta property="article:modified_time" content="2024-06-20T07:01:14.979Z">
+<meta property="article:author" content="Youngkx">
+<meta property="article:tag" content="OI">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/img/head.png"><link rel="shortcut icon" href="/img/head.png"><link rel="canonical" href="http://example.com/2023/10/23/http/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'My http',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-06-20 15:01:14'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/bounce.css"><meta name="generator" content="Hexo 6.3.0"></head><body><script>window.paceOptions = {
+  restartOnPushState: false
+}
+
+document.addEventListener('pjax:send', () => {
+  Pace.restart()
+})
+</script><link rel="stylesheet" href="/css/bounce.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/head.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/back.jpg')"><nav id="nav"><span id="blog-info"><a href="/" title="Youngkx"><span class="site-name">Youngkx</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">My http</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-06-20T07:01:14.979Z" title="更新于 2024-06-20 15:01:14">2024-06-20</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/OI/">OI</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="My http"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h3 id="1-什么是HTTP"><a href="#1-什么是HTTP" class="headerlink" title="1. 什么是HTTP"></a>1. 什么是HTTP</h3><p>HTTP（HyperText Transfer Protocol，超文本传输协议）是互联网上应用最为广泛的一种网络协议。它是一种简单的请求-响应协议，常用于从WWW服务器传输超文本到本地浏览器的浏览器。HTTP协议是客户端和服务器端请求和应答的标准，它基于TCP&#x2F;IP通信协议来传递数据。</p>
+<h3 id="2-HTTP请求方法"><a href="#2-HTTP请求方法" class="headerlink" title="2. HTTP请求方法"></a>2. HTTP请求方法</h3><p>HTTP请求方法用于指定请求的操作类型，常见的请求方法有GET、POST、PUT、DELETE等。</p>
+<ul>
+<li>GET：用于从服务器获取数据。</li>
+<li>POST：用于将数据发送到服务器。</li>
+<li>PUT：用于将完整的资源更新到服务器。</li>
+<li>DELETE：用于从服务器删除资源。</li>
+</ul>
+<h3 id="3-HTTP状态码"><a href="#3-HTTP状态码" class="headerlink" title="3. HTTP状态码"></a>3. HTTP状态码</h3><p>HTTP状态码用于表示请求的响应状态，常见的状态码有200、404、500等。</p>
+<ul>
+<li>200：请求成功。</li>
+<li>404：请求的资源不存在。</li>
+<li>500：服务器内部错误。</li>
+</ul>
+<h3 id="4-HTTP头部"><a href="#4-HTTP头部" class="headerlink" title="4. HTTP头部"></a>4. HTTP头部</h3><p>HTTP头部用于传递请求或响应的附加信息，常见的头部有Content-Type、User-Agent等。</p>
+<ul>
+<li>Content-Type：用于指定请求或响应的正文内容类型。</li>
+<li>User-Agent：用于标识发送请求的客户端软件信息。</li>
+</ul>
+<h3 id="5-HTTP缓存"><a href="#5-HTTP缓存" class="headerlink" title="5. HTTP缓存"></a>5. HTTP缓存</h3><p>HTTP缓存用于缓存请求的响应结果，以提高网络请求的效率。常见的缓存策略有Cache-Control、ETag等。</p>
+<ul>
+<li>Cache-Control：用于指定缓存相关的控制指令。</li>
+<li>ETag：用于指定资源的唯一标识符。</li>
+</ul>
+<h3 id="6-HTTP连接管理"><a href="#6-HTTP连接管理" class="headerlink" title="6. HTTP连接管理"></a>6. HTTP连接管理</h3><p>HTTP连接管理用于管理HTTP连接的状态，包括建立连接、关闭连接等。常见的连接管理策略有Keep-Alive、Connection等。</p>
+<ul>
+<li>Keep-Alive：用于保持HTTP连接的持续性。</li>
+<li>Connection：用于指定连接的关闭方式。</li>
+</ul>
+<h3 id="7-HTTP安全"><a href="#7-HTTP安全" class="headerlink" title="7. HTTP安全"></a>7. HTTP安全</h3><p>HTTP安全用于确保HTTP请求和响应的安全性，包括加密传输和身份验证等。常见的安全策略有HTTPS、SSL等。</p>
+<ul>
+<li>HTTPS：用于在HTTP协议上进行加密传输。</li>
+<li>SSL：用于在HTTP协议上进行加密传输。</li>
+</ul>
+<h3 id="8-HTTP性能优化"><a href="#8-HTTP性能优化" class="headerlink" title="8. HTTP性能优化"></a>8. HTTP性能优化</h3><p>HTTP性能优化是指优化HTTP请求和响应的过程，以提高网络传输的效率和性能。常见的性能优化策略有压缩传输、缓存控制等。</p>
+<ul>
+<li>压缩传输：用于对请求或响应的正文内容进行压缩传输，以减少网络传输的数据量。</li>
+<li>缓存控制：用于对请求的响应结果进行缓存，以提高网络请求的效率。</li>
+</ul>
+<h3 id="9-HTTP错误处理"><a href="#9-HTTP错误处理" class="headerlink" title="9. HTTP错误处理"></a>9. HTTP错误处理</h3><p>HTTP错误处理是指处理HTTP请求或响应过程中出现的错误情况。常见的错误处理策略有重试、错误日志记录等。</p>
+<ul>
+<li>重试：用于在发生错误时重新发送请求。</li>
+<li>错误日志记录：用于记录请求或响应过程中出现的错误信息。</li>
+</ul>
+<h3 id="10-HTTP扩展"><a href="#10-HTTP扩展" class="headerlink" title="10. HTTP扩展"></a>10. HTTP扩展</h3><p>HTTP扩展是指对HTTP协议进行扩展，以支持新的功能或协议。常见的HTTP扩展协议有WebSocket、CoAP等。</p>
+<ul>
+<li>WebSocket：用于在单个TCP连接上进行全双工通信。</li>
+<li>CoAP：用于在受限环境中进行通信。</li>
+</ul>
+<h3 id="11-HTTP历史"><a href="#11-HTTP历史" class="headerlink" title="11. HTTP历史"></a>11. HTTP历史</h3><p>HTTP的历史可以追溯到1989年，当时由蒂姆·伯纳斯-李（Tim Berners-Lee）发明了HTTP协议。HTTP协议经历了多次迭代和演化，逐渐成为互联网上最常用的网络协议之一。</p>
+<h3 id="12-HTTP现状"><a href="#12-HTTP现状" class="headerlink" title="12. HTTP现状"></a>12. HTTP现状</h3><p>HTTP协议currently（目前）广泛应用于互联网上，被广泛应用于网页浏览、文件传输、数据交互等场景。</p>
+<h3 id="13-HTTP未来发展"><a href="#13-HTTP未来发展" class="headerlink" title="13. HTTP未来发展"></a>13. HTTP未来发展</h3><p>HTTP协议未来发展主要集中在以下几个方面：</p>
+<ul>
+<li>HTTP&#x2F;3：下一代HTTP协议，旨在提高网络传输效率和安全性。</li>
+<li>HTTP&#x2F;2：改进的HTTP协议，支持多路复用和二进制传输。</li>
+<li>HTTP&#x2F;4：基于HTTP&#x2F;2的下一代HTTP协议，支持更丰富的功能和性能优化。</li>
+</ul>
+<h3 id="14-HTTP相关技术"><a href="#14-HTTP相关技术" class="headerlink" title="14. HTTP相关技术"></a>14. HTTP相关技术</h3><p>HTTP协议与相关技术包括：</p>
+<ul>
+<li>TCP&#x2F;IP：用于在互联网上传输HTTP请求和响应。</li>
+<li>DNS：用于将域名解析为IP地址。</li>
+<li>SSL&#x2F;TLS：用于在HTTP协议上进行加密传输。</li>
+<li>Web服务器：用于提供HTTP服务。</li>
+<li>Web客户端：用于发送HTTP请求和接收HTTP响应。</li>
+</ul>
+<h3 id="15-HTTP相关工具"><a href="#15-HTTP相关工具" class="headerlink" title="15. HTTP相关工具"></a>15. HTTP相关工具</h3><p>HTTP协议与相关工具包括：</p>
+<ul>
+<li>curl：用于发送HTTP请求和接收HTTP响应的工具。</li>
+<li>wget：用于下载HTTP资源的工具。</li>
+<li>Firefox：用于浏览网页的浏览器，内置了HTTP协议的支持。</li>
+<li>Chrome：用于浏览网页的浏览器，内置了HTTP协议的支持。</li>
+<li>Fiddler：用于抓包和分析HTTP请求和响应的工具。</li>
+</ul>
+<h3 id="16-HTTP相关资源"><a href="#16-HTTP相关资源" class="headerlink" title="16. HTTP相关资源"></a>16. HTTP相关资源</h3><p>HTTP协议与相关资源包括：</p>
+<ul>
+<li>RFC（Request for Comments）：HTTP协议的相关标准文档。</li>
+<li>W3C（World Wide Web Consortium）：HTTP协议的相关规范文档。</li>
+<li>MDN（Mozilla Developer Network）：HTTP协议的相关文档和教程。</li>
+<li>HTTP.org：HTTP协议的相关文档和教程。</li>
+</ul>
+<h3 id="17-HTTP相关社区"><a href="#17-HTTP相关社区" class="headerlink" title="17. HTTP相关社区"></a>17. HTTP相关社区</h3><p>HTTP协议与相关社区包括：</p>
+<ul>
+<li>IETF（Internet Engineering Task Force）：HTTP协议的相关标准制定组织。</li>
+<li>W3C（World Wide Web Consortium）：HTTP协议的相关规范制定组织。</li>
+<li>WHATWG（Web Hypertext Application Technology Working Group）：HTTP协议的相关标准制定组织。</li>
+<li>HTTPArchive：HTTP协议的相关数据和统计信息。</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a target="_blank" rel="noopener" href="https://youngkx.top/2023/10/23/%E6%88%91%E7%9A%84OI/">Youngkx</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2023/10/23/http/">http://example.com/2023/10/23/http/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">Youngkx</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/OI/">OI</a></div><div class="post_share"><div class="social-share" data-image="/img/head.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-full"><a href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路"><img class="cover" src="/img/wdoi_z.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">我的OI之路</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2023/11/04/OI%E8%A6%81%E5%AD%A6%E4%BB%80%E4%B9%88%EF%BC%9F/" title="信息学竞赛要学什么？"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-11-04</div><div class="title">信息学竞赛要学什么？</div></div></a></div><div><a href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路"><img class="cover" src="/img/wdoi_z.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-10-23</div><div class="title">我的OI之路</div></div></a></div><div><a href="/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/" title="printf用法详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-11-05</div><div class="title">printf用法详解</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/head.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Youngkx</div><div class="author-info__description">我是一个怀揣泥土的人</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content"></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E4%BB%80%E4%B9%88%E6%98%AFHTTP"><span class="toc-number">1.</span> <span class="toc-text">1. 什么是HTTP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-HTTP%E8%AF%B7%E6%B1%82%E6%96%B9%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">2. HTTP请求方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-HTTP%E7%8A%B6%E6%80%81%E7%A0%81"><span class="toc-number">3.</span> <span class="toc-text">3. HTTP状态码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-HTTP%E5%A4%B4%E9%83%A8"><span class="toc-number">4.</span> <span class="toc-text">4. HTTP头部</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-HTTP%E7%BC%93%E5%AD%98"><span class="toc-number">5.</span> <span class="toc-text">5. HTTP缓存</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-HTTP%E8%BF%9E%E6%8E%A5%E7%AE%A1%E7%90%86"><span class="toc-number">6.</span> <span class="toc-text">6. HTTP连接管理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-HTTP%E5%AE%89%E5%85%A8"><span class="toc-number">7.</span> <span class="toc-text">7. HTTP安全</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-HTTP%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96"><span class="toc-number">8.</span> <span class="toc-text">8. HTTP性能优化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-HTTP%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86"><span class="toc-number">9.</span> <span class="toc-text">9. HTTP错误处理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-HTTP%E6%89%A9%E5%B1%95"><span class="toc-number">10.</span> <span class="toc-text">10. HTTP扩展</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-HTTP%E5%8E%86%E5%8F%B2"><span class="toc-number">11.</span> <span class="toc-text">11. HTTP历史</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12-HTTP%E7%8E%B0%E7%8A%B6"><span class="toc-number">12.</span> <span class="toc-text">12. HTTP现状</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#13-HTTP%E6%9C%AA%E6%9D%A5%E5%8F%91%E5%B1%95"><span class="toc-number">13.</span> <span class="toc-text">13. HTTP未来发展</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#14-HTTP%E7%9B%B8%E5%85%B3%E6%8A%80%E6%9C%AF"><span class="toc-number">14.</span> <span class="toc-text">14. HTTP相关技术</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#15-HTTP%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7"><span class="toc-number">15.</span> <span class="toc-text">15. HTTP相关工具</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#16-HTTP%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90"><span class="toc-number">16.</span> <span class="toc-text">16. HTTP相关资源</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#17-HTTP%E7%9B%B8%E5%85%B3%E7%A4%BE%E5%8C%BA"><span class="toc-number">17.</span> <span class="toc-text">17. HTTP相关社区</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/" title="printf用法详解">printf用法详解</a><time datetime="2023-11-05T04:12:12.000Z" title="发表于 2023-11-05 12:12:12">2023-11-05</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/04/OI%E8%A6%81%E5%AD%A6%E4%BB%80%E4%B9%88%EF%BC%9F/" title="信息学竞赛要学什么？">信息学竞赛要学什么？</a><time datetime="2023-11-04T04:12:12.000Z" title="发表于 2023-11-04 12:12:12">2023-11-04</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路"><img src="/img/wdoi_z.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="我的OI之路"/></a><div class="content"><a class="title" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路">我的OI之路</a><time datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/23/http/" title="My http">My http</a><time datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time></div></div></div></div></div></div></main><footer id="footer" style="background: linear-gradient(135deg,"><div id="footer-wrap"><div class="copyright">&copy;2023 - 2024 By Youngkx</div><div class="footer_custom_text">Welcome.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script defer="defer" id="fluttering_ribbon" mobile="true" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-fluttering-ribbon.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="I,LOVE,YOU" data-fontsize="10px" data-random="false" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
