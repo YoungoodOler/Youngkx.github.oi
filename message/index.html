@@ -7,7 +7,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://youngkx.cn/img/head.png">
 <meta property="article:published_time" content="2023-10-22T15:59:55.000Z">
-<meta property="article:modified_time" content="2026-07-12T17:49:14.599Z">
+<meta property="article:modified_time" content="2026-07-12T17:54:36.992Z">
 <meta property="article:author" content="Youngkx">
 <meta property="article:tag" content="前端博客">
 <meta name="twitter:card" content="summary">
@@ -56,7 +56,7 @@
   isHome: false,
   isHighlightShrink: false,
   isToc: false,
-  postUpdate: '2026-07-13 01:49:14'
+  postUpdate: '2026-07-13 01:54:36'
 }</script><script>(win=>{
       win.saveToLocal = {
         set: (key, value, ttl) => {
@@ -203,23 +203,6 @@ document.addEventListener('pjax:send', () => {
         <span class="msg-info-value">我会尽快回复你</span>
       </div>
     </div>
-  </div>
-
-  <!-- 近期留言区域 - 实时从 GitHub Discussions 拉取 -->
-  <div class="msg-recent">
-    <div class="msg-recent-header">
-      <i class="fas fa-history"></i>
-      <span>近期留言</span>
-    </div>
-    <div class="msg-recent-body" id="recent-msg-body">
-      <div class="msg-recent-loading">
-        <i class="fas fa-spinner fa-pulse"></i>
-        <p>正在加载留言...</p>
-      </div>
-    </div>
-    <a class="msg-recent-footer" href="https://github.com/YoungoodOler/Youngkx.github.oi/discussions" target="_blank" rel="noopener">
-      查看全部留言 <i class="fas fa-arrow-right"></i>
-    </a>
   </div>
 
   <!-- 评论区标题 -->
@@ -424,243 +407,6 @@ document.addEventListener('pjax:send', () => {
   color: var(--msg-secondary-dark);
 }
 
-/* ========== 近期留言区域 ========== */
-.msg-recent {
-  margin-bottom: 24px;
-  border-radius: 14px;
-  background: var(--msg-card-bg);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--msg-border);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-  overflow: hidden;
-}
-
-[data-theme="dark"] .msg-recent {
-  background: var(--msg-card-bg-dark);
-  border-color: var(--msg-border-dark);
-}
-
-.msg-recent-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 20px 12px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--msg-text);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-}
-
-[data-theme="dark"] .msg-recent-header {
-  color: var(--msg-text-dark);
-  border-bottom-color: rgba(255,255,255,0.06);
-}
-
-.msg-recent-header i {
-  color: var(--msg-accent, #49B1F5);
-}
-
-/* 留言列表项 */
-.msg-recent-item {
-  display: flex;
-  gap: 12px;
-  padding: 14px 20px;
-  border-bottom: 1px solid rgba(0,0,0,0.04);
-  transition: background 0.2s ease;
-}
-
-[data-theme="dark"] .msg-recent-item {
-  border-bottom-color: rgba(255,255,255,0.04);
-}
-
-.msg-recent-item:last-child {
-  border-bottom: none;
-}
-
-.msg-recent-item:hover {
-  background: rgba(73,177,245,0.04);
-}
-
-[data-theme="dark"] .msg-recent-item:hover {
-  background: rgba(73,177,245,0.06);
-}
-
-.msg-recent-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--msg-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  overflow: hidden;
-}
-
-.msg-recent-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.msg-recent-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.msg-recent-author {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--msg-text);
-  margin-bottom: 3px;
-}
-
-[data-theme="dark"] .msg-recent-author {
-  color: var(--msg-text-dark);
-}
-
-.msg-recent-text {
-  font-size: 13px;
-  color: var(--msg-secondary);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  word-break: break-word;
-}
-
-[data-theme="dark"] .msg-recent-text {
-  color: var(--msg-secondary-dark);
-}
-
-.msg-recent-time {
-  font-size: 11px;
-  color: var(--msg-secondary);
-  opacity: 0.7;
-  margin-top: 4px;
-}
-
-[data-theme="dark"] .msg-recent-time {
-  color: var(--msg-secondary-dark);
-}
-
-.msg-recent-empty {
-  text-align: center;
-  padding: 30px 20px 26px;
-  color: var(--msg-secondary);
-}
-
-[data-theme="dark"] .msg-recent-empty {
-  color: var(--msg-secondary-dark);
-}
-
-.msg-recent-empty i {
-  font-size: 36px;
-  margin-bottom: 8px;
-  opacity: 0.5;
-}
-
-.msg-recent-empty p {
-  font-size: 13px;
-  margin: 0;
-}
-
-.msg-recent-loading {
-  text-align: center;
-  padding: 30px 20px 26px;
-  color: var(--msg-accent);
-}
-
-.msg-recent-loading i {
-  font-size: 28px;
-  margin-bottom: 6px;
-}
-
-.msg-recent-loading p {
-  font-size: 13px;
-  margin: 0;
-  color: var(--msg-secondary);
-}
-
-[data-theme="dark"] .msg-recent-loading p {
-  color: var(--msg-secondary-dark);
-}
-
-.msg-recent-error {
-  text-align: center;
-  padding: 24px 20px;
-  color: var(--msg-secondary);
-}
-
-.msg-recent-error i {
-  font-size: 28px;
-  margin-bottom: 6px;
-  color: #e74c3c;
-  opacity: 0.6;
-}
-
-.msg-recent-error p {
-  font-size: 13px;
-  margin: 0 0 8px;
-}
-
-[data-theme="dark"] .msg-recent-error p {
-  color: var(--msg-secondary-dark);
-}
-
-.msg-recent-error .msg-retry-btn {
-  display: inline-block;
-  font-size: 12px;
-  padding: 4px 14px;
-  border-radius: 20px;
-  background: var(--msg-accent);
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.msg-recent-error .msg-retry-btn:hover {
-  opacity: 0.8;
-}
-
-/* 底部查看全部链接 */
-.msg-recent-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 20px;
-  font-size: 13px;
-  color: var(--msg-accent);
-  text-decoration: none;
-  border-top: 1px solid rgba(0,0,0,0.04);
-  transition: background 0.2s ease;
-}
-
-[data-theme="dark"] .msg-recent-footer {
-  border-top-color: rgba(255,255,255,0.04);
-}
-
-.msg-recent-footer:hover {
-  background: rgba(73,177,245,0.06);
-  color: var(--msg-accent);
-}
-
-.msg-recent-footer i {
-  font-size: 12px;
-  transition: transform 0.2s ease;
-}
-
-.msg-recent-footer:hover i {
-  transform: translateX(4px);
-}
-
 /* ========== 评论区标题 ========== */
 .msg-comment-section-label {
   display: flex;
@@ -727,9 +473,6 @@ document.addEventListener('pjax:send', () => {
     font-size: 22px;
     width: 32px;
   }
-  .msg-recent-item {
-    padding: 12px 14px;
-  }
 }
 
 /* ========== CSS 变量定义 ========== */
@@ -746,173 +489,6 @@ document.addEventListener('pjax:send', () => {
   --msg-secondary-dark: #999;
 }
 </style>
-
-<script>
-// 通过 GitHub Discussions API 获取留言板的最近的评论
-(async function() {
-  const API_URL = 'https://api.github.com/graphql';
-  const REPO_OWNER = 'YoungoodOler';
-  const REPO_NAME = 'Youngkx.github.oi';
-  const CATEGORY_ID = 'DIC_kwDOKiBsGM4C_8Ju'; // Announcements 分类
-
-  // 由于 GitHub API 有频率限制，用未认证的方式只能查询公开数据
-  // 并且我们只获取当前页面的 Discussion（通过 pathname 匹配）
-  const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
-  const DISCUSSION_TITLE = '留言板'; // 页面标题
-
-  const container = document.getElementById('recent-msg-body');
-
-  // 构造 GraphQL 查询 - 获取最近留言的 Discussion
-  const query = {
-    query: `
-      {
-        repository(owner: "${REPO_OWNER}", name: "${REPO_NAME}") {
-          discussions(first: 10, categoryId: "${CATEGORY_ID}", orderBy: {field: CREATED_AT, direction: DESC}) {
-            nodes {
-              title
-              url
-              comments(first: 5) {
-                totalCount
-                nodes {
-                  author {
-                    login
-                    avatarUrl(size: 48)
-                  }
-                  body
-                  createdAt
-                  url
-                }
-              }
-            }
-          }
-        }
-      }
-    `
-  };
-
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(query)
-    });
-
-    if (!response.ok) throw new Error('API 请求失败');
-
-    const result = await response.json();
-    const discussions = result?.data?.repository?.discussions?.nodes || [];
-
-    // 找到标题匹配的 Discussion
-    const currentDiscussion = discussions.find(d =>
-      d.title.includes('留言板') || d.title.includes('message')
-    );
-
-    // 如果存在则直接获取该 Discussion 的所有评论
-    if (currentDiscussion && currentDiscussion.comments.nodes.length > 0) {
-      const comments = currentDiscussion.comments.nodes;
-      renderComments(comments, currentDiscussion.comments.totalCount);
-    } else {
-      // 如果没有找到匹配的，尝试在所有 discussions 中查找包含当前路径的
-      const discussionsWithPath = await Promise.all(
-        discussions.map(async (d) => {
-          try {
-            // 尝试用 Discussion ID 获取更多信息
-            return d;
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      // 如果还是没有评论，显示空状态
-      renderEmpty();
-    }
-  } catch (err) {
-    console.warn('获取留言失败:', err);
-    // 如果 API 调用失败（比如未认证的限制），优雅降级显示空状态
-    renderEmpty();
-  }
-
-  function renderComments(comments, totalCount) {
-    const hasMultiple = totalCount > comments.length;
-    const displayComments = comments.slice(0, 5);
-
-    let html = '';
-    displayComments.forEach(c => {
-      const author = c.author || { login: 'Anonymous', avatarUrl: '' };
-      const initial = author.login.charAt(0).toUpperCase();
-      const avatarHtml = author.avatarUrl
-        ? `<img src="${author.avatarUrl}" alt="${author.login}">`
-        : initial;
-
-      // 格式化时间
-      const time = new Date(c.createdAt);
-      const timeStr = formatTime(time);
-
-      // 清理 body 文本（去除 Markdown）
-      const bodyText = c.body
-        .replace(/```[\s\S]*?```/g, '')
-        .replace(/!\[.*?\]\(.*?\)/g, '')
-        .replace(/\[([^\]]*)\]\(.*?\)/g, '$1')
-        .replace(/[#*`>~|_-]/g, '')
-        .replace(/\n+/g, ' ')
-        .trim()
-        .substring(0, 150);
-
-      html += `
-        <div class="msg-recent-item">
-          <div class="msg-recent-avatar">${avatarHtml}</div>
-          <div class="msg-recent-content">
-            <div class="msg-recent-author">${escapeHtml(author.login)}</div>
-            <div class="msg-recent-text">${escapeHtml(bodyText || '...')}</div>
-            <div class="msg-recent-time">${timeStr}</div>
-          </div>
-        </div>
-      `;
-    });
-
-    // 如果有更多评论，显示提示
-    if (hasMultiple) {
-      // 已在底部显示"查看全部留言"
-    }
-
-    container.innerHTML = html;
-  }
-
-  function renderEmpty() {
-    container.innerHTML = `
-      <div class="msg-recent-empty">
-        <i class="fas fa-inbox"></i>
-        <p>还没有留言，来做第一个留言的人吧！</p>
-      </div>
-    `;
-  }
-
-  function formatTime(date) {
-    const now = new Date();
-    const diff = (now - date) / 1000;
-
-    if (diff < 60) return '刚刚';
-    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
-    if (diff < 2592000) return `${Math.floor(diff / 86400)} 天前`;
-
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-})();
-</script>
 </div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/head.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Youngkx</div><div class="author-info__description">我是一个怀揣泥土的人</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content"></div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/" title="printf用法详解">printf用法详解</a><time datetime="2023-11-05T04:12:12.000Z" title="发表于 2023-11-05 12:12:12">2023-11-05</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/04/OI%E8%A6%81%E5%AD%A6%E4%BB%80%E4%B9%88%EF%BC%9F/" title="信息学竞赛要学什么？">信息学竞赛要学什么？</a><time datetime="2023-11-04T04:12:12.000Z" title="发表于 2023-11-04 12:12:12">2023-11-04</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/23/http/" title="My http">My http</a><time datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路"><img src="/img/wdoi_z.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="我的OI之路"/></a><div class="content"><a class="title" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路">我的OI之路</a><time datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time></div></div></div></div><div class="card-widget card-categories"><div class="item-headline">
             <i class="fas fa-folder-open"></i>
             <span>分类</span>
@@ -920,7 +496,7 @@ document.addEventListener('pjax:send', () => {
             </div>
             <ul class="card-category-list" id="aside-cat-list">
             <li class="card-category-list-item "><a class="card-category-list-link" href="/categories/OI/"><span class="card-category-list-name">OI</span><span class="card-category-list-count">4</span></a></li>
-            </ul></div><div class="card-widget card-tags"><div class="item-headline"><i class="fas fa-tags"></i><span>标签</span></div><div class="card-tag-cloud"><a href="/tags/OI/" style="font-size: 1.5em; color: #99a9bf">OI</a> <a href="/tags/C/" style="font-size: 1.1em; color: #999">C++</a></div></div><div class="card-widget card-archives"><div class="item-headline"><i class="fas fa-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/11/"><span class="card-archive-list-date">十一月 2023</span><span class="card-archive-list-count">2</span></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/10/"><span class="card-archive-list-date">十月 2023</span><span class="card-archive-list-count">2</span></a></li></ul></div><div class="card-widget card-webinfo"><div class="item-headline"><i class="fas fa-chart-line"></i><span>网站资讯</span></div><div class="webinfo"><div class="webinfo-item"><div class="item-name">文章数目 :</div><div class="item-count">4</div></div><div class="webinfo-item"><div class="item-name">已运行时间 :</div><div class="item-count" id="runtimeshow" data-publishDate="2023-10-19T16:00:00.000Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站访客数 :</div><div class="item-count" id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站总访问量 :</div><div class="item-count" id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">最后更新时间 :</div><div class="item-count" id="last-push-date" data-lastPushDate="2026-07-12T17:49:19.453Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div></div></div></div></div></main><footer id="footer" style="background: linear-gradient(135deg,"><div id="footer-wrap"><div class="copyright">&copy;2023 - 2026 By Youngkx</div><div class="footer_custom_text">Welcome.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>(()=>{
+            </ul></div><div class="card-widget card-tags"><div class="item-headline"><i class="fas fa-tags"></i><span>标签</span></div><div class="card-tag-cloud"><a href="/tags/C/" style="font-size: 1.1em; color: #999">C++</a> <a href="/tags/OI/" style="font-size: 1.5em; color: #99a9bf">OI</a></div></div><div class="card-widget card-archives"><div class="item-headline"><i class="fas fa-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/11/"><span class="card-archive-list-date">十一月 2023</span><span class="card-archive-list-count">2</span></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/10/"><span class="card-archive-list-date">十月 2023</span><span class="card-archive-list-count">2</span></a></li></ul></div><div class="card-widget card-webinfo"><div class="item-headline"><i class="fas fa-chart-line"></i><span>网站资讯</span></div><div class="webinfo"><div class="webinfo-item"><div class="item-name">文章数目 :</div><div class="item-count">4</div></div><div class="webinfo-item"><div class="item-name">已运行时间 :</div><div class="item-count" id="runtimeshow" data-publishDate="2023-10-19T16:00:00.000Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站访客数 :</div><div class="item-count" id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站总访问量 :</div><div class="item-count" id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">最后更新时间 :</div><div class="item-count" id="last-push-date" data-lastPushDate="2026-07-12T17:54:41.716Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div></div></div></div></div></main><footer id="footer" style="background: linear-gradient(135deg,"><div id="footer-wrap"><div class="copyright">&copy;2023 - 2026 By Youngkx</div><div class="footer_custom_text">Welcome.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>(()=>{
   const getGiscusTheme = theme => {
     return theme === 'dark' ? 'dark' : 'light'
   }
