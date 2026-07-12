@@ -1,0 +1,67 @@
+/* 交互高亮 + 纳米粒子特效 */
+
+/* ===== Canvas Nest 背景控制 ===== */
+body.nanite-active canvas {
+  opacity: 0.12 !important;
+  transition: opacity 0.35s ease !important;
+  pointer-events: none !important;
+}
+
+canvas {
+  transition: opacity 0.5s ease !important;
+}
+
+/* ===== 1. 交互元素泛光高亮 (银蓝) ===== */
+a, button, .card-widget, .recent-post-item,
+.tag-cloud a, .menu-item a, .social-icon,
+.avatar-img, .post-title-link, .article-title,
+.category-list a, .tag-list a, .archive-list a,
+#card-toc .toc-link, .card-archives a,
+.flink-list a, .flink-item-btn {
+  transition: box-shadow 0.25s ease;
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="light"] a:hover,
+[data-theme="light"] button:hover,
+[data-theme="light"] .card-widget:hover,
+[data-theme="light"] .recent-post-item:hover,
+[data-theme="light"] .tag-cloud a:hover,
+[data-theme="light"] .menu-item a:hover,
+[data-theme="light"] .post-title-link:hover,
+[data-theme="light"] .article-title:hover {
+  box-shadow: 0 0 10px rgba(180, 210, 240, 0.15),
+              0 0 3px rgba(180, 210, 240, 0.08);
+}
+
+[data-theme="dark"] a:hover,
+[data-theme="dark"] button:hover,
+[data-theme="dark"] .card-widget:hover,
+[data-theme="dark"] .recent-post-item:hover,
+[data-theme="dark"] .tag-cloud a:hover,
+[data-theme="dark"] .menu-item a:hover,
+[data-theme="dark"] .post-title-link:hover,
+[data-theme="dark"] .article-title:hover {
+  box-shadow: 0 0 16px rgba(200, 220, 245, 0.18),
+              0 0 5px rgba(200, 220, 245, 0.08);
+}
+
+[data-theme="light"] .card-widget:hover {
+  box-shadow: 0 4px 20px rgba(180, 210, 240, 0.08),
+              0 0 0 1px rgba(180, 210, 240, 0.10) inset;
+}
+
+[data-theme="dark"] .card-widget:hover {
+  box-shadow: 0 4px 24px rgba(200, 220, 245, 0.10),
+              0 0 0 1px rgba(200, 220, 245, 0.12) inset;
+}
+
+/* ===== 2. 纳米粒子样式 ===== */
+.nanite-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
