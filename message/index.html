@@ -1,13 +1,13 @@
-<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>留言板 | Youngkx</title><meta name="author" content="Youngkx"><meta name="copyright" content="Youngkx"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content=".msg-page{   max-width:800px;   margin:0 auto;   padding:20px; }  .msg-card{   background:rgba(255,255,255,0.7);   padding:16px;   border-radius:14px;   margin-bottom:16px;   box-shadow:0 6px 18px rg">
+<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>留言板 | Youngkx</title><meta name="author" content="Youngkx"><meta name="copyright" content="Youngkx"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="留 言 板     每一段文字，都是时光的印记                                           欢迎来到这里，你可以在下方留下任何你想说的话。       无论是建议、问题，还是单纯想打个招呼，都欢迎你畅所欲言 ✨                                           友善交">
 <meta property="og:type" content="website">
 <meta property="og:title" content="留言板">
 <meta property="og:url" content="http://youngkx.cn/message/index.html">
 <meta property="og:site_name" content="Youngkx">
-<meta property="og:description" content=".msg-page{   max-width:800px;   margin:0 auto;   padding:20px; }  .msg-card{   background:rgba(255,255,255,0.7);   padding:16px;   border-radius:14px;   margin-bottom:16px;   box-shadow:0 6px 18px rg">
+<meta property="og:description" content="留 言 板     每一段文字，都是时光的印记                                           欢迎来到这里，你可以在下方留下任何你想说的话。       无论是建议、问题，还是单纯想打个招呼，都欢迎你畅所欲言 ✨                                           友善交">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://youngkx.cn/img/head.png">
-<meta property="article:published_time" content="2026-06-25T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-06-26T15:43:09.862Z">
+<meta property="article:published_time" content="2023-10-22T15:59:55.000Z">
+<meta property="article:modified_time" content="2026-07-12T17:39:12.417Z">
 <meta property="article:author" content="Youngkx">
 <meta property="article:tag" content="前端博客">
 <meta name="twitter:card" content="summary">
@@ -56,7 +56,7 @@
   isHome: false,
   isHighlightShrink: false,
   isToc: false,
-  postUpdate: '2026-06-26 23:43:09'
+  postUpdate: '2026-07-13 01:39:12'
 }</script><script>(win=>{
       win.saveToLocal = {
         set: (key, value, ttl) => {
@@ -160,58 +160,413 @@
 document.addEventListener('pjax:send', () => {
   Pace.restart()
 })
-</script><link rel="stylesheet" href="/css/bounce.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/head.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/message/"><i class="fa-fw fas fa-comment-dots"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="page" id="body-wrap"><header class="not-home-page" id="page-header" style="background-image: url('/img/back.jpg')"><nav id="nav"><span id="blog-info"><a href="/" title="Youngkx"><span class="site-name">Youngkx</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/message/"><i class="fa-fw fas fa-comment-dots"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="page-site-info"><h1 id="site-title">留言板</h1></div></header><main class="layout" id="content-inner"><div id="page"><div id="article-container"><style>
-.msg-page{
-  max-width:800px;
-  margin:0 auto;
-  padding:20px;
+</script><link rel="stylesheet" href="/css/bounce.css"/><script src="https://cdn.jsdelivr.net/npm/pace-js/pace.min.js"></script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/head.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/message/"><i class="fa-fw fas fa-comment-dots"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="page" id="body-wrap"><header class="not-home-page" id="page-header" style="background-image: url('/img/back.jpg')"><nav id="nav"><span id="blog-info"><a href="/" title="Youngkx"><span class="site-name">Youngkx</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/message/"><i class="fa-fw fas fa-comment-dots"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="page-site-info"><h1 id="site-title">留言板</h1></div></header><main class="layout" id="content-inner"><div id="page"><div id="article-container"><div class="msg-board">
+
+  <!-- 顶部欢迎区域 -->
+  <div class="msg-hero">
+    <div class="msg-hero-icon">
+      <i class="fas fa-comment-dots"></i>
+    </div>
+    <h1 class="msg-hero-title">留 言 板</h1>
+    <p class="msg-hero-subtitle">每一段文字，都是时光的印记</p>
+    <div class="msg-hero-divider">
+      <span class="msg-hero-dot"></span>
+      <span class="msg-hero-line"></span>
+      <span class="msg-hero-dot"></span>
+    </div>
+    <p class="msg-hero-desc">
+      欢迎来到这里，你可以在下方留下任何你想说的话。<br>
+      无论是建议、问题，还是单纯想打个招呼，都欢迎你畅所欲言 ✨
+    </p>
+  </div>
+
+  <!-- 信息卡片区域 -->
+  <div class="msg-info-row">
+    <div class="msg-info-card">
+      <div class="msg-info-icon"><i class="fas fa-smile-wink"></i></div>
+      <div class="msg-info-text">
+        <span class="msg-info-label">友善交流</span>
+        <span class="msg-info-value">文明用语，互相尊重</span>
+      </div>
+    </div>
+    <div class="msg-info-card">
+      <div class="msg-info-icon"><i class="fas fa-lightbulb"></i></div>
+      <div class="msg-info-text">
+        <span class="msg-info-label">给我建议</span>
+        <span class="msg-info-value">欢迎提出宝贵意见</span>
+      </div>
+    </div>
+    <div class="msg-info-card">
+      <div class="msg-info-icon"><i class="fas fa-question-circle"></i></div>
+      <div class="msg-info-text">
+        <span class="msg-info-label">有问必答</span>
+        <span class="msg-info-value">我会尽快回复你</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 近期留言预览 -->
+  <div class="msg-recent">
+    <div class="msg-recent-header">
+      <i class="fas fa-history"></i>
+      <span>近期留言</span>
+    </div>
+    <div class="msg-recent-empty">
+      <i class="fas fa-inbox"></i>
+      <p>还没有留言，来做第一个留言的人吧！</p>
+    </div>
+  </div>
+
+  <!-- 评论区标题（用于关联主题自带的评论区） -->
+  <div class="msg-comment-section-label">
+    <i class="fas fa-pen-fancy"></i>
+    <span>写下你想说的</span>
+  </div>
+
+</div>
+
+<style>
+/* ========== 留言板主容器 ========== */
+.msg-board {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 10px 0 30px;
 }
 
-.msg-card{
-  background:rgba(255,255,255,0.7);
-  padding:16px;
-  border-radius:14px;
-  margin-bottom:16px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.08);
+/* ========== 顶部欢迎区域 ========== */
+.msg-hero {
+  text-align: center;
+  padding: 40px 30px 30px;
+  margin-bottom: 24px;
+  border-radius: 16px;
+  background: var(--msg-card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid var(--msg-border);
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .msg-hero {
+  background: var(--msg-card-bg-dark);
+  border-color: var(--msg-border-dark);
+}
+
+.msg-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg, transparent, rgba(73,177,245,0.06), transparent, rgba(0,196,182,0.06), transparent);
+  animation: msgHeroGlow 10s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes msgHeroGlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.msg-hero-icon {
+  font-size: 48px;
+  color: var(--msg-accent, #49B1F5);
+  margin-bottom: 12px;
+  animation: msgIconFloat 3s ease-in-out infinite;
+}
+
+@keyframes msgIconFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.msg-hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--msg-text, #363636);
+  letter-spacing: 8px;
+  margin: 0 0 8px;
+}
+
+[data-theme="dark"] .msg-hero-title {
+  color: var(--msg-text-dark);
+}
+
+.msg-hero-subtitle {
+  font-size: 15px;
+  color: var(--msg-secondary);
+  margin: 0 0 16px;
+  letter-spacing: 2px;
+}
+
+[data-theme="dark"] .msg-hero-subtitle {
+  color: var(--msg-secondary-dark);
+}
+
+.msg-hero-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.msg-hero-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--msg-accent, #49B1F5);
+  display: inline-block;
+}
+
+.msg-hero-line {
+  width: 60px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--msg-accent, #49B1F5), var(--msg-accent2, #00c4b6));
+  display: inline-block;
+}
+
+.msg-hero-desc {
+  font-size: 14px;
+  color: var(--msg-secondary);
+  line-height: 1.8;
+  margin: 0;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+[data-theme="dark"] .msg-hero-desc {
+  color: var(--msg-secondary-dark);
+}
+
+/* ========== 信息卡片行 ========== */
+.msg-info-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  .msg-info-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+.msg-info-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--msg-card-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--msg-border);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .msg-info-card {
+  background: var(--msg-card-bg-dark);
+  border-color: var(--msg-border-dark);
+}
+
+.msg-info-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(73,177,245,0.12);
+  border-color: rgba(73,177,245,0.3);
+}
+
+[data-theme="dark"] .msg-info-card:hover {
+  box-shadow: 0 6px 20px rgba(73,177,245,0.08);
+}
+
+.msg-info-icon {
+  font-size: 28px;
+  color: var(--msg-accent, #49B1F5);
+  flex-shrink: 0;
+  width: 40px;
+  text-align: center;
+}
+
+.msg-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.msg-info-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--msg-text);
+}
+
+[data-theme="dark"] .msg-info-label {
+  color: var(--msg-text-dark);
+}
+
+.msg-info-value {
+  font-size: 12px;
+  color: var(--msg-secondary);
+}
+
+[data-theme="dark"] .msg-info-value {
+  color: var(--msg-secondary-dark);
+}
+
+/* ========== 近期留言区域 ========== */
+.msg-recent {
+  margin-bottom: 24px;
+  border-radius: 14px;
+  background: var(--msg-card-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--msg-border);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+[data-theme="dark"] .msg-recent {
+  background: var(--msg-card-bg-dark);
+  border-color: var(--msg-border-dark);
+}
+
+.msg-recent-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--msg-text);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+[data-theme="dark"] .msg-recent-header {
+  color: var(--msg-text-dark);
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+
+.msg-recent-header i {
+  color: var(--msg-accent, #49B1F5);
+}
+
+.msg-recent-empty {
+  text-align: center;
+  padding: 30px 20px 26px;
+  color: var(--msg-secondary);
+}
+
+[data-theme="dark"] .msg-recent-empty {
+  color: var(--msg-secondary-dark);
+}
+
+.msg-recent-empty i {
+  font-size: 36px;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.msg-recent-empty p {
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ========== 评论区标题 ========== */
+.msg-comment-section-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--msg-text);
+  margin-bottom: 16px;
+  padding: 18px 0 14px;
+  border-bottom: 2px solid var(--msg-accent, #49B1F5);
+}
+
+[data-theme="dark"] .msg-comment-section-label {
+  color: var(--msg-text-dark);
+}
+
+.msg-comment-section-label i {
+  color: var(--msg-accent, #49B1F5);
+  font-size: 18px;
+}
+
+/* ========== 覆盖主题默认的评论区样式 ========== */
+#post-comment {
+  margin-top: 0 !important;
+  padding: 20px 24px 24px !important;
+  border-radius: 14px !important;
+  background: var(--msg-card-bg) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid var(--msg-border) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04) !important;
+}
+
+[data-theme="dark"] #post-comment {
+  background: var(--msg-card-bg-dark) !important;
+  border-color: var(--msg-border-dark) !important;
+}
+
+#post-comment .comment-head {
+  display: none !important;
+}
+
+#post-comment .comment-wrap {
+  padding: 0 !important;
+}
+
+/* ========== 响应式调整 ========== */
+@media (max-width: 480px) {
+  .msg-hero {
+    padding: 28px 16px 24px;
+  }
+  .msg-hero-title {
+    font-size: 22px;
+    letter-spacing: 6px;
+  }
+  #post-comment {
+    padding: 16px 14px 18px !important;
+  }
+  .msg-info-card {
+    padding: 12px 14px;
+  }
+  .msg-info-icon {
+    font-size: 22px;
+    width: 32px;
+  }
+}
+
+/* ========== CSS 变量定义 ========== */
+:root {
+  --msg-accent: #49B1F5;
+  --msg-accent2: #00c4b6;
+  --msg-card-bg: rgba(255,255,255,0.6);
+  --msg-border: rgba(255,255,255,0.3);
+  --msg-text: #363636;
+  --msg-secondary: #858585;
+  --msg-card-bg-dark: rgba(30,30,40,0.55);
+  --msg-border-dark: rgba(255,255,255,0.08);
+  --msg-text-dark: #e0e0e0;
+  --msg-secondary-dark: #999;
 }
 </style>
-
-<div class="msg-page">
-
-  <div class="msg-card">
-    <h2>留言板 ✨</h2>
-    <p>在这里留下你的想法</p>
-  </div>
-
-  <div class="msg-card">
-
-<pre><code>&lt;div id=&quot;giscus&quot;&gt;&lt;/div&gt;
-
-&lt;script src=&quot;https://giscus.app/client.js&quot;
-        data-repo=&quot;YoungoodOler/Youngkx.github.oi&quot;
-        data-repo-id=&quot;R_kgDOKiBsGA&quot;
-        data-category=&quot;Announcements&quot;
-        data-category-id=&quot;DIC_kwDOKiBsGM4C_8Ju&quot;
-        data-mapping=&quot;pathname&quot;
-        data-reactions-enabled=&quot;1&quot;
-        data-emit-metadata=&quot;0&quot;
-        data-input-position=&quot;top&quot;
-        data-loading=&quot;lazy&quot;
-        data-theme=&quot;preferred_color_scheme&quot;
-        crossorigin=&quot;anonymous&quot;
-        async&gt;
-&lt;/script&gt;
-</code></pre>
-  </div>
-
-</div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/head.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Youngkx</div><div class="author-info__description">我是一个怀揣泥土的人</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content"></div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/" title="printf用法详解">printf用法详解</a><time datetime="2023-11-05T04:12:12.000Z" title="发表于 2023-11-05 12:12:12">2023-11-05</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/04/OI%E8%A6%81%E5%AD%A6%E4%BB%80%E4%B9%88%EF%BC%9F/" title="信息学竞赛要学什么？">信息学竞赛要学什么？</a><time datetime="2023-11-04T04:12:12.000Z" title="发表于 2023-11-04 12:12:12">2023-11-04</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/23/http/" title="My http">My http</a><time datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路"><img src="/img/wdoi_z.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="我的OI之路"/></a><div class="content"><a class="title" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路">我的OI之路</a><time datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time></div></div></div></div><div class="card-widget card-categories"><div class="item-headline">
+</div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/head.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Youngkx</div><div class="author-info__description">我是一个怀揣泥土的人</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content"></div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/05/printf%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3/" title="printf用法详解">printf用法详解</a><time datetime="2023-11-05T04:12:12.000Z" title="发表于 2023-11-05 12:12:12">2023-11-05</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/11/04/OI%E8%A6%81%E5%AD%A6%E4%BB%80%E4%B9%88%EF%BC%9F/" title="信息学竞赛要学什么？">信息学竞赛要学什么？</a><time datetime="2023-11-04T04:12:12.000Z" title="发表于 2023-11-04 12:12:12">2023-11-04</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/23/http/" title="My http">My http</a><time datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路"><img src="/img/wdoi_z.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="我的OI之路"/></a><div class="content"><a class="title" href="/2023/10/23/%E6%88%91%E7%9A%84OI/" title="我的OI之路">我的OI之路</a><time datetime="2023-10-23T04:12:12.000Z" title="发表于 2023-10-23 12:12:12">2023-10-23</time></div></div></div></div><div class="card-widget card-categories"><div class="item-headline">
             <i class="fas fa-folder-open"></i>
             <span>分类</span>
             
             </div>
             <ul class="card-category-list" id="aside-cat-list">
             <li class="card-category-list-item "><a class="card-category-list-link" href="/categories/OI/"><span class="card-category-list-name">OI</span><span class="card-category-list-count">4</span></a></li>
-            </ul></div><div class="card-widget card-tags"><div class="item-headline"><i class="fas fa-tags"></i><span>标签</span></div><div class="card-tag-cloud"><a href="/tags/C/" style="font-size: 1.1em; color: #999">C++</a> <a href="/tags/OI/" style="font-size: 1.5em; color: #99a9bf">OI</a></div></div><div class="card-widget card-archives"><div class="item-headline"><i class="fas fa-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/11/"><span class="card-archive-list-date">十一月 2023</span><span class="card-archive-list-count">2</span></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/10/"><span class="card-archive-list-date">十月 2023</span><span class="card-archive-list-count">2</span></a></li></ul></div><div class="card-widget card-webinfo"><div class="item-headline"><i class="fas fa-chart-line"></i><span>网站资讯</span></div><div class="webinfo"><div class="webinfo-item"><div class="item-name">文章数目 :</div><div class="item-count">4</div></div><div class="webinfo-item"><div class="item-name">已运行时间 :</div><div class="item-count" id="runtimeshow" data-publishDate="2023-10-19T16:00:00.000Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站访客数 :</div><div class="item-count" id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站总访问量 :</div><div class="item-count" id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">最后更新时间 :</div><div class="item-count" id="last-push-date" data-lastPushDate="2026-06-26T15:43:24.911Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div></div></div></div></div></main><footer id="footer" style="background: linear-gradient(135deg,"><div id="footer-wrap"><div class="copyright">&copy;2023 - 2026 By Youngkx</div><div class="footer_custom_text">Welcome.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>(()=>{
+            </ul></div><div class="card-widget card-tags"><div class="item-headline"><i class="fas fa-tags"></i><span>标签</span></div><div class="card-tag-cloud"><a href="/tags/OI/" style="font-size: 1.5em; color: #99a9bf">OI</a> <a href="/tags/C/" style="font-size: 1.1em; color: #999">C++</a></div></div><div class="card-widget card-archives"><div class="item-headline"><i class="fas fa-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/11/"><span class="card-archive-list-date">十一月 2023</span><span class="card-archive-list-count">2</span></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/10/"><span class="card-archive-list-date">十月 2023</span><span class="card-archive-list-count">2</span></a></li></ul></div><div class="card-widget card-webinfo"><div class="item-headline"><i class="fas fa-chart-line"></i><span>网站资讯</span></div><div class="webinfo"><div class="webinfo-item"><div class="item-name">文章数目 :</div><div class="item-count">4</div></div><div class="webinfo-item"><div class="item-name">已运行时间 :</div><div class="item-count" id="runtimeshow" data-publishDate="2023-10-19T16:00:00.000Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站访客数 :</div><div class="item-count" id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站总访问量 :</div><div class="item-count" id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">最后更新时间 :</div><div class="item-count" id="last-push-date" data-lastPushDate="2026-07-12T17:39:17.076Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div></div></div></div></div></main><footer id="footer" style="background: linear-gradient(135deg,"><div id="footer-wrap"><div class="copyright">&copy;2023 - 2026 By Youngkx</div><div class="footer_custom_text">Welcome.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>(()=>{
   const getGiscusTheme = theme => {
     return theme === 'dark' ? 'dark' : 'light'
   }
