@@ -3,6 +3,11 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
+const smoothstep = (value: number) => {
+  const t = THREE.MathUtils.clamp(value, 0, 1);
+  return t * t * (3 - 2 * t);
+};
+
 export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -12,118 +17,169 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-    camera.position.set(0, 0, 5.4);
+    const camera = new THREE.PerspectiveCamera(39, 1, 0.1, 100);
+    camera.position.set(0, 0, 6.3);
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.65));
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
     const group = new THREE.Group();
     scene.add(group);
 
-    const geometry = new THREE.IcosahedronGeometry(1.65, 5);
-    const isLight = theme === 'light';
-    const material = new THREE.MeshPhysicalMaterial({
-      color: isLight ? 0xbfc7df : 0x171b31,
-      roughness: 0.24,
-      metalness: 0.34,
-      transmission: 0.08,
-      transparent: true,
-      opacity: 0.96,
-      emissive: isLight ? 0x334a8c : 0x080d20,
-      emissiveIntensity: isLight ? 0.28 : 0.8,
-      flatShading: true,
-    });
-    const orb = new THREE.Mesh(geometry, material);
-    group.add(orb);
+    const geometry = new THREE.IcosahedronGeometry(1.58, 4);
+    const position = geometry.getAttribute('position') as THREE.BufferAttribute;
+    const sphere = new Float32Array(position.array);
+    const ribbon = new Float32Array(sphere.length);
+    const diamond = new Float32Array(sphere.length);
 
-    const wire = new THREE.LineSegments(
-      new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(1.67, 2)),
-      new THREE.LineBasicMaterial({ color: isLight ? 0x3f5dbb : 0x7798ff, transparent: true, opacity: isLight ? 0.24 : 0.16 }),
-    );
+    for (let index = 0; index < sphere.length; index += 3) {
+      const x = sphere[index];
+      const y = sphere[index + 1];
+      const z = sphere[index + 2];
+      const twist = y * 0.72;
+      ribbon[index] = (x * Math.cos(twist) - z * Math.sin(twist)) * 1.18;
+      ribbon[index + 1] = y * 0.62;
+      ribbon[index + 2] = (x * Math.sin(twist) + z * Math.cos(twist)) * 0.82;
+
+      const length = Math.hypot(x, y, z) || 1;
+      const nx = x / length;
+      const ny = y / length;
+      const nz = z / length;
+      const octahedronRadius = 1.82 / (Math.abs(nx) + Math.abs(ny) + Math.abs(nz));
+      diamond[index] = nx * octahedronRadius * 1.08;
+      diamond[index + 1] = ny * octahedronRadius * 1.2;
+      diamond[index + 2] = nz * octahedronRadius;
+    }
+
+    const isLight = theme === 'light';
+    const colors = [
+      new THREE.Color(isLight ? '#687fbe' : '#27345f'),
+      new THREE.Color(isLight ? '#7f6aa8' : '#3b2859'),
+      new THREE.Color(isLight ? '#4d927d' : '#17473e'),
+    ];
+    const emissives = [
+      new THREE.Color(isLight ? '#263e80' : '#0b183d'),
+      new THREE.Color(isLight ? '#553a82' : '#241039'),
+      new THREE.Color(isLight ? '#276a58' : '#072e27'),
+    ];
+    const material = new THREE.MeshPhysicalMaterial({
+      color: colors[0],
+      roughness: 0.3,
+      metalness: 0.42,
+      transmission: 0.05,
+      transparent: true,
+      opacity: isLight ? 0.28 : 0.54,
+      emissive: emissives[0],
+      emissiveIntensity: isLight ? 0.18 : 0.72,
+      flatShading: true,
+      side: THREE.DoubleSide,
+    });
+    const subject = new THREE.Mesh(geometry, material);
+    group.add(subject);
+
+    const wireMaterial = new THREE.MeshBasicMaterial({
+      color: isLight ? 0x415caa : 0x89a5ff,
+      transparent: true,
+      opacity: isLight ? 0.12 : 0.17,
+      wireframe: true,
+    });
+    const wire = new THREE.Mesh(geometry, wireMaterial);
+    wire.scale.setScalar(1.008);
     group.add(wire);
 
-    const particleCount = window.innerWidth < 700 ? 420 : 900;
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-    const palette = [new THREE.Color('#7c9cff'), new THREE.Color('#a78bfa'), new THREE.Color('#78e8c2')];
-    for (let i = 0; i < particleCount; i += 1) {
-      const radius = 2.1 + Math.random() * 2.6;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      positions[i * 3 + 2] = radius * Math.cos(phi);
-      const color = palette[Math.floor(Math.random() * palette.length)];
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
-    }
-    const particlesGeometry = new THREE.BufferGeometry();
-    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    const particles = new THREE.Points(
-      particlesGeometry,
-      new THREE.PointsMaterial({ size: 0.015, vertexColors: true, transparent: true, opacity: 0.7, sizeAttenuation: true }),
-    );
-    scene.add(particles);
+    const haloMaterial = new THREE.MeshBasicMaterial({
+      color: isLight ? 0x536fc4 : 0x819fff,
+      transparent: true,
+      opacity: isLight ? 0.08 : 0.13,
+      side: THREE.DoubleSide,
+    });
+    const halos = [2.1, 2.42].map((radius, index) => {
+      const halo = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.006, 4, 160), haloMaterial);
+      halo.rotation.set(Math.PI * (0.32 + index * 0.17), index * 0.6, index * 0.5);
+      group.add(halo);
+      return halo;
+    });
 
-    const keyLight = new THREE.PointLight(0x8aa6ff, 34, 12);
+    const keyLight = new THREE.PointLight(0x8aa6ff, isLight ? 18 : 38, 14);
     keyLight.position.set(3, 2, 4);
     scene.add(keyLight);
-    const rimLight = new THREE.PointLight(0xa989ff, 26, 12);
+    const rimLight = new THREE.PointLight(0xa989ff, isLight ? 12 : 28, 13);
     rimLight.position.set(-3, -1, 2);
     scene.add(rimLight);
-    const mintLight = new THREE.PointLight(0x62e6bf, 13, 10);
+    const mintLight = new THREE.PointLight(0x62e6bf, isLight ? 8 : 18, 11);
     mintLight.position.set(1, -3, 3);
     scene.add(mintLight);
 
-    const pointer = { x: 0, y: 0, velocity: 0 };
-    let lastPointerX = 0;
-    let lastPointerY = 0;
-    const onPointerMove = (event: PointerEvent) => {
-      const nextX = (event.clientX / window.innerWidth - 0.5) * 0.8;
-      const nextY = (event.clientY / window.innerHeight - 0.5) * 0.58;
-      pointer.velocity = Math.min(1, Math.hypot(nextX - lastPointerX, nextY - lastPointerY) * 3.5);
-      pointer.x = nextX;
-      pointer.y = nextY;
-      lastPointerX = nextX;
-      lastPointerY = nextY;
+    const pointer = { x: 0, y: 0 };
+    let targetScroll = 0;
+    let currentScroll = 0;
+    const updateScroll = () => {
+      const maximum = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      targetScroll = window.scrollY / maximum;
     };
+    const onPointerMove = (event: PointerEvent) => {
+      pointer.x = (event.clientX / window.innerWidth - 0.5) * 0.7;
+      pointer.y = (event.clientY / window.innerHeight - 0.5) * 0.5;
+    };
+    window.addEventListener('scroll', updateScroll, { passive: true });
     window.addEventListener('pointermove', onPointerMove, { passive: true });
+    updateScroll();
 
     const resize = () => {
-      const { clientWidth, clientHeight } = mount;
-      renderer.setSize(clientWidth, clientHeight, false);
-      camera.aspect = clientWidth / clientHeight;
+      renderer.setSize(mount.clientWidth, mount.clientHeight, false);
+      camera.aspect = mount.clientWidth / mount.clientHeight;
       camera.updateProjectionMatrix();
+      updateScroll();
     };
     const observer = new ResizeObserver(resize);
     observer.observe(mount);
     resize();
 
-    let frame = 0;
+    const mixedColor = new THREE.Color();
+    const mixedEmissive = new THREE.Color();
     const clock = new THREE.Clock();
+    let frame = 0;
     const render = () => {
       const delta = Math.min(clock.getDelta(), 0.05);
-      const t = clock.elapsedTime;
-      if (!prefersReducedMotion) {
-        group.rotation.y = THREE.MathUtils.damp(group.rotation.y, pointer.x, 5.8, delta);
-        group.rotation.x = THREE.MathUtils.damp(group.rotation.x, -pointer.y, 5.8, delta);
-        group.position.x = THREE.MathUtils.damp(group.position.x, pointer.x * 0.14, 4.5, delta);
-        keyLight.position.x = THREE.MathUtils.damp(keyLight.position.x, 3 + pointer.x * 2.2, 7, delta);
-        keyLight.position.y = THREE.MathUtils.damp(keyLight.position.y, 2 - pointer.y * 2, 7, delta);
-        const reactiveScale = 1 + pointer.velocity * 0.025;
-        group.scale.setScalar(THREE.MathUtils.damp(group.scale.x, reactiveScale, 8, delta));
-        pointer.velocity = THREE.MathUtils.damp(pointer.velocity, 0, 6, delta);
-        orb.rotation.z = t * 0.035;
-        wire.rotation.y = -t * 0.08;
-        particles.rotation.y = t * 0.018;
-        particles.rotation.x = Math.sin(t * 0.15) * 0.08;
-        group.position.y = Math.sin(t * 0.65) * 0.08;
+      const time = clock.elapsedTime;
+      currentScroll = prefersReducedMotion ? targetScroll : THREE.MathUtils.damp(currentScroll, targetScroll, 4.6, delta);
+
+      const articleMix = smoothstep((currentScroll - 0.055) / 0.3);
+      const categoryMix = smoothstep((currentScroll - 0.61) / 0.24);
+      for (let index = 0; index < sphere.length; index += 1) {
+        const articleShape = THREE.MathUtils.lerp(sphere[index], ribbon[index], articleMix);
+        position.array[index] = THREE.MathUtils.lerp(articleShape, diamond[index], categoryMix);
       }
+      position.needsUpdate = true;
+      geometry.computeVertexNormals();
+
+      const mobile = window.innerWidth < 700;
+      const heroX = mobile ? 0.7 : 1.55;
+      const articleX = mobile ? -0.68 : -1.72;
+      const categoryX = mobile ? 0.76 : 1.72;
+      const firstX = THREE.MathUtils.lerp(heroX, articleX, articleMix);
+      group.position.x = THREE.MathUtils.lerp(firstX, categoryX, categoryMix) + pointer.x * 0.1;
+      group.position.y = THREE.MathUtils.lerp(-0.05, 0.28, articleMix) - categoryMix * 0.46 - pointer.y * 0.1;
+      const desiredScale = THREE.MathUtils.lerp(1, mobile ? 0.54 : 0.64, articleMix) + categoryMix * 0.1;
+      group.scale.setScalar(desiredScale);
+
+      group.rotation.x = currentScroll * Math.PI * 1.08 - pointer.y * 0.24;
+      group.rotation.y = currentScroll * Math.PI * 1.7 + pointer.x * 0.28 + time * (prefersReducedMotion ? 0 : 0.035);
+      group.rotation.z = currentScroll * -0.72;
+      halos[0].rotation.z = time * (prefersReducedMotion ? 0 : 0.055) + currentScroll * 1.8;
+      halos[1].rotation.y = -time * (prefersReducedMotion ? 0 : 0.04) - currentScroll * 1.3;
+
+      if (categoryMix > 0) {
+        mixedColor.copy(colors[1]).lerp(colors[2], categoryMix);
+        mixedEmissive.copy(emissives[1]).lerp(emissives[2], categoryMix);
+      } else {
+        mixedColor.copy(colors[0]).lerp(colors[1], articleMix);
+        mixedEmissive.copy(emissives[0]).lerp(emissives[1], articleMix);
+      }
+      material.color.copy(mixedColor);
+      material.emissive.copy(mixedEmissive);
       renderer.render(scene, camera);
       frame = window.requestAnimationFrame(render);
     };
@@ -131,12 +187,14 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
 
     return () => {
       window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', updateScroll);
       window.removeEventListener('pointermove', onPointerMove);
       observer.disconnect();
       geometry.dispose();
       material.dispose();
-      particlesGeometry.dispose();
-      (particles.material as THREE.Material).dispose();
+      wireMaterial.dispose();
+      halos.forEach((halo) => halo.geometry.dispose());
+      haloMaterial.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };

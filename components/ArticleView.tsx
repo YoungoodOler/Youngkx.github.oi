@@ -2,6 +2,7 @@
 
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import SiteFooter from './SiteFooter';
 
 type Article = {
   key: string;
@@ -43,7 +44,20 @@ export default function ArticleView({ article }: { article: Article }) {
   };
 
   const copyLink = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    const link = window.location.href;
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = link;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+    }
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1200);
   };
@@ -52,26 +66,26 @@ export default function ArticleView({ article }: { article: Article }) {
     <main className="modern-article-page">
       <motion.div className="progress" style={{ scaleX: progress }} />
       <header className="nav shell">
-        <a className="brand" href="/#top"><span className="brand-mark">YK</span><span className="brand-name">Youngkx</span></a>
-        <nav className="nav-links article-nav-links"><a href="/#top">首页</a><a href="/#posts">文章</a><a href="/#topics">分类</a></nav>
+        <a className="brand" href="/#top"><img className="brand-avatar" src="/avatar.webp" alt="Youngkx 头像" /><span className="brand-name">Youngkx</span></a>
+        <nav className="nav-links article-nav-links"><a href="/#top">首页</a><a href="/articles/">文章</a><a href="/categories/">分类</a></nav>
         <button className="theme-toggle" onClick={toggleTheme} aria-label="切换主题"><span className="theme-icon">{theme === 'dark' ? '☼' : '◐'}</span><span className="theme-label">{theme === 'dark' ? 'LIGHT' : 'DARK'}</span></button>
       </header>
 
       <header className="modern-article-hero">
         <motion.div className="shell" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8 }}>
-          <span className="article-breadcrumb">ARTICLE / {article.tag}</span>
+          <span className="article-breadcrumb">{article.tag}</span>
           <h1>{article.title}</h1>
-          <div className="article-meta"><span>{article.date}</span><span>{article.tag}</span><span>{characters.toLocaleString()} 字</span><span>约 {minutes} 分钟</span></div>
+          <div className="article-meta"><span>发布于 {article.date}</span><span>{characters.toLocaleString()} 字</span><span>约 {minutes} 分钟</span></div>
         </motion.div>
       </header>
 
       <div className="modern-article-layout shell">
         <article ref={contentRef} className="modern-article-content" dangerouslySetInnerHTML={{ __html: article.content }} />
-        <div className="modern-copyright"><span>作者</span><strong>Youngkx</strong><span>本文链接</span><code>{`youngkx.cn/2023/${article.key}/`}</code></div>
+        <div className="modern-copyright"><span>作者</span><strong>Youngkx</strong><span>说明</span><code>原创内容，转载请注明出处</code></div>
       </div>
 
       <aside className={tocOpen ? 'modern-toc open' : 'modern-toc'}>
-        <div><strong>CONTENTS</strong><small>{toc.length} SECTIONS</small></div>
+        <div><strong>文章目录</strong><small>{toc.length} 节</small></div>
         {toc.map((item) => <a className={item.level === 3 ? 'level-3' : ''} href={`#${item.id}`} key={item.id} onClick={() => setTocOpen(false)}>{item.text}</a>)}
       </aside>
 
@@ -82,7 +96,7 @@ export default function ArticleView({ article }: { article: Article }) {
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} title="返回顶部" aria-label="返回顶部">↑</button>
       </div>
 
-      <footer className="footer shell"><span>© 2023 YOUNGKX.CN</span><span>{article.tag}</span><a href="/articles/">全部文章 ↗</a></footer>
+      <SiteFooter backHref="/articles/" backLabel="全部文章 ↗" />
     </main>
   );
 }
