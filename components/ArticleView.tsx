@@ -1,0 +1,88 @@
+'use client';
+
+import { motion, useScroll, useSpring } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+type Article = {
+  key: string;
+  path: string[];
+  title: string;
+  date: string;
+  tag: string;
+  excerpt: string;
+  content: string;
+};
+
+type TocItem = { id: string; text: string; level: number };
+
+export default function ArticleView({ article }: { article: Article }) {
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 28 });
+  const contentRef = useRef<HTMLElement>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [toc, setToc] = useState<TocItem[]>([]);
+  const [tocOpen, setTocOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const characters = useMemo(() => article.content.replace(/<[^>]+>/g, '').replace(/\s+/g, '').length, [article.content]);
+  const minutes = Math.max(1, Math.ceil(characters / 500));
+
+  useEffect(() => {
+    const saved = localStorage.getItem('youngkx-theme');
+    const initial = saved === 'light' || saved === 'dark' ? saved : window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    setTheme(initial);
+    document.documentElement.dataset.theme = initial;
+    const headings = [...(contentRef.current?.querySelectorAll('h2, h3') ?? [])];
+    setToc(headings.map((heading) => ({ id: heading.id, text: heading.textContent ?? '', level: heading.tagName === 'H3' ? 3 : 2 })));
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('youngkx-theme', next);
+  };
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  };
+
+  return (
+    <main className="modern-article-page">
+      <motion.div className="progress" style={{ scaleX: progress }} />
+      <header className="nav shell">
+        <a className="brand" href="/#top"><span className="brand-mark">YK</span><span className="brand-name">Youngkx</span></a>
+        <nav className="nav-links article-nav-links"><a href="/#top">首页</a><a href="/#posts">文章</a><a href="/#topics">分类</a></nav>
+        <button className="theme-toggle" onClick={toggleTheme} aria-label="切换主题"><span className="theme-icon">{theme === 'dark' ? '☼' : '◐'}</span><span className="theme-label">{theme === 'dark' ? 'LIGHT' : 'DARK'}</span></button>
+      </header>
+
+      <header className="modern-article-hero">
+        <motion.div className="shell" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8 }}>
+          <span className="article-breadcrumb">ARTICLE / {article.tag}</span>
+          <h1>{article.title}</h1>
+          <div className="article-meta"><span>{article.date}</span><span>{article.tag}</span><span>{characters.toLocaleString()} 字</span><span>约 {minutes} 分钟</span></div>
+        </motion.div>
+      </header>
+
+      <div className="modern-article-layout shell">
+        <article ref={contentRef} className="modern-article-content" dangerouslySetInnerHTML={{ __html: article.content }} />
+        <div className="modern-copyright"><span>作者</span><strong>Youngkx</strong><span>本文链接</span><code>{`youngkx.cn/2023/${article.key}/`}</code></div>
+      </div>
+
+      <aside className={tocOpen ? 'modern-toc open' : 'modern-toc'}>
+        <div><strong>CONTENTS</strong><small>{toc.length} SECTIONS</small></div>
+        {toc.map((item) => <a className={item.level === 3 ? 'level-3' : ''} href={`#${item.id}`} key={item.id} onClick={() => setTocOpen(false)}>{item.text}</a>)}
+      </aside>
+
+      <div className="modern-article-tools">
+        <a href="/#top" title="返回主页" aria-label="返回主页">⌂</a>
+        <button className={tocOpen ? 'active' : ''} onClick={() => setTocOpen(!tocOpen)} title="文章目录" aria-label="文章目录">☷</button>
+        <button onClick={copyLink} title="复制链接" aria-label="复制链接">{copied ? '✓' : '⧉'}</button>
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} title="返回顶部" aria-label="返回顶部">↑</button>
+      </div>
+
+      <footer className="footer shell"><span>© 2023 YOUNGKX.CN</span><span>{article.tag}</span><a href="/articles/">全部文章 ↗</a></footer>
+    </main>
+  );
+}
