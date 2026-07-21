@@ -20,4 +20,4 @@ npm run dev
 
 ## GitHub Pages
 
-项目已包含自动部署流程。将代码推送到 `main` 或 `master` 后，在仓库 Settings → Pages 中将 Source 设为 **GitHub Actions**。配置会自动识别用户主页仓库和普通项目仓库，并设置正确的资源路径。
+项目已包含自动部署流程。将代码推送到 `main` 或 `master` 后，在仓库 Settings → Pages 中将 Source 设为 **GitHub Actions**。站点按自定义域名 `youngkx.cn` 的根路径构建。
