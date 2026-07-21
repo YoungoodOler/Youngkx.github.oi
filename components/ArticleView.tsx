@@ -2,21 +2,12 @@
 
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ArticleRecord } from '@/lib/articles';
 import SiteFooter from './SiteFooter';
-
-type Article = {
-  key: string;
-  path: string[];
-  title: string;
-  date: string;
-  tag: string;
-  excerpt: string;
-  content: string;
-};
 
 type TocItem = { id: string; text: string; level: number };
 
-export default function ArticleView({ article }: { article: Article }) {
+export default function ArticleView({ article }: { article: ArticleRecord }) {
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 28 });
   const contentRef = useRef<HTMLElement>(null);
@@ -73,7 +64,7 @@ export default function ArticleView({ article }: { article: Article }) {
 
       <header className="modern-article-hero">
         <motion.div className="shell" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8 }}>
-          <span className="article-breadcrumb">{article.tag}</span>
+          <span className="article-breadcrumb">{article.tags.join(' / ')}</span>
           <h1>{article.title}</h1>
           <div className="article-meta"><span>发布于 {article.date}</span><span>{characters.toLocaleString()} 字</span><span>约 {minutes} 分钟</span></div>
         </motion.div>

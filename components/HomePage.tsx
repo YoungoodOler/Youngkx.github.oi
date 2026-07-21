@@ -2,51 +2,9 @@
 
 import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from 'react';
+import type { ArticleSummary, CategorySummary } from '@/lib/articles';
 import Scene from './Scene';
 import SiteFooter from './SiteFooter';
-
-export const posts = [
-  {
-    number: '01',
-    title: 'printf 用法详解',
-    excerpt: '系统整理 printf 的类型、标志、输出宽度、精度、转义字符与常用示例。',
-    date: '2023.11.05',
-    tag: 'C / OI',
-    href: '/2023/11/05/printf用法详解/',
-    tone: 'mint',
-    visual: 'terminal',
-  },
-  {
-    number: '02',
-    title: '信息学竞赛要学什么？',
-    excerpt: '从 CSP-S 到 NOIP，整理信息学竞赛流程、需要掌握的知识和学习路线。',
-    date: '2023.11.04',
-    tag: 'OI',
-    href: '/2023/11/04/OI要学什么？/',
-    tone: 'blue',
-    visual: 'network',
-  },
-  {
-    number: '03',
-    title: '我的 OI 之路',
-    excerpt: '关于学习算法、参加竞赛以及离开 OI 的个人记录。',
-    date: '2023.10.23',
-    tag: 'OI',
-    href: '/2023/10/23/我的OI/',
-    tone: 'violet',
-    visual: 'timeline',
-  },
-  {
-    number: '04',
-    title: 'My HTTP',
-    excerpt: 'HTTP 基础笔记：请求方法、状态码、请求头以及常见工作流程。',
-    date: '2023.10.23',
-    tag: 'WEB',
-    href: '/2023/10/23/http/',
-    tone: 'blue',
-    visual: 'protocol',
-  },
-];
 
 const introQuotes = [
   '我见青山多妩媚，料青山见我应如是。',
@@ -128,7 +86,7 @@ function MagneticLink({ href, className, children }: { href: string; className: 
   return <motion.a href={href} className={className} style={{ x, y }} onPointerMove={move} onPointerLeave={() => { rawX.set(0); rawY.set(0); }}>{children}</motion.a>;
 }
 
-function FeaturedPost({ post, index }: { post: (typeof posts)[number]; index: number }) {
+function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) {
   const rawRotateX = useMotionValue(0);
   const rawRotateY = useMotionValue(0);
   const rotateX = useSpring(rawRotateX, { stiffness: 180, damping: 24, mass: 0.5 });
@@ -161,10 +119,10 @@ function FeaturedPost({ post, index }: { post: (typeof posts)[number]; index: nu
       <div className="card-visual">
         <div className="card-number">{post.number}</div>
         <CardArtwork kind={post.visual} />
-        <span className="category">{post.tag}</span>
+        <span className="category">{post.tagLabel}</span>
       </div>
       <div className="card-body">
-        <div className="card-meta"><span>发布于 {post.date}</span></div>
+        <div className="card-meta"><span>发布于 {post.dateLabel}</span></div>
         <h3>{post.title}</h3>
         <p>{post.excerpt}</p>
         <a href={post.href} aria-label={`阅读：${post.title}`}><span>阅读全文</span><b>↗</b></a>
@@ -173,7 +131,7 @@ function FeaturedPost({ post, index }: { post: (typeof posts)[number]; index: nu
   );
 }
 
-export default function HomePage() {
+export default function HomePage({ posts, categories }: { posts: ArticleSummary[]; categories: CategorySummary[] }) {
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.001 });
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.25]);
@@ -271,7 +229,7 @@ export default function HomePage() {
           {posts.slice(0, 3).map((post, index) => <FeaturedPost post={post} index={index} key={post.href} />)}
         </div>
         <motion.div className="more-posts" initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <a href="/articles/"><span>更多文章</span><b>查看全部 4 篇</b><i>↗</i></a>
+          <a href="/articles/"><span>更多文章</span><b>查看全部 {posts.length} 篇</b><i>↗</i></a>
         </motion.div>
       </section>
 
@@ -282,9 +240,14 @@ export default function HomePage() {
           <p>按内容主题浏览文章，快速找到信息学竞赛、C / C++ 与 Web 相关笔记。</p>
         </motion.div>
         <div className="category-grid">
-          <a href="/categories/#oi" className="category-block"><span>01</span><h3>OI</h3><p>信息学竞赛与学习路线</p><b>3 篇相关文章</b></a>
-          <a href="/categories/#c" className="category-block"><span>02</span><h3>C / C++</h3><p>语言基础与函数用法</p><b>1 篇相关文章</b></a>
-          <a href="/categories/#web" className="category-block"><span>03</span><h3>Web</h3><p>HTTP 基础知识整理</p><b>1 篇相关文章</b></a>
+          {categories.map((category) => (
+            <a href={`/categories/#${category.id}`} className="category-block" key={category.id}>
+              <span>{category.number}</span>
+              <h3>{category.title}</h3>
+              <p>{category.description}</p>
+              <b>{category.posts.length} 篇相关文章</b>
+            </a>
+          ))}
         </div>
       </section>
 

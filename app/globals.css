@@ -158,7 +158,7 @@ button { font: inherit; }
 .archive-arrow { display: grid; place-items: center; width: 34px; height: 34px; color: #737889; border: 1px solid transparent; border-radius: 50%; transition: transform .3s, color .3s, border-color .3s; }
 .archive-row:hover .archive-arrow { color: #a8b8ff; border-color: var(--line); transform: rotate(45deg); }
 .categories { padding-bottom: 130px; }
-.category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap:14px; }
+.category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:14px; }
 .category-block { position: relative; min-height: 300px; padding: 34px; border:1px solid var(--line); border-radius:4px; background:rgba(8,9,13,.93); transition: background .35s, transform .35s, border-color .35s; }
 .category-block:hover { z-index: 2; background: rgba(125,148,235,.055); transform: translateY(-5px); }
 .category-block > span { color: #646978; font: 400 9px/1 var(--mono); }

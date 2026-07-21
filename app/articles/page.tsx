@@ -1,4 +1,5 @@
 import ArticlesPage from '@/components/ArticlesPage';
+import { articleSummaries } from '@/lib/articles';
 
 export const metadata = {
   title: '所有文章 | Youngkx',
@@ -6,5 +7,5 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <ArticlesPage />;
+  return <ArticlesPage posts={articleSummaries} />;
 }

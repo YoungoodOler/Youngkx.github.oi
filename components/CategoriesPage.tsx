@@ -2,16 +2,10 @@
 
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { posts } from './HomePage';
+import type { CategorySummary } from '@/lib/articles';
 import SiteFooter from './SiteFooter';
 
-const groups = [
-  { id: 'oi', number: '01', title: 'OI', description: '信息学竞赛、算法学习与参赛记录', posts: posts.filter((post) => post.tag.includes('OI')) },
-  { id: 'c', number: '02', title: 'C / C++', description: '语言基础、函数用法与代码笔记', posts: posts.filter((post) => post.tag.includes('C')) },
-  { id: 'web', number: '03', title: 'Web', description: '网络协议与 Web 基础知识', posts: posts.filter((post) => post.tag === 'WEB') },
-];
-
-export default function CategoriesPage() {
+export default function CategoriesPage({ categories, articleCount }: { categories: CategorySummary[]; articleCount: number }) {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
@@ -39,16 +33,16 @@ export default function CategoriesPage() {
       <section className="categories-hero shell">
         <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8 }}>
           <h1>文章分类</h1>
-          <p>3 个主题 · 4 篇文章</p>
+          <p>{categories.length} 个主题 · {articleCount} 篇文章</p>
         </motion.div>
       </section>
 
       <section className="category-directory shell">
-        {groups.map((group, groupIndex) => (
+        {categories.map((group, groupIndex) => (
           <motion.section className="category-group" id={group.id} key={group.id} initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-70px' }} transition={{ duration: .65, delay: groupIndex * .05 }}>
             <header><span>{group.number}</span><div><h2>{group.title}</h2><p>{group.description}</p></div><b>{group.posts.length} 篇文章</b></header>
             <div className="category-posts">
-              {group.posts.map((post) => <a href={post.href} key={`${group.id}-${post.href}`}><span>{post.date}</span><strong>{post.title}</strong><i>↗</i></a>)}
+              {group.posts.map((post) => <a href={post.href} key={`${group.id}-${post.href}`}><span>{post.dateLabel}</span><strong>{post.title}</strong><i>↗</i></a>)}
             </div>
           </motion.section>
         ))}

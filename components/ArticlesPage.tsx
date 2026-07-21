@@ -2,10 +2,10 @@
 
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { posts } from './HomePage';
+import type { ArticleSummary } from '@/lib/articles';
 import SiteFooter from './SiteFooter';
 
-export default function ArticlesPage() {
+export default function ArticlesPage({ posts }: { posts: ArticleSummary[] }) {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
@@ -35,18 +35,18 @@ export default function ArticlesPage() {
       <section className="articles-hero shell">
         <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8 }}>
           <h1>所有文章</h1>
-          <p>共 4 篇文章</p>
+          <p>共 {posts.length} 篇文章</p>
         </motion.div>
-        <motion.div className="articles-hero-number" initial={{ opacity: 0, scale: .85 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1 }}>04</motion.div>
+        <motion.div className="articles-hero-number" initial={{ opacity: 0, scale: .85 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1 }}>{String(posts.length).padStart(2, '0')}</motion.div>
       </section>
 
       <section className="article-directory shell">
         {posts.map((post, index) => (
-          <motion.a id={post.tag.includes('C') ? 'c' : post.tag === 'WEB' ? 'web' : index === 1 ? 'oi' : undefined} href={post.href} className="directory-row" key={post.href} initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .6, delay: .12 + index * .07 }}>
+          <motion.a href={post.href} className="directory-row" key={post.href} initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .6, delay: .12 + index * .07 }}>
             <span className="directory-number">{post.number}</span>
-            <span className="directory-date">{post.date}</span>
-            <span className="directory-copy"><strong>{post.title}</strong><small className="directory-mobile-date">发布于 {post.date}</small><small>{post.excerpt}</small></span>
-            <span className="directory-tag">{post.tag}</span>
+            <span className="directory-date">{post.dateLabel}</span>
+            <span className="directory-copy"><strong>{post.title}</strong><small className="directory-mobile-date">发布于 {post.dateLabel}</small><small>{post.excerpt}</small></span>
+            <span className="directory-tag">{post.tagLabel}</span>
             <i>↗</i>
           </motion.a>
         ))}
