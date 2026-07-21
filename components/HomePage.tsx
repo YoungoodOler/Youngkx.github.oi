@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from 'react';
 import Scene from './Scene';
+import SiteFooter from './SiteFooter';
 
 export const posts = [
   {
@@ -78,7 +79,7 @@ function CardArtwork({ kind }: { kind: string }) {
     return (
       <div className="artwork timeline-art" aria-hidden="true">
         <div className="timeline-track"><i /><i /><i /><i /></div>
-        <div className="timeline-labels"><span>START<small>2023.03</small></span><span>AC<small>+1</small></span><span>CSP<small>2023.09</small></span><span>END<small>2023.10</small></span></div>
+        <div className="timeline-labels"><span>起步<small>学习</small></span><span>通过<small>练习</small></span><span>竞赛<small>CSP</small></span><span>记录<small>OI</small></span></div>
         <div className="timeline-signal" />
       </div>
     );
@@ -163,7 +164,7 @@ function FeaturedPost({ post, index }: { post: (typeof posts)[number]; index: nu
         <span className="category">{post.tag}</span>
       </div>
       <div className="card-body">
-        <div className="card-meta"><span>{post.date}</span><span>YOUNGKX.CN</span></div>
+        <div className="card-meta"><span>发布于 {post.date}</span></div>
         <h3>{post.title}</h3>
         <p>{post.excerpt}</p>
         <a href={post.href} aria-label={`阅读：${post.title}`}><span>阅读全文</span><b>↗</b></a>
@@ -210,15 +211,18 @@ export default function HomePage() {
   };
 
   return (
-    <main>
+    <main className="home-page">
       <motion.div className="progress" style={{ scaleX: progress }} />
       <ReactivePointer />
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
+      <div className="scroll-morph">
+        <Scene theme={theme} />
+      </div>
 
       <header className="nav shell">
         <a className="brand" href="#top" aria-label="Youngkx Blog 首页">
-          <span className="brand-mark">YK</span>
+          <img className="brand-avatar" src="/avatar.webp" alt="Youngkx 头像" />
           <span className="brand-name">Youngkx</span>
         </a>
         <nav className={menuOpen ? 'nav-links open' : 'nav-links'} aria-label="主导航">
@@ -237,9 +241,6 @@ export default function HomePage() {
 
       <section className="hero shell" id="top">
         <motion.div className="hero-copy" style={{ opacity: heroOpacity, y: heroY }}>
-          <motion.div className="eyebrow" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-            <span className="status-dot" /> YOUNGKX.CN / 2023
-          </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 42 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}>
             Youngkx<br />
             <span>Blog</span>
@@ -257,22 +258,11 @@ export default function HomePage() {
           </motion.div>
         </motion.div>
 
-        <motion.div className="visual" initial={{ opacity: 0, scale: 0.86 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.4, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}>
-          <Scene theme={theme} />
-          <div className="orbit-label orbit-a"><i /> 4 POSTS</div>
-          <div className="orbit-label orbit-b"><i /> OI / C / WEB</div>
-        </motion.div>
-        <div className="hero-meta"><span>INFORMATICS OLYMPIAD</span><span>PROGRAMMING NOTES</span></div>
-        <a href="#posts" className="scroll-cue" aria-label="向下滚动"><span /> LATEST POSTS</a>
-      </section>
-
-      <section className="marquee" aria-hidden="true">
-        <div>信息学竞赛 <b>✦</b> C / C++ <b>✦</b> HTTP <b>✦</b> 学习笔记 <b>✦</b> 信息学竞赛 <b>✦</b> C / C++ <b>✦</b> HTTP <b>✦</b> 学习笔记 <b>✦</b></div>
       </section>
 
       <section className="writing shell section" id="posts">
         <motion.div className="section-heading" initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-100px' }} transition={{ duration: 0.75 }}>
-          <div><span className="section-index">01 /</span><span className="kicker">全部内容</span></div>
+          <div><span className="section-index">01 /</span><span className="kicker">文章</span></div>
           <h2>文章</h2>
           <p>首页按时间倒序展示原博客文章，正文、代码示例和旧链接均已保留。</p>
         </motion.div>
@@ -286,22 +276,19 @@ export default function HomePage() {
       </section>
 
       <section className="topics shell section" id="topics">
-        <motion.div className="archive-head" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <div><span className="section-index">02 /</span><span className="kicker">主题</span></div>
-          <span className="archive-count">OI · C · WEB</span>
+        <motion.div className="section-heading" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <div><span className="section-index">02 /</span><span className="kicker">分类</span></div>
+          <h2>分类</h2>
+          <p>按内容主题浏览文章，快速找到信息学竞赛、C / C++ 与 Web 相关笔记。</p>
         </motion.div>
         <div className="category-grid">
-          <a href="/articles/#oi" className="category-block"><span>01</span><h3>OI</h3><p>信息学竞赛与学习路线</p><b>3 篇相关文章</b></a>
-          <a href="/articles/#c" className="category-block"><span>02</span><h3>C / C++</h3><p>语言基础与函数用法</p><b>1 篇相关文章</b></a>
-          <a href="/articles/#web" className="category-block"><span>03</span><h3>Web</h3><p>HTTP 基础知识整理</p><b>1 篇相关文章</b></a>
+          <a href="/categories/#oi" className="category-block"><span>01</span><h3>OI</h3><p>信息学竞赛与学习路线</p><b>3 篇相关文章</b></a>
+          <a href="/categories/#c" className="category-block"><span>02</span><h3>C / C++</h3><p>语言基础与函数用法</p><b>1 篇相关文章</b></a>
+          <a href="/categories/#web" className="category-block"><span>03</span><h3>Web</h3><p>HTTP 基础知识整理</p><b>1 篇相关文章</b></a>
         </div>
       </section>
 
-      <footer className="footer shell">
-        <span>© 2023 YOUNGKX.CN</span>
-        <span>4 POSTS · 1 CATEGORY · 2 TAGS</span>
-        <a href="#top">返回顶部 ↑</a>
-      </footer>
+      <SiteFooter backHref="#top" backLabel="返回顶部 ↑" />
     </main>
   );
 }
