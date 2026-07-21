@@ -1,23 +1,29 @@
-# Youngkx Digital Garden
+# Youngkx
 
-一个使用 Next.js、React、Framer Motion 与 Three.js 重写的沉浸式个人博客首页。设计语言以深色数字花园为核心，包含实时 3D 星体、鼠标视差、滚动揭示、阅读进度与完整移动端适配。
+Youngkx 的个人博客，使用 Next.js、React、Framer Motion 与 Three.js 构建，并部署在 Cloudflare Workers。
 
-## 本地运行
+## 本地开发
 
 ```bash
 npm install
 npm run dev
 ```
 
-打开 `http://localhost:3000`。生产构建使用 `npm run build`，静态文件会输出到 `out/`；构建完成后可用 `npm start` 预览。
+开发地址为 `http://localhost:3000`。
 
-## 内容修改
+## 检查与构建
 
-- 页面文案和文章数据：`components/HomePage.tsx`
-- Three.js 场景：`components/Scene.tsx`
-- 视觉样式和响应式布局：`app/globals.css`
-- SEO 标题与描述：`app/layout.tsx`
+```bash
+npm run check
+npm run build
+```
 
-## GitHub Pages
+Next.js 会将静态站点输出到 `out/`。Cloudflare Worker 负责提供静态资源，并将 `youngkx.cn` 永久重定向到 `www.youngkx.cn`。
 
-项目已包含自动部署流程。将代码推送到 `main` 或 `master` 后，在仓库 Settings → Pages 中将 Source 设为 **GitHub Actions**。站点按自定义域名 `youngkx.cn` 的根路径构建。
+## 部署
+
+```bash
+npx wrangler deploy
+```
+
+Cloudflare 项目名称为 `youngkxblog`，正式站点为 `https://www.youngkx.cn`。
