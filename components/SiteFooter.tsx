@@ -28,7 +28,7 @@ export default function SiteFooter({ backHref, backLabel }: { backHref: string; 
       <span>Youngkx</span>
       <div className="site-status">
         <span>已运行：{runtime}</span>
-        <span>最近更新：2026 年 7 月 21 日</span>
+        <span>最近更新：2026 年 7 月 23 日</span>
       </div>
       <a href={backHref}>{backLabel}</a>
     </footer>

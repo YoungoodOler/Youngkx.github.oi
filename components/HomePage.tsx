@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from 'react';
 import type { ArticleSummary, CategorySummary } from '@/lib/articles';
+import type { CardPreset } from '@/lib/card-presets';
 import Scene from './Scene';
 import SiteFooter from './SiteFooter';
 
@@ -11,8 +12,52 @@ const introQuotes = [
   'Life is real, life is earnest.',
 ];
 
-function CardArtwork({ kind }: { kind: string }) {
-  if (kind === 'terminal') {
+export function CardArtwork({ kind }: { kind: CardPreset }) {
+  if (kind === 'ai') {
+    return (
+      <div className="artwork ai-art" aria-hidden="true">
+        <svg viewBox="0 0 320 220">
+          <g className="ai-links">
+            <path d="M48 52 135 36M48 52 135 108M48 110 135 36M48 110 135 108M48 168 135 108M48 168 135 180M135 36 238 70M135 36 238 150M135 108 238 70M135 108 238 150M135 180 238 150M238 70 284 110M238 150 284 110" />
+          </g>
+          <g className="ai-nodes">
+            {[[48,52],[48,110],[48,168],[135,36],[135,108],[135,180],[238,70],[238,150],[284,110]].map(([cx, cy], index) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={index === 8 ? 10 : 6} />)}
+          </g>
+        </svg>
+        <span className="ai-label">NEURAL FLOW</span>
+        <i className="ai-pulse pulse-one" /><i className="ai-pulse pulse-two" /><i className="ai-pulse pulse-three" />
+      </div>
+    );
+  }
+  if (kind === 'cs') {
+    return (
+      <div className="artwork cs-art" aria-hidden="true">
+        <div className="cs-chip"><span>CS</span><small>1010</small></div>
+        <i className="cs-trace trace-one" /><i className="cs-trace trace-two" /><i className="cs-trace trace-three" /><i className="cs-trace trace-four" />
+        <b className="cs-signal signal-one" /><b className="cs-signal signal-two" /><b className="cs-signal signal-three" />
+        <span className="cs-label">PROCESS / MEMORY / LOGIC</span>
+      </div>
+    );
+  }
+  if (kind === 'vlog') {
+    return (
+      <div className="artwork vlog-art" aria-hidden="true">
+        <div className="vlog-screen"><div className="vlog-sun" /><div className="vlog-land land-back" /><div className="vlog-land land-front" /><span>REC</span></div>
+        <div className="vlog-timeline"><i /><b /></div>
+        <span className="vlog-time">00:00:24</span>
+      </div>
+    );
+  }
+  if (kind === 'talk') {
+    return (
+      <div className="artwork talk-art" aria-hidden="true">
+        <div className="talk-bubble bubble-one"><span>THOUGHTS</span><i /><i /><i /></div>
+        <div className="talk-bubble bubble-two"><b>…</b></div>
+        <div className="talk-orbit" />
+      </div>
+    );
+  }
+  if (kind === 'code') {
     return (
       <div className="artwork terminal-art" aria-hidden="true">
         <div className="terminal-top"><i /><i /><i /><span>main.cpp</span></div>
@@ -118,7 +163,7 @@ function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) 
     >
       <div className="card-visual">
         <div className="card-number">{post.number}</div>
-        <CardArtwork kind={post.visual} />
+        <CardArtwork kind={post.card} />
         <span className="category">{post.tagLabel}</span>
       </div>
       <div className="card-body">
