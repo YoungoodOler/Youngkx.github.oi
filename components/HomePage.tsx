@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useReducedM
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ArticleSummary, CategorySummary } from '@/lib/articles';
 import type { CardPreset } from '@/lib/card-presets';
-import Scene from './Scene';
+import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
 
 const introQuotes = [
@@ -100,6 +100,7 @@ function ReactivePointer() {
   const glow = useMotionTemplate`radial-gradient(520px circle at ${glowX}px ${glowY}px, rgba(112, 137, 255, .085), transparent 68%)`;
 
   useEffect(() => {
+    if (window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 900) return;
     const move = (event: PointerEvent) => {
       pointerX.set(event.clientX);
       pointerY.set(event.clientY);
@@ -123,6 +124,7 @@ function MagneticLink({ href, className, children }: { href: string; className: 
   const y = useSpring(rawY, { stiffness: 320, damping: 22, mass: 0.35 });
 
   const move = (event: ReactPointerEvent<HTMLAnchorElement>) => {
+    if (event.pointerType !== 'mouse') return;
     const rect = event.currentTarget.getBoundingClientRect();
     rawX.set((event.clientX - rect.left - rect.width / 2) * 0.16);
     rawY.set((event.clientY - rect.top - rect.height / 2) * 0.16);
@@ -138,6 +140,7 @@ function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) 
   const rotateY = useSpring(rawRotateY, { stiffness: 180, damping: 24, mass: 0.5 });
 
   const move = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType !== 'mouse') return;
     const rect = event.currentTarget.getBoundingClientRect();
     const px = (event.clientX - rect.left) / rect.width - 0.5;
     const py = (event.clientY - rect.top) / rect.height - 0.5;
@@ -153,10 +156,10 @@ function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) 
   return (
     <motion.article
       className={`article-card ${post.tone}`}
-      initial={{ opacity: 0, y: 36 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 72, filter: 'blur(15px)' }}
+      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.7, delay: index * 0.08 }}
+      transition={{ duration: 0.82, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
       style={{ rotateX, rotateY, transformPerspective: 1200 }}
       onPointerMove={move}
       onPointerLeave={reset}
@@ -177,22 +180,37 @@ function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) 
 }
 
 export default function HomePage({ posts, categories }: { posts: ArticleSummary[]; categories: CategorySummary[] }) {
+  const { theme, toggleTheme } = useSiteExperience();
+  const [compactLayout, setCompactLayout] = useState(false);
+  const [titleDestinationX, setTitleDestinationX] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [quoteIndex, setQuoteIndex] = useState(0);
   const { scrollYProgress } = useScroll();
   const heroRef = useRef<HTMLElement>(null);
+  const titleHeadingRef = useRef<HTMLHeadingElement>(null);
+  const detailLayerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress: heroProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end end'],
   });
   const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.001 });
-  const titleY = useTransform(heroProgress, [0, 0.58], ['0vh', '-72vh']);
-  const titleScale = useTransform(heroProgress, [0, 0.52], [1, 0.84]);
-  const titleOpacity = useTransform(heroProgress, [0, 0.38, 0.62], [1, 1, 0]);
-  const detailOpacity = useTransform(heroProgress, [0.24, 0.5, 0.82], [0, 1, 1]);
-  const detailY = useTransform(heroProgress, [0.22, 0.56], [76, 0]);
+  const titleRestScale = compactLayout ? 0.74 : 0.69;
+  const titleX = useTransform(heroProgress, [0, 0.18, 0.66], [0, 0, titleDestinationX]);
+  const titleY = useTransform(heroProgress, [0, 0.18, 0.66, 0.88, 1], ['0vh', '0vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-38vh' : '-30vh']);
+  const titleScale = useTransform(heroProgress, [0, 0.18, 0.66, 0.9, 1], [1, 1, titleRestScale, titleRestScale, compactLayout ? 0.66 : 0.62]);
+  const titleOpacity = useTransform(heroProgress, [0, 0.9, 1], [1, 1, 0]);
+  const titleEyebrowOpacity = useTransform(heroProgress, [0, 0.2, 0.42], [1, 0.5, 0]);
+  const detailOpacity = useTransform(heroProgress, [0.25, 0.46, 0.88, 1], [0, 1, 1, 0]);
+  const introOpacity = useTransform(heroProgress, [0.28, 0.48, 0.86, 1], [0, 1, 1, 0]);
+  const introY = useTransform(heroProgress, [0.28, 0.52, 0.86, 1], [150, 0, 0, -105]);
+  const introBlur = useTransform(heroProgress, [0.28, 0.52, 0.86, 1], ['blur(16px)', 'blur(0px)', 'blur(0px)', 'blur(14px)']);
+  const descriptionOpacity = useTransform(heroProgress, [0.38, 0.58, 0.88, 1], [0, 1, 1, 0]);
+  const descriptionY = useTransform(heroProgress, [0.36, 0.62, 0.88, 1], [170, 0, 0, -92]);
+  const descriptionBlur = useTransform(heroProgress, [0.36, 0.62, 0.88, 1], ['blur(18px)', 'blur(0px)', 'blur(0px)', 'blur(15px)']);
+  const actionsOpacity = useTransform(heroProgress, [0.48, 0.68, 0.9, 1], [0, 1, 1, 0]);
+  const actionsY = useTransform(heroProgress, [0.46, 0.7, 0.9, 1], [185, 0, 0, -78]);
+  const actionsBlur = useTransform(heroProgress, [0.46, 0.7, 0.9, 1], ['blur(20px)', 'blur(0px)', 'blur(0px)', 'blur(16px)']);
   const cueOpacity = useTransform(heroProgress, [0, 0.2, 0.36], [1, 1, 0]);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [quoteIndex, setQuoteIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -201,12 +219,23 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
   }, [menuOpen]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('youngkx-theme');
-    const initial = saved === 'light' || saved === 'dark'
-      ? saved
-      : window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    setTheme(initial);
-    document.documentElement.dataset.theme = initial;
+    const media = window.matchMedia('(max-width: 560px)');
+    const updateLayout = () => {
+      const compact = media.matches;
+      const restingScale = compact ? 0.74 : 0.69;
+      const headingWidth = titleHeadingRef.current?.offsetWidth ?? 0;
+      const detailLeft = detailLayerRef.current?.getBoundingClientRect().left ?? (compact ? 15 : 48);
+      setCompactLayout(compact);
+      setTitleDestinationX(detailLeft - (window.innerWidth - headingWidth * restingScale) / 2);
+    };
+    updateLayout();
+    media.addEventListener('change', updateLayout);
+    window.addEventListener('resize', updateLayout, { passive: true });
+    document.fonts?.ready.then(updateLayout);
+    return () => {
+      media.removeEventListener('change', updateLayout);
+      window.removeEventListener('resize', updateLayout);
+    };
   }, []);
 
   useEffect(() => {
@@ -215,22 +244,12 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
     return () => window.clearInterval(timer);
   }, [reduceMotion]);
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('youngkx-theme', next);
-  };
-
   return (
     <main className="home-page">
       <motion.div className="progress" style={{ scaleX: progress }} />
       <ReactivePointer />
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
-      <div className="scroll-morph">
-        <Scene theme={theme} />
-      </div>
 
       <header className="nav shell">
         <a className="brand" href="#top" aria-label="Youngkx Blog 首页">
@@ -253,29 +272,44 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
 
       <section className="hero-stage" id="top" ref={heroRef}>
         <div className="hero-sticky">
-          <motion.div className="hero-title-layer" style={{ y: titleY, scale: titleScale, opacity: titleOpacity }}>
-            <span className="hero-title-eyebrow">PERSONAL ARCHIVE / SINCE 2023</span>
-            <h1>
+          <motion.div className="hero-title-layer" style={{ x: titleX, y: titleY, scale: titleScale, opacity: titleOpacity }}>
+            <motion.span className="hero-title-eyebrow" style={{ opacity: titleEyebrowOpacity }}>PERSONAL ARCHIVE / SINCE 2023</motion.span>
+            <h1 ref={titleHeadingRef}>
             Youngkx<br />
             <span>Blog</span>
             </h1>
           </motion.div>
 
-          <motion.div className="hero-detail-layer shell" style={{ opacity: detailOpacity, y: detailY }}>
-            <div className="hero-detail-copy">
-              <span className="eyebrow"><i className="status-dot" />记录、学习与持续构建</span>
-              <div className="hero-quote">
-                <AnimatePresence mode="wait">
-                  <motion.p key={quoteIndex} initial={{ opacity: 0, y: 8, filter: 'blur(5px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -8, filter: 'blur(5px)' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-                    {introQuotes[quoteIndex]}
-                  </motion.p>
-                </AnimatePresence>
+          <motion.div ref={detailLayerRef} className="hero-detail-layer shell" style={{ opacity: detailOpacity }}>
+            <div className="hero-detail-grid">
+              <div className="hero-detail-copy">
+                <motion.div className="hero-copy-block hero-copy-intro" style={{ opacity: introOpacity, y: introY, filter: introBlur }}>
+                  <span className="eyebrow"><i className="status-dot" />记录、学习与持续构建</span>
+                  <div className="hero-quote">
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={quoteIndex}
+                        initial={{ opacity: 0, x: -18, clipPath: 'inset(0 100% 0 0)' }}
+                        animate={{ opacity: 1, x: 0, clipPath: 'inset(0 0% 0 0)' }}
+                        exit={{ opacity: 0, x: 18, clipPath: 'inset(0 0 0 100%)' }}
+                        transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        {introQuotes[quoteIndex]}
+                      </motion.p>
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+                <motion.div className="hero-copy-block hero-copy-description" style={{ opacity: descriptionOpacity, y: descriptionY, filter: descriptionBlur }}>
+                  <p>记录 OI、C / C++、Web 与日常思考，在代码、文字和时间之间留下可以回看的坐标。</p>
+                </motion.div>
+                <motion.div className="hero-copy-block hero-copy-actions" style={{ opacity: actionsOpacity, y: actionsY, filter: actionsBlur }}>
+                  <div className="hero-actions">
+                    <MagneticLink className="button primary" href="#posts">浏览文章 <span>↓</span></MagneticLink>
+                    <MagneticLink className="text-link" href="#topics">文章主题 <span>→</span></MagneticLink>
+                  </div>
+                </motion.div>
               </div>
-              <p>记录 OI、C / C++、Web 与日常思考，在代码、文字和时间之间留下可以回看的坐标。</p>
-              <div className="hero-actions">
-                <MagneticLink className="button primary" href="#posts">浏览文章 <span>↓</span></MagneticLink>
-                <MagneticLink className="text-link" href="#topics">文章主题 <span>→</span></MagneticLink>
-              </div>
+              <div className="hero-detail-spacer" aria-hidden="true" />
             </div>
           </motion.div>
 
@@ -286,7 +320,7 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
       </section>
 
       <section className="writing shell section" id="posts">
-        <motion.div className="section-heading" initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-100px' }} transition={{ duration: 0.75 }}>
+        <motion.div className="section-heading" initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }} whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} viewport={{ once: true, margin: '-100px' }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
           <div><span className="section-index">01 /</span><span className="kicker">文章</span></div>
           <h2>文章</h2>
           <p>首页按时间倒序展示原博客文章，正文、代码示例和旧链接均已保留。</p>
@@ -295,25 +329,33 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
         <div className="article-list">
           {posts.slice(0, 3).map((post, index) => <FeaturedPost post={post} index={index} key={post.href} />)}
         </div>
-        <motion.div className="more-posts" initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="more-posts" initial={{ opacity: 0, y: 42, filter: 'blur(12px)' }} whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
           <a href="/articles/"><span>更多文章</span><b>查看全部 {posts.length} 篇</b><i>↗</i></a>
         </motion.div>
       </section>
 
       <section className="topics shell section" id="topics">
-        <motion.div className="section-heading" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="section-heading" initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }} whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
           <div><span className="section-index">02 /</span><span className="kicker">分类</span></div>
           <h2>分类</h2>
           <p>按内容主题浏览文章，快速找到信息学竞赛、C / C++ 与 Web 相关笔记。</p>
         </motion.div>
         <div className="category-grid">
-          {categories.map((category) => (
-            <a href={`/categories/#${category.id}`} className="category-block" key={category.id}>
+          {categories.map((category, index) => (
+            <motion.a
+              href={`/categories/#${category.id}`}
+              className="category-block"
+              key={category.id}
+              initial={{ opacity: 0, y: 70, filter: 'blur(15px)' }}
+              whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              viewport={{ once: true, margin: '-70px' }}
+              transition={{ duration: 0.82, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
+            >
               <span>{category.number}</span>
               <h3>{category.title}</h3>
               <p>{category.description}</p>
               <b>{category.posts.length} 篇相关文章</b>
-            </a>
+            </motion.a>
           ))}
         </div>
       </section>

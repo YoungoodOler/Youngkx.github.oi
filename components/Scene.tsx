@@ -8,6 +8,14 @@ const smoothstep = (value: number) => {
   return t * t * (3 - 2 * t);
 };
 
+const cubicBezier = (start: number, controlA: number, controlB: number, end: number, progress: number) => {
+  const inverse = 1 - progress;
+  return inverse * inverse * inverse * start
+    + 3 * inverse * inverse * progress * controlA
+    + 3 * inverse * progress * progress * controlB
+    + progress * progress * progress * end;
+};
+
 function createRandom(seed = 137) {
   let value = seed >>> 0;
   return () => {
@@ -16,8 +24,24 @@ function createRandom(seed = 137) {
   };
 }
 
-export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) {
+export default function Scene({
+  theme = 'dark',
+  showSubject = true,
+}: {
+  theme?: 'dark' | 'light';
+  showSubject?: boolean;
+}) {
   const mountRef = useRef<HTMLDivElement>(null);
+  const themeRef = useRef(theme);
+  const showSubjectRef = useRef(showSubject);
+
+  useEffect(() => {
+    themeRef.current = theme;
+  }, [theme]);
+
+  useEffect(() => {
+    showSubjectRef.current = showSubject;
+  }, [showSubject]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -28,26 +52,32 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     const camera = new THREE.PerspectiveCamera(39, 1, 0.1, 100);
     camera.position.set(0, 0, 6.3);
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.65));
+    const mobileAtMount = window.innerWidth < 700 || window.matchMedia('(pointer: coarse)').matches;
+    const pixelRatio = Math.min(window.devicePixelRatio, mobileAtMount ? 1 : 1.5);
+    let currentThemeMix = themeRef.current === 'light' ? 1 : 0;
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: !mobileAtMount,
+      powerPreference: 'high-performance',
+    });
+    renderer.setPixelRatio(pixelRatio);
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
     const group = new THREE.Group();
     scene.add(group);
 
-    const mobileAtMount = window.innerWidth < 700;
-    const isLight = theme === 'light';
-    const particleCount = mobileAtMount ? 360 : 920;
+    const particleCount = mobileAtMount ? 480 : 1120;
     const particlePositions = new Float32Array(particleCount * 3);
-    const particleColors = new Float32Array(particleCount * 3);
+    const particleColorsDark = new Float32Array(particleCount * 3);
+    const particleColorsLight = new Float32Array(particleCount * 3);
     const particleSizes = new Float32Array(particleCount);
     const particlePhases = new Float32Array(particleCount);
     const particleStrengths = new Float32Array(particleCount);
     const random = createRandom();
-    const particlePalette = (theme === 'light'
-      ? ['#1f324f', '#465f80', '#68788d', '#776d61']
-      : ['#f3f6fb', '#bac9df', '#8399b8', '#ded4c7'])
+    const darkParticlePalette = ['#f3f6fb', '#bac9df', '#8399b8', '#ded4c7']
+      .map((color) => new THREE.Color(color));
+    const lightParticlePalette = ['#1f324f', '#465f80', '#68788d', '#776d61']
       .map((color) => new THREE.Color(color));
 
     for (let index = 0; index < particleCount; index += 1) {
@@ -60,18 +90,24 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       particlePositions[offset + 1] = (random() - 0.5) * (foreground ? 6.6 : 8.8);
       particlePositions[offset + 2] = foreground ? random() * 2.8 - 0.2 : random() * 4.8 - 4.6;
 
-      const color = particlePalette[Math.floor(random() * particlePalette.length)];
-      particleColors[offset] = color.r;
-      particleColors[offset + 1] = color.g;
-      particleColors[offset + 2] = color.b;
-      particleSizes[index] = foreground ? 1.8 + random() * 3.2 : 0.8 + random() * 1.9;
+      const paletteIndex = Math.floor(random() * darkParticlePalette.length);
+      const darkColor = darkParticlePalette[paletteIndex];
+      const lightColor = lightParticlePalette[paletteIndex];
+      particleColorsDark[offset] = darkColor.r;
+      particleColorsDark[offset + 1] = darkColor.g;
+      particleColorsDark[offset + 2] = darkColor.b;
+      particleColorsLight[offset] = lightColor.r;
+      particleColorsLight[offset + 1] = lightColor.g;
+      particleColorsLight[offset + 2] = lightColor.b;
+      particleSizes[index] = foreground ? 2 + random() * 3.8 : 1 + random() * 2.3;
       particlePhases[index] = random() * Math.PI * 2;
       particleStrengths[index] = foreground ? 0.56 + random() * 0.42 : 0.22 + random() * 0.45;
     }
 
     const particleGeometry = new THREE.BufferGeometry();
     particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    particleGeometry.setAttribute('aColor', new THREE.BufferAttribute(particleColors, 3));
+    particleGeometry.setAttribute('aColorDark', new THREE.BufferAttribute(particleColorsDark, 3));
+    particleGeometry.setAttribute('aColorLight', new THREE.BufferAttribute(particleColorsLight, 3));
     particleGeometry.setAttribute('aSize', new THREE.BufferAttribute(particleSizes, 1));
     particleGeometry.setAttribute('aPhase', new THREE.BufferAttribute(particlePhases, 1));
     particleGeometry.setAttribute('aStrength', new THREE.BufferAttribute(particleStrengths, 1));
@@ -80,20 +116,23 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       uniforms: {
         uTime: { value: 0 },
         uScroll: { value: 0 },
-        uOpacity: { value: theme === 'light' ? 0.58 : 0.82 },
-        uPixelRatio: { value: Math.min(window.devicePixelRatio, 1.65) },
+        uOpacity: { value: THREE.MathUtils.lerp(0.95, 0.66, currentThemeMix) },
+        uThemeMix: { value: currentThemeMix },
+        uPixelRatio: { value: pixelRatio },
         uPointer: { value: new THREE.Vector2(20, 20) },
         uPointerPower: { value: 0 },
         uPulseOrigin: { value: new THREE.Vector2(20, 20) },
         uPulseProgress: { value: 2 },
       },
       vertexShader: `
-        attribute vec3 aColor;
+        attribute vec3 aColorDark;
+        attribute vec3 aColorLight;
         attribute float aSize;
         attribute float aPhase;
         attribute float aStrength;
         uniform float uTime;
         uniform float uScroll;
+        uniform float uThemeMix;
         uniform float uPixelRatio;
         uniform vec2 uPointer;
         uniform float uPointerPower;
@@ -121,20 +160,20 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
 
           vec2 pulseDelta = animated.xy - uPulseOrigin;
           float pulseDistance = max(length(pulseDelta), 0.001);
-          float pulseFront = uPulseProgress * 5.8;
-          float pulseWave = exp(-abs(pulseDistance - pulseFront) * 3.4)
+          float pulseFront = uPulseProgress * 3.8;
+          float pulseWave = exp(-abs(pulseDistance - pulseFront) * 4.8)
             * max(0.0, 1.0 - uPulseProgress);
-          animated.xy += (pulseDelta / pulseDistance) * pulseWave * 0.52;
+          animated.xy += (pulseDelta / pulseDistance) * pulseWave * 0.12;
 
           vec4 viewPosition = modelViewMatrix * vec4(animated, 1.0);
           gl_Position = projectionMatrix * viewPosition;
-          vInteraction = clamp(pointerFalloff * uPointerPower + pulseWave, 0.0, 1.0);
+          vInteraction = clamp(pointerFalloff * uPointerPower + pulseWave * 0.35, 0.0, 1.0);
           gl_PointSize = clamp(
-            aSize * (1.0 + vInteraction * 0.72) * uPixelRatio * (18.0 / max(1.0, -viewPosition.z)),
+            aSize * (1.0 + vInteraction * 0.35) * uPixelRatio * (18.0 / max(1.0, -viewPosition.z)),
             1.0,
             10.0
           );
-          vColor = aColor;
+          vColor = mix(aColorDark, aColorLight, uThemeMix);
           vStrength = aStrength * (0.72 + sin(uTime * 0.7 + aPhase) * 0.28);
         }
       `,
@@ -147,7 +186,7 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
         void main() {
           float distanceToCenter = distance(gl_PointCoord, vec2(0.5));
           float core = smoothstep(0.23, 0.0, distanceToCenter);
-          float glow = smoothstep(0.5, 0.05, distanceToCenter) * 0.42;
+          float glow = smoothstep(0.5, 0.05, distanceToCenter) * 0.55;
           float sparkle = 1.0 + vInteraction * 1.25;
           float alpha = (core + glow) * vStrength * uOpacity * sparkle;
           if (alpha < 0.015) discard;
@@ -157,13 +196,13 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       `,
       transparent: true,
       depthWrite: false,
-      blending: theme === 'light' ? THREE.NormalBlending : THREE.AdditiveBlending,
+      blending: currentThemeMix < 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending,
     });
     const particleField = new THREE.Points(particleGeometry, particleMaterial);
     particleField.frustumCulled = false;
     scene.add(particleField);
 
-    const trailCount = mobileAtMount ? 54 : 108;
+    const trailCount = mobileAtMount ? 20 : 72;
     const trailPositions = new Float32Array(trailCount * 3);
     const trailColors = new Float32Array(trailCount * 3);
     const trailSizes = new Float32Array(trailCount);
@@ -185,8 +224,8 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
 
     const trailMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        uOpacity: { value: isLight ? 0.78 : 0.96 },
-        uPixelRatio: { value: Math.min(window.devicePixelRatio, 1.65) },
+        uOpacity: { value: THREE.MathUtils.lerp(0.96, 0.78, currentThemeMix) },
+        uPixelRatio: { value: pixelRatio },
       },
       vertexShader: `
         attribute vec3 aColor;
@@ -225,13 +264,13 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       transparent: true,
       depthWrite: false,
       depthTest: false,
-      blending: isLight ? THREE.NormalBlending : THREE.AdditiveBlending,
+      blending: currentThemeMix < 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending,
     });
     const pointerTrail = new THREE.Points(trailGeometry, trailMaterial);
     pointerTrail.frustumCulled = false;
     scene.add(pointerTrail);
 
-    const geometry = new THREE.IcosahedronGeometry(1.58, 4);
+    const geometry = new THREE.IcosahedronGeometry(1.58, mobileAtMount ? 2 : 3);
     const position = geometry.getAttribute('position') as THREE.BufferAttribute;
     const sphere = new Float32Array(position.array);
     const ribbon = new Float32Array(sphere.length);
@@ -256,25 +295,19 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       diamond[index + 2] = nz * octahedronRadius;
     }
 
-    const colors = [
-      new THREE.Color(isLight ? '#687b98' : '#1c2b43'),
-      new THREE.Color(isLight ? '#778397' : '#263750'),
-      new THREE.Color(isLight ? '#5e7388' : '#192a3d'),
-    ];
-    const emissives = [
-      new THREE.Color(isLight ? '#2d4261' : '#071426'),
-      new THREE.Color(isLight ? '#394a61' : '#0c1b30'),
-      new THREE.Color(isLight ? '#294258' : '#08131f'),
-    ];
+    const darkColors = ['#1c2b43', '#263750', '#192a3d'].map((color) => new THREE.Color(color));
+    const lightColors = ['#687b98', '#778397', '#5e7388'].map((color) => new THREE.Color(color));
+    const darkEmissives = ['#071426', '#0c1b30', '#08131f'].map((color) => new THREE.Color(color));
+    const lightEmissives = ['#2d4261', '#394a61', '#294258'].map((color) => new THREE.Color(color));
     const material = new THREE.MeshPhysicalMaterial({
-      color: colors[0],
+      color: darkColors[0].clone().lerp(lightColors[0], currentThemeMix),
       roughness: 0.3,
       metalness: 0.42,
       transmission: 0.05,
       transparent: true,
-      opacity: isLight ? 0.28 : 0.54,
-      emissive: emissives[0],
-      emissiveIntensity: isLight ? 0.18 : 0.72,
+      opacity: THREE.MathUtils.lerp(0.54, 0.28, currentThemeMix),
+      emissive: darkEmissives[0].clone().lerp(lightEmissives[0], currentThemeMix),
+      emissiveIntensity: THREE.MathUtils.lerp(0.72, 0.18, currentThemeMix),
       flatShading: true,
       side: THREE.DoubleSide,
     });
@@ -282,9 +315,9 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     group.add(subject);
 
     const wireMaterial = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x405a7d : 0xa9bdd9,
+      color: new THREE.Color('#a9bdd9').lerp(new THREE.Color('#405a7d'), currentThemeMix),
       transparent: true,
-      opacity: isLight ? 0.12 : 0.17,
+      opacity: THREE.MathUtils.lerp(0.17, 0.12, currentThemeMix),
       wireframe: true,
     });
     const wire = new THREE.Mesh(geometry, wireMaterial);
@@ -292,9 +325,9 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     group.add(wire);
 
     const haloMaterial = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x536b8a : 0x9db4d2,
+      color: new THREE.Color('#9db4d2').lerp(new THREE.Color('#536b8a'), currentThemeMix),
       transparent: true,
-      opacity: isLight ? 0.08 : 0.13,
+      opacity: THREE.MathUtils.lerp(0.13, 0.08, currentThemeMix),
       side: THREE.DoubleSide,
     });
     const halos = [2.1, 2.42].map((radius, index) => {
@@ -304,13 +337,13 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       return halo;
     });
 
-    const keyLight = new THREE.PointLight(0xa9bfe0, isLight ? 18 : 38, 14);
+    const keyLight = new THREE.PointLight(0xa9bfe0, THREE.MathUtils.lerp(38, 18, currentThemeMix), 14);
     keyLight.position.set(3, 2, 4);
     scene.add(keyLight);
-    const rimLight = new THREE.PointLight(0xd8d1c7, isLight ? 12 : 28, 13);
+    const rimLight = new THREE.PointLight(0xd8d1c7, THREE.MathUtils.lerp(28, 12, currentThemeMix), 13);
     rimLight.position.set(-3, -1, 2);
     scene.add(rimLight);
-    const fillLight = new THREE.PointLight(0x718cae, isLight ? 8 : 18, 11);
+    const fillLight = new THREE.PointLight(0x718cae, THREE.MathUtils.lerp(18, 8, currentThemeMix), 11);
     fillLight.position.set(1, -3, 3);
     scene.add(fillLight);
 
@@ -323,21 +356,18 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     observer.observe(mount);
     resize();
 
-    const interactionRingGeometry = new THREE.RingGeometry(0.21, 0.225, 64);
+    const interactionRingGeometry = new THREE.RingGeometry(0.16, 0.17, 36);
     const hoverRingMaterial = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x425d80 : 0xb3c7e2,
+      color: new THREE.Color('#b3c7e2').lerp(new THREE.Color('#425d80'), currentThemeMix),
       transparent: true,
       opacity: 0,
       depthTest: false,
       side: THREE.DoubleSide,
-      blending: isLight ? THREE.NormalBlending : THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
     });
-    const pulseRingMaterial = hoverRingMaterial.clone();
     const hoverRing = new THREE.Mesh(interactionRingGeometry, hoverRingMaterial);
-    const pulseRing = new THREE.Mesh(interactionRingGeometry, pulseRingMaterial);
     hoverRing.renderOrder = 8;
-    pulseRing.renderOrder = 7;
-    scene.add(hoverRing, pulseRing);
+    scene.add(hoverRing);
 
     const pointer = { x: 0, y: 0 };
     const pointerNdc = new THREE.Vector2(2, 2);
@@ -351,6 +381,8 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     const interactionPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     let targetScroll = 0;
     let currentScroll = 0;
+    let targetHeroProgress = 0;
+    let currentHeroProgress = 0;
     let pointerInside = false;
     let pointerPressed = false;
     let currentPointerPower = 0;
@@ -361,6 +393,9 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     const updateScroll = () => {
       const maximum = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
       targetScroll = window.scrollY / maximum;
+      const heroStage = document.querySelector<HTMLElement>('.hero-stage');
+      const heroTravel = Math.max(1, (heroStage?.offsetHeight ?? window.innerHeight * 1.85) - window.innerHeight);
+      targetHeroProgress = THREE.MathUtils.clamp(window.scrollY / heroTravel, 0, 1);
     };
 
     const mapPointer = (event: PointerEvent) => {
@@ -386,7 +421,8 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
         const angle = random() * Math.PI * 2;
         const speed = burst ? 0.75 + random() * 1.65 : 0.16 + random() * 0.38;
         const jitter = burst ? random() * 0.08 : random() * 0.045;
-        const color = particlePalette[(trailIndex + index) % particlePalette.length];
+        const palette = themeRef.current === 'light' ? lightParticlePalette : darkParticlePalette;
+        const color = palette[(trailIndex + index) % palette.length];
 
         trailPositions[offset] = origin.x + Math.cos(angle) * jitter;
         trailPositions[offset + 1] = origin.y + Math.sin(angle) * jitter;
@@ -406,7 +442,7 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     };
 
     const onPointerMove = (event: PointerEvent) => {
-      if (!mapPointer(event) || prefersReducedMotion) return;
+      if (mobileAtMount || !mapPointer(event) || prefersReducedMotion) return;
       const now = performance.now();
       if (
         now - lastTrailEmission > 24 &&
@@ -419,12 +455,11 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     };
 
     const onPointerDown = (event: PointerEvent) => {
-      if (!mapPointer(event) || prefersReducedMotion) return;
+      if (mobileAtMount || !mapPointer(event) || prefersReducedMotion) return;
       pointerPressed = true;
       pulseStarted = performance.now() * 0.001;
       pulseOrigin.copy(targetPointerWorld);
-      pulseRing.position.copy(pulseOrigin);
-      spawnTrail(targetPointerWorld, mobileAtMount ? 16 : 28, true);
+      spawnTrail(targetPointerWorld, 6, true);
     };
 
     const onPointerUp = () => {
@@ -454,14 +489,35 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
 
     const mixedColor = new THREE.Color();
     const mixedEmissive = new THREE.Color();
-    const clock = new THREE.Clock();
+    const darkShapeColor = new THREE.Color();
+    const lightShapeColor = new THREE.Color();
+    const darkShapeEmissive = new THREE.Color();
+    const lightShapeEmissive = new THREE.Color();
+    const darkWireColor = new THREE.Color('#a9bdd9');
+    const lightWireColor = new THREE.Color('#405a7d');
+    const darkHaloColor = new THREE.Color('#9db4d2');
+    const lightHaloColor = new THREE.Color('#536b8a');
+    const darkRingColor = new THREE.Color('#b3c7e2');
+    const lightRingColor = new THREE.Color('#425d80');
     let frame = 0;
-    const render = () => {
-      const delta = Math.min(clock.getDelta(), 0.05);
-      const time = clock.elapsedTime;
+    let previousFrameTime = performance.now();
+    const render = (now: number) => {
+      frame = window.requestAnimationFrame(render);
+      const frameInterval = prefersReducedMotion ? 90 : 0;
+      if (frameInterval && now - previousFrameTime < frameInterval) return;
+      const delta = Math.min((now - previousFrameTime) / 1000, 0.05);
+      previousFrameTime = now;
+      const time = now * 0.001;
       const motionTime = prefersReducedMotion ? 0 : time;
+      const targetThemeMix = themeRef.current === 'light' ? 1 : 0;
+      currentThemeMix = prefersReducedMotion
+        ? targetThemeMix
+        : THREE.MathUtils.damp(currentThemeMix, targetThemeMix, 5.2, delta);
       currentScroll = prefersReducedMotion ? targetScroll : THREE.MathUtils.damp(currentScroll, targetScroll, 4.6, delta);
-      const targetPointerPower = pointerInside && !prefersReducedMotion ? (pointerPressed ? 1.48 : 1) : 0;
+      currentHeroProgress = prefersReducedMotion
+        ? targetHeroProgress
+        : THREE.MathUtils.damp(currentHeroProgress, targetHeroProgress, 4.8, delta);
+      const targetPointerPower = pointerInside && !prefersReducedMotion ? (pointerPressed ? 1.08 : 0.82) : 0;
       currentPointerPower = THREE.MathUtils.damp(currentPointerPower, targetPointerPower, 8.5, delta);
       currentPointerWorld.lerp(targetPointerWorld, 1 - Math.exp(-12 * delta));
       const pulseProgress = THREE.MathUtils.clamp(
@@ -472,34 +528,49 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
 
       const articleMix = smoothstep((currentScroll - 0.055) / 0.3);
       const categoryMix = smoothstep((currentScroll - 0.61) / 0.24);
-      for (let index = 0; index < sphere.length; index += 1) {
-        const articleShape = THREE.MathUtils.lerp(sphere[index], ribbon[index], articleMix);
-        position.array[index] = THREE.MathUtils.lerp(articleShape, diamond[index], categoryMix);
+      const sphereEntry = showSubjectRef.current
+        ? smoothstep((currentHeroProgress - 0.25) / 0.48)
+        : 0;
+      if (sphereEntry > 0.001) {
+        for (let index = 0; index < sphere.length; index += 1) {
+          const articleShape = THREE.MathUtils.lerp(sphere[index], ribbon[index], articleMix);
+          position.array[index] = THREE.MathUtils.lerp(articleShape, diamond[index], categoryMix);
+        }
+        position.needsUpdate = true;
+        geometry.computeVertexNormals();
       }
-      position.needsUpdate = true;
-      geometry.computeVertexNormals();
 
       const mobile = window.innerWidth < 700;
-      const heroX = mobile ? 0.7 : 1.55;
+      const heroX = mobile ? 0.82 : 1.78;
       const articleX = mobile ? -0.68 : -1.72;
       const categoryX = mobile ? 0.76 : 1.72;
       const firstX = THREE.MathUtils.lerp(heroX, articleX, articleMix);
-      group.position.x = THREE.MathUtils.lerp(firstX, categoryX, categoryMix) + pointer.x * 0.1;
-      group.position.y = THREE.MathUtils.lerp(-0.05, 0.28, articleMix) - categoryMix * 0.46 - pointer.y * 0.1;
+      const contentX = THREE.MathUtils.lerp(firstX, categoryX, categoryMix);
+      const contentY = THREE.MathUtils.lerp(-0.05, 0.28, articleMix) - categoryMix * 0.46;
+      const edgeX = mobile ? 4.4 : 5.8;
+      const edgeY = mobile ? -2.4 : -3.2;
+      const flightX = cubicBezier(edgeX, edgeX * 0.82, heroX + 1.35, heroX, sphereEntry);
+      const flightY = cubicBezier(edgeY, 1.7, -1.05, -0.05, sphereEntry);
+      group.position.x = flightX + (contentX - heroX) + pointer.x * 0.1;
+      group.position.y = flightY + (contentY + 0.05) - pointer.y * 0.1;
       const desiredScale = THREE.MathUtils.lerp(1, mobile ? 0.54 : 0.64, articleMix) + categoryMix * 0.1;
-      group.scale.setScalar(desiredScale);
+      group.scale.setScalar(desiredScale * THREE.MathUtils.lerp(0.18, 1, sphereEntry));
 
-      group.rotation.x = currentScroll * Math.PI * 1.08 - pointer.y * 0.24;
-      group.rotation.y = currentScroll * Math.PI * 1.7 + pointer.x * 0.28 + motionTime * 0.035;
-      group.rotation.z = currentScroll * -0.72;
+      group.rotation.x = currentScroll * Math.PI * 1.08 - pointer.y * 0.24 + (1 - sphereEntry) * 1.45;
+      group.rotation.y = currentScroll * Math.PI * 1.7 + pointer.x * 0.28 + motionTime * 0.035 - (1 - sphereEntry) * 2.6;
+      group.rotation.z = currentScroll * -0.72 + (1 - sphereEntry) * 1.2;
       halos[0].rotation.z = motionTime * 0.055 + currentScroll * 1.8;
       halos[1].rotation.y = -motionTime * 0.04 - currentScroll * 1.3;
 
       particleMaterial.uniforms.uTime.value = motionTime;
       particleMaterial.uniforms.uScroll.value = currentScroll;
+      particleMaterial.uniforms.uThemeMix.value = currentThemeMix;
+      const sceneBlending = currentThemeMix < 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending;
+      particleMaterial.blending = sceneBlending;
+      trailMaterial.blending = sceneBlending;
       particleMaterial.uniforms.uOpacity.value = THREE.MathUtils.lerp(
-        isLight ? 0.58 : 0.82,
-        isLight ? 0.32 : 0.46,
+        THREE.MathUtils.lerp(0.95, 0.66, currentThemeMix),
+        THREE.MathUtils.lerp(0.62, 0.4, currentThemeMix),
         articleMix * (1 - categoryMix * 0.45),
       );
       particleField.rotation.z = currentScroll * 0.14 + motionTime * 0.003;
@@ -518,10 +589,10 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
 
       hoverRing.position.copy(currentPointerWorld);
       hoverRing.position.z = 0.16;
-      hoverRing.scale.setScalar(0.82 + currentPointerPower * 0.34);
-      hoverRingMaterial.opacity = currentPointerPower * (isLight ? 0.26 : 0.4);
-      pulseRing.scale.setScalar(1 + Math.min(pulseProgress, 1) * 22);
-      pulseRingMaterial.opacity = Math.max(0, 1 - pulseProgress) * (isLight ? 0.3 : 0.52);
+      hoverRing.scale.setScalar(0.88 + currentPointerPower * 0.16);
+      hoverRingMaterial.color.copy(darkRingColor).lerp(lightRingColor, currentThemeMix);
+      hoverRingMaterial.opacity = currentPointerPower * THREE.MathUtils.lerp(0.22, 0.14, currentThemeMix);
+      trailMaterial.uniforms.uOpacity.value = THREE.MathUtils.lerp(0.96, 0.78, currentThemeMix);
 
       let trailActive = false;
       const trailDrag = Math.exp(-2.35 * delta);
@@ -553,18 +624,32 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       }
 
       if (categoryMix > 0) {
-        mixedColor.copy(colors[1]).lerp(colors[2], categoryMix);
-        mixedEmissive.copy(emissives[1]).lerp(emissives[2], categoryMix);
+        darkShapeColor.copy(darkColors[1]).lerp(darkColors[2], categoryMix);
+        lightShapeColor.copy(lightColors[1]).lerp(lightColors[2], categoryMix);
+        darkShapeEmissive.copy(darkEmissives[1]).lerp(darkEmissives[2], categoryMix);
+        lightShapeEmissive.copy(lightEmissives[1]).lerp(lightEmissives[2], categoryMix);
       } else {
-        mixedColor.copy(colors[0]).lerp(colors[1], articleMix);
-        mixedEmissive.copy(emissives[0]).lerp(emissives[1], articleMix);
+        darkShapeColor.copy(darkColors[0]).lerp(darkColors[1], articleMix);
+        lightShapeColor.copy(lightColors[0]).lerp(lightColors[1], articleMix);
+        darkShapeEmissive.copy(darkEmissives[0]).lerp(darkEmissives[1], articleMix);
+        lightShapeEmissive.copy(lightEmissives[0]).lerp(lightEmissives[1], articleMix);
       }
+      mixedColor.copy(darkShapeColor).lerp(lightShapeColor, currentThemeMix);
+      mixedEmissive.copy(darkShapeEmissive).lerp(lightShapeEmissive, currentThemeMix);
       material.color.copy(mixedColor);
       material.emissive.copy(mixedEmissive);
+      material.opacity = THREE.MathUtils.lerp(0.54, 0.28, currentThemeMix) * sphereEntry;
+      material.emissiveIntensity = THREE.MathUtils.lerp(0.72, 0.18, currentThemeMix);
+      wireMaterial.color.copy(darkWireColor).lerp(lightWireColor, currentThemeMix);
+      wireMaterial.opacity = THREE.MathUtils.lerp(0.17, 0.12, currentThemeMix) * sphereEntry;
+      haloMaterial.color.copy(darkHaloColor).lerp(lightHaloColor, currentThemeMix);
+      haloMaterial.opacity = THREE.MathUtils.lerp(0.13, 0.08, currentThemeMix) * sphereEntry;
+      keyLight.intensity = THREE.MathUtils.lerp(38, 18, currentThemeMix);
+      rimLight.intensity = THREE.MathUtils.lerp(28, 12, currentThemeMix);
+      fillLight.intensity = THREE.MathUtils.lerp(18, 8, currentThemeMix);
       renderer.render(scene, camera);
-      frame = window.requestAnimationFrame(render);
     };
-    render();
+    frame = window.requestAnimationFrame(render);
 
     return () => {
       window.cancelAnimationFrame(frame);
@@ -585,13 +670,12 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       trailMaterial.dispose();
       interactionRingGeometry.dispose();
       hoverRingMaterial.dispose();
-      pulseRingMaterial.dispose();
       halos.forEach((halo) => halo.geometry.dispose());
       haloMaterial.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [theme]);
+  }, []);
 
   return <div ref={mountRef} className="scene" aria-hidden="true" />;
 }

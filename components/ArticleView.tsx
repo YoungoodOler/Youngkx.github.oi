@@ -3,6 +3,7 @@
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ArticleRecord } from '@/lib/articles';
+import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
 
 type TocItem = { id: string; text: string; level: number };
@@ -11,7 +12,7 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 28 });
   const contentRef = useRef<HTMLElement>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const { theme, toggleTheme } = useSiteExperience();
   const [toc, setToc] = useState<TocItem[]>([]);
   const [tocOpen, setTocOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -19,20 +20,9 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
   const minutes = Math.max(1, Math.ceil(characters / 500));
 
   useEffect(() => {
-    const saved = localStorage.getItem('youngkx-theme');
-    const initial = saved === 'light' || saved === 'dark' ? saved : window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    setTheme(initial);
-    document.documentElement.dataset.theme = initial;
     const headings = [...(contentRef.current?.querySelectorAll('h2, h3') ?? [])];
     setToc(headings.map((heading) => ({ id: heading.id, text: heading.textContent ?? '', level: heading.tagName === 'H3' ? 3 : 2 })));
   }, []);
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('youngkx-theme', next);
-  };
 
   const copyLink = async () => {
     const link = window.location.href;
@@ -63,7 +53,7 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
       </header>
 
       <header className="modern-article-hero">
-        <motion.div className="shell" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8 }}>
+        <motion.div className="shell" initial={{ opacity: 0, y: 78, filter: 'blur(20px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: .98, ease: [0.22, 1, 0.36, 1] }}>
           <span className="article-breadcrumb">{article.tags.join(' / ')}</span>
           <h1>{article.title}</h1>
           <div className="article-meta"><span>发布于 {article.date}</span><span>{characters.toLocaleString()} 字</span><span>约 {minutes} 分钟</span></div>

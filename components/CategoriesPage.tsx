@@ -1,26 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
 import type { CategorySummary } from '@/lib/articles';
+import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
 
 export default function CategoriesPage({ categories, articleCount }: { categories: CategorySummary[]; articleCount: number }) {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('youngkx-theme');
-    const initial = saved === 'light' || saved === 'dark' ? saved : window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    setTheme(initial);
-    document.documentElement.dataset.theme = initial;
-  }, []);
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('youngkx-theme', next);
-  };
+  const { theme, toggleTheme } = useSiteExperience();
 
   return (
     <main className="categories-page">
@@ -31,7 +17,11 @@ export default function CategoriesPage({ categories, articleCount }: { categorie
       </header>
 
       <section className="categories-hero shell">
-        <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 72, filter: 'blur(18px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: .92, ease: [0.22, 1, 0.36, 1] }}
+        >
           <h1>文章分类</h1>
           <p>{categories.length} 个主题 · {articleCount} 篇文章</p>
         </motion.div>
@@ -39,7 +29,7 @@ export default function CategoriesPage({ categories, articleCount }: { categorie
 
       <section className="category-directory shell">
         {categories.map((group, groupIndex) => (
-          <motion.section className="category-group" id={group.id} key={group.id} initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-70px' }} transition={{ duration: .65, delay: groupIndex * .05 }}>
+          <motion.section className="category-group" id={group.id} key={group.id} initial={{ opacity: 0, y: 68, filter: 'blur(15px)' }} whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} viewport={{ once: true, margin: '-70px' }} transition={{ duration: .82, delay: groupIndex * .05, ease: [0.22, 1, 0.36, 1] }}>
             <header><span>{group.number}</span><div><h2>{group.title}</h2><p>{group.description}</p></div><b>{group.posts.length} 篇文章</b></header>
             <div className="category-posts">
               {group.posts.map((post) => <a href={post.href} key={`${group.id}-${post.href}`}><span>{post.dateLabel}</span><strong>{post.title}</strong><i>↗</i></a>)}

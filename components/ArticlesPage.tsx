@@ -1,26 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
 import type { ArticleSummary } from '@/lib/articles';
+import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
 
 export default function ArticlesPage({ posts }: { posts: ArticleSummary[] }) {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('youngkx-theme');
-    const initial = saved === 'light' || saved === 'dark' ? saved : window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    setTheme(initial);
-    document.documentElement.dataset.theme = initial;
-  }, []);
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('youngkx-theme', next);
-  };
+  const { theme, toggleTheme } = useSiteExperience();
 
   return (
     <main className="articles-page">
@@ -33,11 +19,15 @@ export default function ArticlesPage({ posts }: { posts: ArticleSummary[] }) {
       </header>
 
       <section className="articles-hero shell">
-        <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 72, filter: 'blur(18px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: .92, ease: [0.22, 1, 0.36, 1] }}
+        >
           <h1>所有文章</h1>
           <p>共 {posts.length} 篇文章</p>
         </motion.div>
-        <motion.div className="articles-hero-number" initial={{ opacity: 0, scale: .85 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1 }}>{String(posts.length).padStart(2, '0')}</motion.div>
+        <motion.div className="articles-hero-number" initial={{ opacity: 0, scale: .82, y: 48, filter: 'blur(20px)' }} animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: 1.08, delay: .08, ease: [0.22, 1, 0.36, 1] }}>{String(posts.length).padStart(2, '0')}</motion.div>
       </section>
 
       <section className="article-directory shell">

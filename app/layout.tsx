@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import SiteExperience from '@/components/SiteExperience';
 
 export const metadata: Metadata = {
   title: 'Youngkx',
@@ -14,9 +15,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('youngkx-theme');if(!t)t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t}catch(e){}})()` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('youngkx-theme');if(!t)t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t;if(sessionStorage.getItem('youngkx-page-transition')==='1')document.documentElement.classList.add('page-entering')}catch(e){}})()` }} />
       </head>
-      <body>{children}</body>
+      <body><SiteExperience>{children}</SiteExperience></body>
     </html>
   );
 }
