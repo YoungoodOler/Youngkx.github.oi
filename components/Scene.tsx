@@ -46,8 +46,8 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     const particleStrengths = new Float32Array(particleCount);
     const random = createRandom();
     const particlePalette = (theme === 'light'
-      ? ['#4967af', '#72539d', '#2e7c69', '#8a6c45']
-      : ['#91aaff', '#bd91ff', '#67e0c1', '#ffd49a'])
+      ? ['#1f324f', '#465f80', '#68788d', '#776d61']
+      : ['#f3f6fb', '#bac9df', '#8399b8', '#ded4c7'])
       .map((color) => new THREE.Color(color));
 
     for (let index = 0; index < particleCount; index += 1) {
@@ -257,14 +257,14 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     }
 
     const colors = [
-      new THREE.Color(isLight ? '#687fbe' : '#27345f'),
-      new THREE.Color(isLight ? '#7f6aa8' : '#3b2859'),
-      new THREE.Color(isLight ? '#4d927d' : '#17473e'),
+      new THREE.Color(isLight ? '#687b98' : '#1c2b43'),
+      new THREE.Color(isLight ? '#778397' : '#263750'),
+      new THREE.Color(isLight ? '#5e7388' : '#192a3d'),
     ];
     const emissives = [
-      new THREE.Color(isLight ? '#263e80' : '#0b183d'),
-      new THREE.Color(isLight ? '#553a82' : '#241039'),
-      new THREE.Color(isLight ? '#276a58' : '#072e27'),
+      new THREE.Color(isLight ? '#2d4261' : '#071426'),
+      new THREE.Color(isLight ? '#394a61' : '#0c1b30'),
+      new THREE.Color(isLight ? '#294258' : '#08131f'),
     ];
     const material = new THREE.MeshPhysicalMaterial({
       color: colors[0],
@@ -282,7 +282,7 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     group.add(subject);
 
     const wireMaterial = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x415caa : 0x89a5ff,
+      color: isLight ? 0x405a7d : 0xa9bdd9,
       transparent: true,
       opacity: isLight ? 0.12 : 0.17,
       wireframe: true,
@@ -292,7 +292,7 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     group.add(wire);
 
     const haloMaterial = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x536fc4 : 0x819fff,
+      color: isLight ? 0x536b8a : 0x9db4d2,
       transparent: true,
       opacity: isLight ? 0.08 : 0.13,
       side: THREE.DoubleSide,
@@ -304,15 +304,15 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       return halo;
     });
 
-    const keyLight = new THREE.PointLight(0x8aa6ff, isLight ? 18 : 38, 14);
+    const keyLight = new THREE.PointLight(0xa9bfe0, isLight ? 18 : 38, 14);
     keyLight.position.set(3, 2, 4);
     scene.add(keyLight);
-    const rimLight = new THREE.PointLight(0xa989ff, isLight ? 12 : 28, 13);
+    const rimLight = new THREE.PointLight(0xd8d1c7, isLight ? 12 : 28, 13);
     rimLight.position.set(-3, -1, 2);
     scene.add(rimLight);
-    const mintLight = new THREE.PointLight(0x62e6bf, isLight ? 8 : 18, 11);
-    mintLight.position.set(1, -3, 3);
-    scene.add(mintLight);
+    const fillLight = new THREE.PointLight(0x718cae, isLight ? 8 : 18, 11);
+    fillLight.position.set(1, -3, 3);
+    scene.add(fillLight);
 
     const resize = () => {
       renderer.setSize(mount.clientWidth, mount.clientHeight, false);
@@ -325,7 +325,7 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
 
     const interactionRingGeometry = new THREE.RingGeometry(0.21, 0.225, 64);
     const hoverRingMaterial = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x4967af : 0x9cb0ff,
+      color: isLight ? 0x425d80 : 0xb3c7e2,
       transparent: true,
       opacity: 0,
       depthTest: false,
@@ -427,14 +427,6 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       spawnTrail(targetPointerWorld, mobileAtMount ? 16 : 28, true);
     };
 
-    const onCosmicReveal = () => {
-      if (prefersReducedMotion) return;
-      pulseStarted = performance.now() * 0.001;
-      pulseOrigin.set(0, 0, 0.16);
-      pulseRing.position.copy(pulseOrigin);
-      spawnTrail(pulseOrigin, mobileAtMount ? 22 : 46, true);
-    };
-
     const onPointerUp = () => {
       pointerPressed = false;
     };
@@ -458,7 +450,6 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
     window.addEventListener('pointercancel', onPointerUp, { passive: true });
     window.addEventListener('pointerout', onPointerOut, { passive: true });
     window.addEventListener('blur', onWindowBlur);
-    window.addEventListener('youngkx:cosmic-reveal', onCosmicReveal);
     updateScroll();
 
     const mixedColor = new THREE.Color();
@@ -584,7 +575,6 @@ export default function Scene({ theme = 'dark' }: { theme?: 'dark' | 'light' }) 
       window.removeEventListener('pointercancel', onPointerUp);
       window.removeEventListener('pointerout', onPointerOut);
       window.removeEventListener('blur', onWindowBlur);
-      window.removeEventListener('youngkx:cosmic-reveal', onCosmicReveal);
       observer.disconnect();
       geometry.dispose();
       material.dispose();

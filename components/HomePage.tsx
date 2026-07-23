@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
-import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from 'react';
+import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ArticleSummary, CategorySummary } from '@/lib/articles';
 import type { CardPreset } from '@/lib/card-presets';
 import Scene from './Scene';
@@ -88,56 +88,6 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
     );
   }
   return <div className="artwork protocol-art" aria-hidden="true"><span>CLIENT</span><i>GET / HTTP/1.1 →</i><span>SERVER</span></div>;
-}
-
-function CosmicReveal({ active }: { active: boolean }) {
-  const panels = [
-    { className: 'reveal-top-left', x: '-104%', y: '-104%' },
-    { className: 'reveal-top-right', x: '104%', y: '-104%' },
-    { className: 'reveal-bottom-left', x: '-104%', y: '104%' },
-    { className: 'reveal-bottom-right', x: '104%', y: '104%' },
-  ];
-
-  return (
-    <AnimatePresence>
-      {active && (
-        <motion.div
-          className="cosmic-reveal"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
-          aria-hidden="true"
-        >
-          {panels.map((panel) => (
-            <motion.div
-              className={`reveal-panel ${panel.className}`}
-              key={panel.className}
-              initial={{ x: 0, y: 0 }}
-              animate={{ x: panel.x, y: panel.y }}
-              transition={{ delay: 0.24, duration: 1.16, ease: [0.76, 0, 0.24, 1] }}
-            />
-          ))}
-          <motion.div
-            className="reveal-core"
-            initial={{ opacity: 0, scale: 0.68, rotate: -18 }}
-            animate={{ opacity: [0, 1, 1, 0], scale: [0.68, 0.88, 1.12, 2.8], rotate: [-18, 0, 12, 32] }}
-            transition={{ duration: 1.18, times: [0, 0.16, 0.5, 1], ease: [0.65, 0, 0.35, 1] }}
-          >
-            <i />
-            <b />
-          </motion.div>
-          <motion.div
-            className="reveal-signature"
-            initial={{ opacity: 0, y: 8, letterSpacing: '0.32em' }}
-            animate={{ opacity: [0, 1, 1, 0], y: [8, 0, 0, -8], letterSpacing: ['0.32em', '0.2em', '0.2em', '0.3em'] }}
-            transition={{ duration: 1.05, times: [0, 0.18, 0.62, 1] }}
-          >
-            YOUNGKX / FIELD 01
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
 }
 
 function ReactivePointer() {
@@ -228,13 +178,21 @@ function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) 
 
 export default function HomePage({ posts, categories }: { posts: ArticleSummary[]; categories: CategorySummary[] }) {
   const { scrollYProgress } = useScroll();
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end end'],
+  });
   const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.001 });
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.25]);
-  const heroY = useTransform(scrollYProgress, [0, 0.22], [0, 90]);
+  const titleY = useTransform(heroProgress, [0, 0.58], ['0vh', '-72vh']);
+  const titleScale = useTransform(heroProgress, [0, 0.52], [1, 0.84]);
+  const titleOpacity = useTransform(heroProgress, [0, 0.38, 0.62], [1, 1, 0]);
+  const detailOpacity = useTransform(heroProgress, [0.24, 0.5, 0.82], [0, 1, 1]);
+  const detailY = useTransform(heroProgress, [0.22, 0.56], [76, 0]);
+  const cueOpacity = useTransform(heroProgress, [0, 0.2, 0.36], [1, 1, 0]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [quoteIndex, setQuoteIndex] = useState(0);
-  const [introReady, setIntroReady] = useState(false);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -257,22 +215,6 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
     return () => window.clearInterval(timer);
   }, [reduceMotion]);
 
-  useEffect(() => {
-    if (reduceMotion) {
-      setIntroReady(true);
-      return;
-    }
-
-    const burstTimer = window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('youngkx:cosmic-reveal'));
-    }, 360);
-    const revealTimer = window.setTimeout(() => setIntroReady(true), 1480);
-    return () => {
-      window.clearTimeout(burstTimer);
-      window.clearTimeout(revealTimer);
-    };
-  }, [reduceMotion]);
-
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
@@ -282,7 +224,6 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
 
   return (
     <main className="home-page">
-      <CosmicReveal active={!introReady && !reduceMotion} />
       <motion.div className="progress" style={{ scaleX: progress }} />
       <ReactivePointer />
       <div className="ambient ambient-one" />
@@ -291,12 +232,7 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
         <Scene theme={theme} />
       </div>
 
-      <motion.header
-        className="nav shell"
-        initial={{ opacity: 0, y: -18 }}
-        animate={introReady ? { opacity: 1, y: 0 } : { opacity: 0, y: -18 }}
-        transition={{ duration: reduceMotion ? 0 : 0.58, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <header className="nav shell">
         <a className="brand" href="#top" aria-label="Youngkx Blog 首页">
           <img className="brand-avatar" src="/avatar.webp" alt="Youngkx 头像" />
           <span className="brand-name">Youngkx</span>
@@ -313,27 +249,40 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
         <button className="menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="切换菜单" aria-expanded={menuOpen}>
           <span /><span />
         </button>
-      </motion.header>
+      </header>
 
-      <section className="hero shell" id="top">
-        <motion.div className="hero-copy" style={{ opacity: heroOpacity, y: heroY }}>
-          <motion.h1 initial={{ opacity: 0, y: 42 }} animate={introReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 42 }} transition={{ duration: reduceMotion ? 0 : 0.9, ease: [0.22, 1, 0.36, 1] }}>
+      <section className="hero-stage" id="top" ref={heroRef}>
+        <div className="hero-sticky">
+          <motion.div className="hero-title-layer" style={{ y: titleY, scale: titleScale, opacity: titleOpacity }}>
+            <span className="hero-title-eyebrow">PERSONAL ARCHIVE / SINCE 2023</span>
+            <h1>
             Youngkx<br />
             <span>Blog</span>
-          </motion.h1>
-          <motion.div className="hero-quote" initial={{ opacity: 0, y: 22 }} animate={introReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 }} transition={{ duration: reduceMotion ? 0 : 0.7, delay: reduceMotion ? 0 : 0.16 }}>
-            <AnimatePresence mode="wait">
-              <motion.p key={quoteIndex} initial={{ opacity: 0, y: 8, filter: 'blur(5px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -8, filter: 'blur(5px)' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-                {introQuotes[quoteIndex]}
-              </motion.p>
-            </AnimatePresence>
+            </h1>
           </motion.div>
-          <motion.div className="hero-actions" initial={{ opacity: 0, y: 16 }} animate={introReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }} transition={{ duration: reduceMotion ? 0 : 0.52, delay: reduceMotion ? 0 : 0.28 }}>
-            <MagneticLink className="button primary" href="#posts">浏览文章 <span>↓</span></MagneticLink>
-            <MagneticLink className="text-link" href="#topics">文章主题 <span>→</span></MagneticLink>
-          </motion.div>
-        </motion.div>
 
+          <motion.div className="hero-detail-layer shell" style={{ opacity: detailOpacity, y: detailY }}>
+            <div className="hero-detail-copy">
+              <span className="eyebrow"><i className="status-dot" />记录、学习与持续构建</span>
+              <div className="hero-quote">
+                <AnimatePresence mode="wait">
+                  <motion.p key={quoteIndex} initial={{ opacity: 0, y: 8, filter: 'blur(5px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -8, filter: 'blur(5px)' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+                    {introQuotes[quoteIndex]}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
+              <p>记录 OI、C / C++、Web 与日常思考，在代码、文字和时间之间留下可以回看的坐标。</p>
+              <div className="hero-actions">
+                <MagneticLink className="button primary" href="#posts">浏览文章 <span>↓</span></MagneticLink>
+                <MagneticLink className="text-link" href="#topics">文章主题 <span>→</span></MagneticLink>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div className="hero-scroll-cue" style={{ opacity: cueOpacity }}>
+            <span>SCROLL TO EXPLORE</span><i />
+          </motion.div>
+        </div>
       </section>
 
       <section className="writing shell section" id="posts">
