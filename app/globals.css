@@ -61,7 +61,8 @@ html.theme-changing .modern-toc { transition-duration:.62s!important; transition
 .hero-title-layer { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; text-align: center; transform-origin: 50% 45%; will-change: transform,opacity; }
 .hero-title-eyebrow { margin-bottom: 34px; color: #7c8497; font: 400 9px/1 var(--mono); letter-spacing: .22em; }
 .hero-title-layer h1 { margin: 0; font-family: var(--display); font-size: clamp(90px,15vw,230px); font-weight: 400; letter-spacing: -.075em; line-height: .72; }
-.hero-title-layer h1 span { font-family: var(--serif); font-weight: 400; font-style: italic; color: transparent; -webkit-text-stroke: 1px rgba(232,234,242,.72); }
+.hero-title-word { position:relative; z-index:1; display:block; }
+.hero-title-blog { position:relative; z-index:2; display:block; font-family: var(--serif); font-weight: 400; font-style: italic; color: transparent; -webkit-text-stroke: 1px rgba(232,234,242,.72); will-change:transform; }
 .hero-detail-layer { position: absolute; inset: 0; z-index: 4; display: flex; align-items: flex-end; padding-bottom: 7svh; pointer-events: none; will-change: opacity; }
 .hero-detail-grid { display:grid; grid-template-columns:minmax(430px,.82fr) minmax(0,1fr); align-items:end; gap:clamp(70px,10vw,170px); width:100%; }
 .hero-detail-spacer { min-width:0; }
@@ -356,7 +357,7 @@ html[data-theme='light'] .nav::before { background:rgba(243,241,235,.8); }
 html[data-theme='light'] .nav-links a,html[data-theme='light'] .hero-copy-description p { color:#5e6473; }
 html[data-theme='light'] .hero-quote p { color:#555c6b; }
 html[data-theme='light'] .theme-toggle { color:#596071; background:rgba(255,255,255,.42); }
-html[data-theme='light'] .hero-title-layer h1 span, html[data-theme='light'] .section-heading h2 em { -webkit-text-stroke:1px rgba(23,25,34,.72); }
+html[data-theme='light'] .hero-title-blog, html[data-theme='light'] .section-heading h2 em { -webkit-text-stroke:1px rgba(23,25,34,.72); }
 html[data-theme='light'] .hero-title-eyebrow,html[data-theme='light'] .hero-scroll-cue { color:#626b7d; }
 html[data-theme='light'] .hero-scroll-cue i { background:rgba(34,43,63,.18); }
 html[data-theme='light'] .hero-scroll-cue i::after { background:#405679; }

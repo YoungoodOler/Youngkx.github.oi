@@ -198,7 +198,8 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
   const titleX = useTransform(heroProgress, [0, 0.18, 0.66], [0, 0, titleDestinationX]);
   const titleY = useTransform(heroProgress, [0, 0.18, 0.66, 0.84, 1], ['0vh', '0vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-38vh' : '-30vh']);
   const titleScale = useTransform(heroProgress, [0, 0.18, 0.66, 0.84, 1], [1, 1, titleRestScale, titleRestScale, compactLayout ? 0.78 : 0.62]);
-  const titleOpacity = useTransform(heroProgress, [0, 0.84, 1], [1, 1, 0]);
+  const titleOpacity = useTransform(heroProgress, [0, 0.94, 1], [1, 1, 0]);
+  const titleBlogY = useTransform(heroProgress, [0, 0.84, 0.94, 1], ['0%', '0%', '-42%', '-46%']);
   const titleEyebrowOpacity = useTransform(heroProgress, [0, 0.2, 0.42], [1, 0.5, 0]);
   const detailOpacity = useTransform(heroProgress, [0.22, 0.52, 0.84, 1], [0, 1, 1, 0]);
   const introOpacity = useTransform(heroProgress, [0.24, 0.54, 0.84, 1], [0, 1, 1, 0]);
@@ -272,8 +273,8 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
           <motion.div className="hero-title-layer" style={{ x: titleX, y: titleY, scale: titleScale, opacity: titleOpacity }}>
             <motion.span className="hero-title-eyebrow" style={{ opacity: titleEyebrowOpacity }}>PERSONAL ARCHIVE / SINCE 2023</motion.span>
             <h1 ref={titleHeadingRef}>
-            Youngkx<br />
-            <span>Blog</span>
+              <span className="hero-title-word">Youngkx</span>
+              <motion.span className="hero-title-blog" style={{ y: titleBlogY }}>Blog</motion.span>
             </h1>
           </motion.div>
 
