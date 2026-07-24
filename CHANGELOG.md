@@ -11,6 +11,12 @@
 - 将 `Youngkx` 与 `Blog` 拆分为独立标题层；退出时 `Blog` 从下方向上缓慢压叠至 `Youngkx` 下半部，保留两层可辨识轮廓后标题整体淡出。
 - 将首页星球的文章区转场改为在第二阶段末段才触发；文字全部就位时，星球保持放大并占据右半屏，不再提前向左漂移或缩小。
 
+### 发布
+
+- Git 提交：`991c8c7`（`Refine home stage motion and planet position`）、`25e9eb3`（`Animate split home title exit`）
+- Cloudflare Worker：`youngkxblog`
+- Cloudflare 版本：`8128ccf1-832d-4ef7-b2f9-c6438b5d3bc9`
+
 ## [2.4.2] - 2026-07-24
 
 ### 首页滚动
