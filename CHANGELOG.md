@@ -12,6 +12,12 @@
 - 复制成功后显示短暂状态反馈；Clipboard API 不可用时自动使用兼容复制方式。
 - 代码工具栏适配亮暗主题、横向滚动和手机窄屏。
 
+### 发布
+
+- Git 提交：`d83ac41`（`Add code block language and copy tools`）
+- Cloudflare Worker：`youngkxblog`
+- Cloudflare 版本：`6c34b1ca-e2bc-4c25-a662-3357ba485756`
+
 ## [2.4.0] - 2026-07-24
 
 ### 首页与滚动叙事
