@@ -194,22 +194,22 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
     offset: ['start start', 'end end'],
   });
   const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.001 });
-  const titleRestScale = compactLayout ? 0.74 : 0.69;
+  const titleRestScale = compactLayout ? 0.88 : 0.69;
   const titleX = useTransform(heroProgress, [0, 0.18, 0.66], [0, 0, titleDestinationX]);
-  const titleY = useTransform(heroProgress, [0, 0.18, 0.66, 0.88, 1], ['0vh', '0vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-38vh' : '-30vh']);
-  const titleScale = useTransform(heroProgress, [0, 0.18, 0.66, 0.9, 1], [1, 1, titleRestScale, titleRestScale, compactLayout ? 0.66 : 0.62]);
-  const titleOpacity = useTransform(heroProgress, [0, 0.9, 1], [1, 1, 0]);
+  const titleY = useTransform(heroProgress, [0, 0.18, 0.66, 0.84, 1], ['0vh', '0vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-38vh' : '-30vh']);
+  const titleScale = useTransform(heroProgress, [0, 0.18, 0.66, 0.84, 1], [1, 1, titleRestScale, titleRestScale, compactLayout ? 0.78 : 0.62]);
+  const titleOpacity = useTransform(heroProgress, [0, 0.84, 1], [1, 1, 0]);
   const titleEyebrowOpacity = useTransform(heroProgress, [0, 0.2, 0.42], [1, 0.5, 0]);
-  const detailOpacity = useTransform(heroProgress, [0.25, 0.46, 0.88, 1], [0, 1, 1, 0]);
-  const introOpacity = useTransform(heroProgress, [0.28, 0.48, 0.86, 1], [0, 1, 1, 0]);
-  const introY = useTransform(heroProgress, [0.28, 0.52, 0.86, 1], [150, 0, 0, -105]);
-  const introBlur = useTransform(heroProgress, [0.28, 0.52, 0.86, 1], ['blur(16px)', 'blur(0px)', 'blur(0px)', 'blur(14px)']);
-  const descriptionOpacity = useTransform(heroProgress, [0.38, 0.58, 0.88, 1], [0, 1, 1, 0]);
-  const descriptionY = useTransform(heroProgress, [0.36, 0.62, 0.88, 1], [170, 0, 0, -92]);
-  const descriptionBlur = useTransform(heroProgress, [0.36, 0.62, 0.88, 1], ['blur(18px)', 'blur(0px)', 'blur(0px)', 'blur(15px)']);
-  const actionsOpacity = useTransform(heroProgress, [0.48, 0.68, 0.9, 1], [0, 1, 1, 0]);
-  const actionsY = useTransform(heroProgress, [0.46, 0.7, 0.9, 1], [185, 0, 0, -78]);
-  const actionsBlur = useTransform(heroProgress, [0.46, 0.7, 0.9, 1], ['blur(20px)', 'blur(0px)', 'blur(0px)', 'blur(16px)']);
+  const detailOpacity = useTransform(heroProgress, [0.25, 0.46, 0.84, 1], [0, 1, 1, 0]);
+  const introOpacity = useTransform(heroProgress, [0.28, 0.48, 0.84, 1], [0, 1, 1, 0]);
+  const introY = useTransform(heroProgress, [0.28, 0.52, 0.84, 1], [150, 0, 0, -105]);
+  const introBlur = useTransform(heroProgress, [0.28, 0.52, 0.84, 1], ['blur(16px)', 'blur(0px)', 'blur(0px)', 'blur(14px)']);
+  const descriptionOpacity = useTransform(heroProgress, [0.38, 0.58, 0.86, 1], [0, 1, 1, 0]);
+  const descriptionY = useTransform(heroProgress, [0.36, 0.62, 0.86, 1], [170, 0, 0, -92]);
+  const descriptionBlur = useTransform(heroProgress, [0.36, 0.62, 0.86, 1], ['blur(18px)', 'blur(0px)', 'blur(0px)', 'blur(15px)']);
+  const actionsOpacity = useTransform(heroProgress, [0.48, 0.68, 0.88, 1], [0, 1, 1, 0]);
+  const actionsY = useTransform(heroProgress, [0.46, 0.7, 0.88, 1], [185, 0, 0, -78]);
+  const actionsBlur = useTransform(heroProgress, [0.46, 0.7, 0.88, 1], ['blur(20px)', 'blur(0px)', 'blur(0px)', 'blur(16px)']);
   const cueOpacity = useTransform(heroProgress, [0, 0.2, 0.36], [1, 1, 0]);
   const reduceMotion = useReducedMotion();
 
@@ -222,7 +222,7 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
     const media = window.matchMedia('(max-width: 560px)');
     const updateLayout = () => {
       const compact = media.matches;
-      const restingScale = compact ? 0.74 : 0.69;
+      const restingScale = compact ? 0.88 : 0.69;
       const headingWidth = titleHeadingRef.current?.offsetWidth ?? 0;
       const detailLeft = detailLayerRef.current?.getBoundingClientRect().left ?? (compact ? 15 : 48);
       setCompactLayout(compact);
