@@ -201,13 +201,13 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
   const titleOpacity = useTransform(heroProgress, [0, 0.94, 1], [1, 1, 0]);
   const titleBlogY = useTransform(heroProgress, [0, 0.84, 0.94, 1], ['0%', '0%', '-42%', '-46%']);
   const titleEyebrowOpacity = useTransform(heroProgress, [0, 0.2, 0.42], [1, 0.5, 0]);
-  const detailOpacity = useTransform(heroProgress, [0.22, 0.52, 0.84, 1], [0, 1, 1, 0]);
-  const introOpacity = useTransform(heroProgress, [0.24, 0.54, 0.84, 1], [0, 1, 1, 0]);
-  const introY = useTransform(heroProgress, [0.24, 0.56, 0.84, 1], [150, 0, 0, -105]);
-  const descriptionOpacity = useTransform(heroProgress, [0.3, 0.62, 0.86, 1], [0, 1, 1, 0]);
-  const descriptionY = useTransform(heroProgress, [0.3, 0.64, 0.86, 1], [170, 0, 0, -92]);
-  const actionsOpacity = useTransform(heroProgress, [0.38, 0.7, 0.88, 1], [0, 1, 1, 0]);
-  const actionsY = useTransform(heroProgress, [0.38, 0.72, 0.88, 1], [185, 0, 0, -78]);
+  const detailOpacity = useTransform(heroProgress, [0.22, 0.52], [0, 1]);
+  const introOpacity = useTransform(heroProgress, [0.24, 0.54, 0.94, 1], [0, 1, 1, 0]);
+  const introY = useTransform(heroProgress, [0.24, 0.56, 0.94, 1], [150, 0, 0, -105]);
+  const descriptionOpacity = useTransform(heroProgress, [0.3, 0.62, 0.94, 1], [0, 1, 1, 0]);
+  const descriptionY = useTransform(heroProgress, [0.3, 0.64, 0.94, 1], [170, 0, 0, -92]);
+  const actionsOpacity = useTransform(heroProgress, [0.38, 0.7, 0.94, 1], [0, 1, 1, 0]);
+  const actionsY = useTransform(heroProgress, [0.38, 0.72, 0.94, 1], [185, 0, 0, -78]);
   const cueOpacity = useTransform(heroProgress, [0, 0.2, 0.36], [1, 1, 0]);
   const reduceMotion = useReducedMotion();
 
@@ -318,7 +318,7 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
       </section>
 
       <section className="writing shell section" id="posts">
-        <motion.div className="section-heading" initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }} whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} viewport={{ once: true, margin: '-100px' }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+        <motion.div className="section-heading" initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }} whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} viewport={{ once: true, margin: '0px' }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
           <div><span className="section-index">01 /</span><span className="kicker">文章</span></div>
           <h2>文章</h2>
           <p>首页按时间倒序展示原博客文章，正文、代码示例和旧链接均已保留。</p>
