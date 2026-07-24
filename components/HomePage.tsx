@@ -200,16 +200,13 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
   const titleScale = useTransform(heroProgress, [0, 0.18, 0.66, 0.84, 1], [1, 1, titleRestScale, titleRestScale, compactLayout ? 0.78 : 0.62]);
   const titleOpacity = useTransform(heroProgress, [0, 0.84, 1], [1, 1, 0]);
   const titleEyebrowOpacity = useTransform(heroProgress, [0, 0.2, 0.42], [1, 0.5, 0]);
-  const detailOpacity = useTransform(heroProgress, [0.25, 0.46, 0.84, 1], [0, 1, 1, 0]);
-  const introOpacity = useTransform(heroProgress, [0.28, 0.48, 0.84, 1], [0, 1, 1, 0]);
-  const introY = useTransform(heroProgress, [0.28, 0.52, 0.84, 1], [150, 0, 0, -105]);
-  const introBlur = useTransform(heroProgress, [0.28, 0.52, 0.84, 1], ['blur(16px)', 'blur(0px)', 'blur(0px)', 'blur(14px)']);
-  const descriptionOpacity = useTransform(heroProgress, [0.38, 0.58, 0.86, 1], [0, 1, 1, 0]);
-  const descriptionY = useTransform(heroProgress, [0.36, 0.62, 0.86, 1], [170, 0, 0, -92]);
-  const descriptionBlur = useTransform(heroProgress, [0.36, 0.62, 0.86, 1], ['blur(18px)', 'blur(0px)', 'blur(0px)', 'blur(15px)']);
-  const actionsOpacity = useTransform(heroProgress, [0.48, 0.68, 0.88, 1], [0, 1, 1, 0]);
-  const actionsY = useTransform(heroProgress, [0.46, 0.7, 0.88, 1], [185, 0, 0, -78]);
-  const actionsBlur = useTransform(heroProgress, [0.46, 0.7, 0.88, 1], ['blur(20px)', 'blur(0px)', 'blur(0px)', 'blur(16px)']);
+  const detailOpacity = useTransform(heroProgress, [0.22, 0.52, 0.84, 1], [0, 1, 1, 0]);
+  const introOpacity = useTransform(heroProgress, [0.24, 0.54, 0.84, 1], [0, 1, 1, 0]);
+  const introY = useTransform(heroProgress, [0.24, 0.56, 0.84, 1], [150, 0, 0, -105]);
+  const descriptionOpacity = useTransform(heroProgress, [0.3, 0.62, 0.86, 1], [0, 1, 1, 0]);
+  const descriptionY = useTransform(heroProgress, [0.3, 0.64, 0.86, 1], [170, 0, 0, -92]);
+  const actionsOpacity = useTransform(heroProgress, [0.38, 0.7, 0.88, 1], [0, 1, 1, 0]);
+  const actionsY = useTransform(heroProgress, [0.38, 0.72, 0.88, 1], [185, 0, 0, -78]);
   const cueOpacity = useTransform(heroProgress, [0, 0.2, 0.36], [1, 1, 0]);
   const reduceMotion = useReducedMotion();
 
@@ -283,7 +280,7 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
           <motion.div ref={detailLayerRef} className="hero-detail-layer shell" style={{ opacity: detailOpacity }}>
             <div className="hero-detail-grid">
               <div className="hero-detail-copy">
-                <motion.div className="hero-copy-block hero-copy-intro" style={{ opacity: introOpacity, y: introY, filter: introBlur }}>
+                <motion.div className="hero-copy-block hero-copy-intro" style={{ opacity: introOpacity, y: introY }}>
                   <span className="eyebrow"><i className="status-dot" />记录、学习与持续构建</span>
                   <div className="hero-quote">
                     <AnimatePresence mode="wait">
@@ -299,10 +296,10 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
                     </AnimatePresence>
                   </div>
                 </motion.div>
-                <motion.div className="hero-copy-block hero-copy-description" style={{ opacity: descriptionOpacity, y: descriptionY, filter: descriptionBlur }}>
+                <motion.div className="hero-copy-block hero-copy-description" style={{ opacity: descriptionOpacity, y: descriptionY }}>
                   <p>记录 OI、C / C++、Web 与日常思考，在代码、文字和时间之间留下可以回看的坐标。</p>
                 </motion.div>
-                <motion.div className="hero-copy-block hero-copy-actions" style={{ opacity: actionsOpacity, y: actionsY, filter: actionsBlur }}>
+                <motion.div className="hero-copy-block hero-copy-actions" style={{ opacity: actionsOpacity, y: actionsY }}>
                   <div className="hero-actions">
                     <MagneticLink className="button primary" href="#posts">浏览文章 <span>↓</span></MagneticLink>
                     <MagneticLink className="text-link" href="#topics">文章主题 <span>→</span></MagneticLink>

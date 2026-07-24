@@ -66,7 +66,7 @@ html.theme-changing .modern-toc { transition-duration:.62s!important; transition
 .hero-detail-grid { display:grid; grid-template-columns:minmax(430px,.82fr) minmax(0,1fr); align-items:end; gap:clamp(70px,10vw,170px); width:100%; }
 .hero-detail-spacer { min-width:0; }
 .hero-detail-copy { position:relative; display:grid; gap:28px; width:min(100%,610px); pointer-events:auto; }
-.hero-copy-block { position:relative; padding:0; will-change:transform,opacity,filter; }
+.hero-copy-block { position:relative; padding:0; will-change:transform,opacity; }
 .hero-copy-description p { max-width:590px; margin:0; color:#9298a8; font-size:14px; font-weight:300; line-height:1.95; letter-spacing:.035em; }
 .hero-copy-block .eyebrow { margin-bottom:20px; }
 .hero-copy-block .hero-quote { min-height:50px; margin-top:0; }

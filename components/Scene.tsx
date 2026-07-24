@@ -528,12 +528,15 @@ export default function Scene({
 
       const articleMix = smoothstep((currentScroll - 0.055) / 0.3);
       const categoryMix = smoothstep((currentScroll - 0.61) / 0.24);
+      const subjectArticleMix = showSubjectRef.current
+        ? smoothstep((currentHeroProgress - 0.84) / 0.16)
+        : articleMix;
       const sphereEntry = showSubjectRef.current
         ? smoothstep((currentHeroProgress - 0.25) / 0.48)
         : 0;
       if (sphereEntry > 0.001) {
         for (let index = 0; index < sphere.length; index += 1) {
-          const articleShape = THREE.MathUtils.lerp(sphere[index], ribbon[index], articleMix);
+          const articleShape = THREE.MathUtils.lerp(sphere[index], ribbon[index], subjectArticleMix);
           position.array[index] = THREE.MathUtils.lerp(articleShape, diamond[index], categoryMix);
         }
         position.needsUpdate = true;
@@ -544,16 +547,17 @@ export default function Scene({
       const heroX = mobile ? 0.82 : 1.78;
       const articleX = mobile ? -0.68 : -1.72;
       const categoryX = mobile ? 0.76 : 1.72;
-      const firstX = THREE.MathUtils.lerp(heroX, articleX, articleMix);
+      const firstX = THREE.MathUtils.lerp(heroX, articleX, subjectArticleMix);
       const contentX = THREE.MathUtils.lerp(firstX, categoryX, categoryMix);
-      const contentY = THREE.MathUtils.lerp(-0.05, 0.28, articleMix) - categoryMix * 0.46;
+      const contentY = THREE.MathUtils.lerp(-0.05, 0.28, subjectArticleMix) - categoryMix * 0.46;
       const edgeX = mobile ? 4.4 : 5.8;
       const edgeY = mobile ? -2.4 : -3.2;
       const flightX = cubicBezier(edgeX, edgeX * 0.82, heroX + 1.35, heroX, sphereEntry);
       const flightY = cubicBezier(edgeY, 1.7, -1.05, -0.05, sphereEntry);
       group.position.x = flightX + (contentX - heroX) + pointer.x * 0.1;
       group.position.y = flightY + (contentY + 0.05) - pointer.y * 0.1;
-      const desiredScale = THREE.MathUtils.lerp(1, mobile ? 0.54 : 0.64, articleMix) + categoryMix * 0.1;
+      const heroScale = mobile ? 0.8 : 1.02;
+      const desiredScale = THREE.MathUtils.lerp(heroScale, mobile ? 0.54 : 0.64, subjectArticleMix) + categoryMix * 0.1;
       group.scale.setScalar(desiredScale * THREE.MathUtils.lerp(0.18, 1, sphereEntry));
 
       group.rotation.x = currentScroll * Math.PI * 1.08 - pointer.y * 0.24 + (1 - sphereEntry) * 1.45;
