@@ -9,6 +9,12 @@
 - 延长首页第二阶段的完整同屏停留与分层退出距离，使 `Youngkx Blog`、引句、说明和按钮在继续滚动时更舒缓地向上虚化消失。
 - 放大手机端第二阶段的 `Youngkx Blog`，并继续根据实际标题宽度计算位置，保持与下方文字内容左对齐。
 
+### 发布
+
+- Git 提交：`a3c6e7e`（`Slow home hero exit and enlarge mobile title`）
+- Cloudflare Worker：`youngkxblog`
+- Cloudflare 版本：`7f5998a4-b68c-4dce-8cdc-b4b8a2eb382b`
+
 ## [2.4.1] - 2026-07-24
 
 ### 文章阅读
