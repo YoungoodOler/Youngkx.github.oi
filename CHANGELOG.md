@@ -9,6 +9,12 @@
 - 新增文章《CodeX使用教程》，介绍桌面端安装、账号验证、订阅方式与基础使用流程。
 - 文章使用 AI 动态卡片，并归入 `AI` 分类。
 
+### 发布
+
+- Git 提交：`83a147d`（`Publish CodeX usage guide`）
+- Cloudflare Worker：`youngkxblog`
+- Cloudflare 版本：`ed2cf257-9238-4fdc-b166-d94c46e7ad02`
+
 ## [2.4.4] - 2026-07-24
 
 ### 首页内容衔接
