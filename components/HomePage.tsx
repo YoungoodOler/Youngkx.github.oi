@@ -1,16 +1,30 @@
 'use client';
 
-import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
-import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  AnimatePresence,
+  m,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from 'framer-motion';
+import Image from 'next/image';
+import Link from 'next/link';
+import {
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { ArticleSummary, CategorySummary } from '@/lib/articles';
 import type { CardPreset } from '@/lib/card-presets';
 import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
 
-const introQuotes = [
-  '我见青山多妩媚，料青山见我应如是。',
-  'Life is real, life is earnest.',
-];
+const introQuotes = ['我见青山多妩媚，料青山见我应如是。', 'Life is real, life is earnest.'];
 
 export function CardArtwork({ kind }: { kind: CardPreset }) {
   if (kind === 'ai') {
@@ -21,20 +35,42 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
             <path d="M48 52 135 36M48 52 135 108M48 110 135 36M48 110 135 108M48 168 135 108M48 168 135 180M135 36 238 70M135 36 238 150M135 108 238 70M135 108 238 150M135 180 238 150M238 70 284 110M238 150 284 110" />
           </g>
           <g className="ai-nodes">
-            {[[48,52],[48,110],[48,168],[135,36],[135,108],[135,180],[238,70],[238,150],[284,110]].map(([cx, cy], index) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={index === 8 ? 10 : 6} />)}
+            {[
+              [48, 52],
+              [48, 110],
+              [48, 168],
+              [135, 36],
+              [135, 108],
+              [135, 180],
+              [238, 70],
+              [238, 150],
+              [284, 110],
+            ].map(([cx, cy], index) => (
+              <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={index === 8 ? 10 : 6} />
+            ))}
           </g>
         </svg>
         <span className="ai-label">NEURAL FLOW</span>
-        <i className="ai-pulse pulse-one" /><i className="ai-pulse pulse-two" /><i className="ai-pulse pulse-three" />
+        <i className="ai-pulse pulse-one" />
+        <i className="ai-pulse pulse-two" />
+        <i className="ai-pulse pulse-three" />
       </div>
     );
   }
   if (kind === 'cs') {
     return (
       <div className="artwork cs-art" aria-hidden="true">
-        <div className="cs-chip"><span>CS</span><small>1010</small></div>
-        <i className="cs-trace trace-one" /><i className="cs-trace trace-two" /><i className="cs-trace trace-three" /><i className="cs-trace trace-four" />
-        <b className="cs-signal signal-one" /><b className="cs-signal signal-two" /><b className="cs-signal signal-three" />
+        <div className="cs-chip">
+          <span>CS</span>
+          <small>1010</small>
+        </div>
+        <i className="cs-trace trace-one" />
+        <i className="cs-trace trace-two" />
+        <i className="cs-trace trace-three" />
+        <i className="cs-trace trace-four" />
+        <b className="cs-signal signal-one" />
+        <b className="cs-signal signal-two" />
+        <b className="cs-signal signal-three" />
         <span className="cs-label">PROCESS / MEMORY / LOGIC</span>
       </div>
     );
@@ -42,8 +78,16 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
   if (kind === 'vlog') {
     return (
       <div className="artwork vlog-art" aria-hidden="true">
-        <div className="vlog-screen"><div className="vlog-sun" /><div className="vlog-land land-back" /><div className="vlog-land land-front" /><span>REC</span></div>
-        <div className="vlog-timeline"><i /><b /></div>
+        <div className="vlog-screen">
+          <div className="vlog-sun" />
+          <div className="vlog-land land-back" />
+          <div className="vlog-land land-front" />
+          <span>REC</span>
+        </div>
+        <div className="vlog-timeline">
+          <i />
+          <b />
+        </div>
         <span className="vlog-time">00:00:24</span>
       </div>
     );
@@ -51,8 +95,15 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
   if (kind === 'talk') {
     return (
       <div className="artwork talk-art" aria-hidden="true">
-        <div className="talk-bubble bubble-one"><span>THOUGHTS</span><i /><i /><i /></div>
-        <div className="talk-bubble bubble-two"><b>…</b></div>
+        <div className="talk-bubble bubble-one">
+          <span>THOUGHTS</span>
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="talk-bubble bubble-two">
+          <b>…</b>
+        </div>
         <div className="talk-orbit" />
       </div>
     );
@@ -60,8 +111,21 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
   if (kind === 'code') {
     return (
       <div className="artwork terminal-art" aria-hidden="true">
-        <div className="terminal-top"><i /><i /><i /><span>main.cpp</span></div>
-        <div className="terminal-code"><span><b>int</b> value = <em>42</em>;</span><span><b>printf</b>(<i>&quot;%d&quot;</i>, value);</span><span className="terminal-output">› 42_</span></div>
+        <div className="terminal-top">
+          <i />
+          <i />
+          <i />
+          <span>main.cpp</span>
+        </div>
+        <div className="terminal-code">
+          <span>
+            <b>int</b> value = <em>42</em>;
+          </span>
+          <span>
+            <b>printf</b>(<i>&quot;%d&quot;</i>, value);
+          </span>
+          <span className="terminal-output">› 42_</span>
+        </div>
         <div className="scan-line" />
       </div>
     );
@@ -72,22 +136,56 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
         <svg className="network-art" viewBox="0 0 320 220">
           <path d="M45 155 L105 78 L165 137 L226 48 L278 125" />
           <path d="M105 78 L226 48 M165 137 L278 125 M45 155 L165 137" />
-          {[['45','155'],['105','78'],['165','137'],['226','48'],['278','125']].map(([cx, cy], index) => <circle key={cx} cx={cx} cy={cy} r={index === 3 ? 9 : 6} />)}
+          {[
+            ['45', '155'],
+            ['105', '78'],
+            ['165', '137'],
+            ['226', '48'],
+            ['278', '125'],
+          ].map(([cx, cy], index) => (
+            <circle key={cx} cx={cx} cy={cy} r={index === 3 ? 9 : 6} />
+          ))}
         </svg>
-        <span className="network-label label-a">GRAPH</span><span className="network-label label-b">DP</span><span className="network-label label-c">CSP-S</span>
+        <span className="network-label label-a">GRAPH</span>
+        <span className="network-label label-b">DP</span>
+        <span className="network-label label-c">CSP-S</span>
       </div>
     );
   }
   if (kind === 'timeline') {
     return (
       <div className="artwork timeline-art" aria-hidden="true">
-        <div className="timeline-track"><i /><i /><i /><i /></div>
-        <div className="timeline-labels"><span>起步<small>学习</small></span><span>通过<small>练习</small></span><span>竞赛<small>CSP</small></span><span>记录<small>OI</small></span></div>
+        <div className="timeline-track">
+          <i />
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="timeline-labels">
+          <span>
+            起步<small>学习</small>
+          </span>
+          <span>
+            通过<small>练习</small>
+          </span>
+          <span>
+            竞赛<small>CSP</small>
+          </span>
+          <span>
+            记录<small>OI</small>
+          </span>
+        </div>
         <div className="timeline-signal" />
       </div>
     );
   }
-  return <div className="artwork protocol-art" aria-hidden="true"><span>CLIENT</span><i>GET / HTTP/1.1 →</i><span>SERVER</span></div>;
+  return (
+    <div className="artwork protocol-art" aria-hidden="true">
+      <span>CLIENT</span>
+      <i>GET / HTTP/1.1 →</i>
+      <span>SERVER</span>
+    </div>
+  );
 }
 
 function ReactivePointer() {
@@ -111,13 +209,21 @@ function ReactivePointer() {
 
   return (
     <>
-      <motion.div className="pointer-glow" style={{ background: glow }} />
-      <motion.div className="pointer-dot" style={{ x: dotX, y: dotY }} />
+      <m.div className="pointer-glow" style={{ background: glow }} />
+      <m.div className="pointer-dot" style={{ x: dotX, y: dotY }} />
     </>
   );
 }
 
-function MagneticLink({ href, className, children }: { href: string; className: string; children: ReactNode }) {
+function MagneticLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className: string;
+  children: ReactNode;
+}) {
   const rawX = useMotionValue(0);
   const rawY = useMotionValue(0);
   const x = useSpring(rawX, { stiffness: 320, damping: 22, mass: 0.35 });
@@ -130,7 +236,20 @@ function MagneticLink({ href, className, children }: { href: string; className: 
     rawY.set((event.clientY - rect.top - rect.height / 2) * 0.16);
   };
 
-  return <motion.a href={href} className={className} style={{ x, y }} onPointerMove={move} onPointerLeave={() => { rawX.set(0); rawY.set(0); }}>{children}</motion.a>;
+  return (
+    <m.a
+      href={href}
+      className={className}
+      style={{ x, y }}
+      onPointerMove={move}
+      onPointerLeave={() => {
+        rawX.set(0);
+        rawY.set(0);
+      }}
+    >
+      {children}
+    </m.a>
+  );
 }
 
 function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) {
@@ -154,7 +273,7 @@ function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) 
   };
 
   return (
-    <motion.article
+    <m.article
       className={`article-card ${post.tone}`}
       initial={{ opacity: 0, y: 72, filter: 'blur(15px)' }}
       whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -170,16 +289,27 @@ function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) 
         <span className="category">{post.tagLabel}</span>
       </div>
       <div className="card-body">
-        <div className="card-meta"><span>发布于 {post.dateLabel}</span></div>
+        <div className="card-meta">
+          <span>发布于 {post.dateLabel}</span>
+        </div>
         <h3>{post.title}</h3>
         <p>{post.excerpt}</p>
-        <a href={post.href} aria-label={`阅读：${post.title}`}><span>阅读全文</span><b>↗</b></a>
+        <Link href={post.href} aria-label={`阅读：${post.title}`}>
+          <span>阅读全文</span>
+          <b>↗</b>
+        </Link>
       </div>
-    </motion.article>
+    </m.article>
   );
 }
 
-export default function HomePage({ posts, categories }: { posts: ArticleSummary[]; categories: CategorySummary[] }) {
+export default function HomePage({
+  posts,
+  categories,
+}: {
+  posts: ArticleSummary[];
+  categories: CategorySummary[];
+}) {
   const { theme, toggleTheme } = useSiteExperience();
   const [compactLayout, setCompactLayout] = useState(false);
   const [titleDestinationX, setTitleDestinationX] = useState(0);
@@ -196,8 +326,22 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
   const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.001 });
   const titleRestScale = compactLayout ? 0.88 : 0.69;
   const titleX = useTransform(heroProgress, [0, 0.18, 0.66], [0, 0, titleDestinationX]);
-  const titleY = useTransform(heroProgress, [0, 0.18, 0.66, 0.84, 1], ['0vh', '0vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-23vh' : '-13vh', compactLayout ? '-38vh' : '-30vh']);
-  const titleScale = useTransform(heroProgress, [0, 0.18, 0.66, 0.84, 1], [1, 1, titleRestScale, titleRestScale, compactLayout ? 0.78 : 0.62]);
+  const titleY = useTransform(
+    heroProgress,
+    [0, 0.18, 0.66, 0.84, 1],
+    [
+      '0vh',
+      '0vh',
+      compactLayout ? '-23vh' : '-13vh',
+      compactLayout ? '-23vh' : '-13vh',
+      compactLayout ? '-38vh' : '-30vh',
+    ],
+  );
+  const titleScale = useTransform(
+    heroProgress,
+    [0, 0.18, 0.66, 0.84, 1],
+    [1, 1, titleRestScale, titleRestScale, compactLayout ? 0.78 : 0.62],
+  );
   const titleOpacity = useTransform(heroProgress, [0, 0.94, 1], [1, 1, 0]);
   const titleBlogY = useTransform(heroProgress, [0, 0.84, 0.94, 1], ['0%', '0%', '-42%', '-46%']);
   const titleEyebrowOpacity = useTransform(heroProgress, [0, 0.2, 0.42], [1, 0.5, 0]);
@@ -213,7 +357,9 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [menuOpen]);
 
   useEffect(() => {
@@ -222,7 +368,8 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
       const compact = media.matches;
       const restingScale = compact ? 0.88 : 0.69;
       const headingWidth = titleHeadingRef.current?.offsetWidth ?? 0;
-      const detailLeft = detailLayerRef.current?.getBoundingClientRect().left ?? (compact ? 15 : 48);
+      const detailLeft =
+        detailLayerRef.current?.getBoundingClientRect().left ?? (compact ? 15 : 48);
       setCompactLayout(compact);
       setTitleDestinationX(detailLeft - (window.innerWidth - headingWidth * restingScale) / 2);
     };
@@ -238,54 +385,98 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
 
   useEffect(() => {
     if (reduceMotion) return;
-    const timer = window.setInterval(() => setQuoteIndex((current) => (current + 1) % introQuotes.length), 4200);
+    const timer = window.setInterval(
+      () => setQuoteIndex((current) => (current + 1) % introQuotes.length),
+      4200,
+    );
     return () => window.clearInterval(timer);
   }, [reduceMotion]);
 
   return (
     <main className="home-page">
-      <motion.div className="progress" style={{ scaleX: progress }} />
+      <m.div className="progress" style={{ scaleX: progress }} />
       <ReactivePointer />
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
 
       <header className="nav shell">
         <a className="brand" href="#top" aria-label="Youngkx Blog 首页">
-          <img className="brand-avatar" src="/avatar.webp" alt="Youngkx 头像" />
+          <Image
+            className="brand-avatar"
+            src="/avatar.webp"
+            alt="Youngkx 头像"
+            width={36}
+            height={36}
+            priority
+          />
           <span className="brand-name">Youngkx</span>
         </a>
         <nav className={menuOpen ? 'nav-links open' : 'nav-links'} aria-label="主导航">
-          <a href="#top" onClick={() => setMenuOpen(false)}>首页</a>
-          <a href="#posts" onClick={() => setMenuOpen(false)}>文章</a>
-          <a href="#topics" onClick={() => setMenuOpen(false)}>分类</a>
+          <a href="#top" onClick={() => setMenuOpen(false)}>
+            首页
+          </a>
+          <a href="#posts" onClick={() => setMenuOpen(false)}>
+            文章
+          </a>
+          <a href="#topics" onClick={() => setMenuOpen(false)}>
+            分类
+          </a>
         </nav>
-        <button className="theme-toggle" onClick={toggleTheme} aria-label={`切换到${theme === 'dark' ? '亮色' : '暗色'}主题`} title={`切换到${theme === 'dark' ? '亮色' : '暗色'}主题`}>
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          aria-label={`切换到${theme === 'dark' ? '亮色' : '暗色'}主题`}
+          title={`切换到${theme === 'dark' ? '亮色' : '暗色'}主题`}
+        >
           <span className="theme-icon">{theme === 'dark' ? '☼' : '◐'}</span>
           <span className="theme-label">{theme === 'dark' ? 'LIGHT' : 'DARK'}</span>
         </button>
-        <button className="menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="切换菜单" aria-expanded={menuOpen}>
-          <span /><span />
+        <button
+          className="menu"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="切换菜单"
+          aria-expanded={menuOpen}
+        >
+          <span />
+          <span />
         </button>
       </header>
 
       <section className="hero-stage" id="top" ref={heroRef}>
         <div className="hero-sticky">
-          <motion.div className="hero-title-layer" style={{ x: titleX, y: titleY, scale: titleScale, opacity: titleOpacity }}>
-            <motion.span className="hero-title-eyebrow" style={{ opacity: titleEyebrowOpacity }}>PERSONAL ARCHIVE / SINCE 2023</motion.span>
+          <m.div
+            className="hero-title-layer"
+            style={{ x: titleX, y: titleY, scale: titleScale, opacity: titleOpacity }}
+          >
+            <m.span className="hero-title-eyebrow" style={{ opacity: titleEyebrowOpacity }}>
+              PERSONAL ARCHIVE / SINCE 2023
+            </m.span>
             <h1 ref={titleHeadingRef}>
               <span className="hero-title-word">Youngkx</span>
-              <motion.span className="hero-title-blog" style={{ y: titleBlogY }}>Blog</motion.span>
+              <m.span className="hero-title-blog" style={{ y: titleBlogY }}>
+                Blog
+              </m.span>
             </h1>
-          </motion.div>
+          </m.div>
 
-          <motion.div ref={detailLayerRef} className="hero-detail-layer shell" style={{ opacity: detailOpacity }}>
+          <m.div
+            ref={detailLayerRef}
+            className="hero-detail-layer shell"
+            style={{ opacity: detailOpacity }}
+          >
             <div className="hero-detail-grid">
               <div className="hero-detail-copy">
-                <motion.div className="hero-copy-block hero-copy-intro" style={{ opacity: introOpacity, y: introY }}>
-                  <span className="eyebrow"><i className="status-dot" />记录、学习与持续构建</span>
+                <m.div
+                  className="hero-copy-block hero-copy-intro"
+                  style={{ opacity: introOpacity, y: introY }}
+                >
+                  <span className="eyebrow">
+                    <i className="status-dot" />
+                    记录、学习与持续构建
+                  </span>
                   <div className="hero-quote">
                     <AnimatePresence mode="wait">
-                      <motion.p
+                      <m.p
                         key={quoteIndex}
                         initial={{ opacity: 0, x: -18, clipPath: 'inset(0 100% 0 0)' }}
                         animate={{ opacity: 1, x: 0, clipPath: 'inset(0 0% 0 0)' }}
@@ -293,54 +484,97 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
                         transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}
                       >
                         {introQuotes[quoteIndex]}
-                      </motion.p>
+                      </m.p>
                     </AnimatePresence>
                   </div>
-                </motion.div>
-                <motion.div className="hero-copy-block hero-copy-description" style={{ opacity: descriptionOpacity, y: descriptionY }}>
-                  <p>记录 OI、C / C++、Web 与日常思考，在代码、文字和时间之间留下可以回看的坐标。</p>
-                </motion.div>
-                <motion.div className="hero-copy-block hero-copy-actions" style={{ opacity: actionsOpacity, y: actionsY }}>
+                </m.div>
+                <m.div
+                  className="hero-copy-block hero-copy-description"
+                  style={{ opacity: descriptionOpacity, y: descriptionY }}
+                >
+                  <p>
+                    记录 OI、C / C++、Web 与日常思考，在代码、文字和时间之间留下可以回看的坐标。
+                  </p>
+                </m.div>
+                <m.div
+                  className="hero-copy-block hero-copy-actions"
+                  style={{ opacity: actionsOpacity, y: actionsY }}
+                >
                   <div className="hero-actions">
-                    <MagneticLink className="button primary" href="#posts">浏览文章 <span>↓</span></MagneticLink>
-                    <MagneticLink className="text-link" href="#topics">文章主题 <span>→</span></MagneticLink>
+                    <MagneticLink className="button primary" href="#posts">
+                      浏览文章 <span>↓</span>
+                    </MagneticLink>
+                    <MagneticLink className="text-link" href="#topics">
+                      文章主题 <span>→</span>
+                    </MagneticLink>
                   </div>
-                </motion.div>
+                </m.div>
               </div>
               <div className="hero-detail-spacer" aria-hidden="true" />
             </div>
-          </motion.div>
+          </m.div>
 
-          <motion.div className="hero-scroll-cue" style={{ opacity: cueOpacity }}>
-            <span>SCROLL TO EXPLORE</span><i />
-          </motion.div>
+          <m.div className="hero-scroll-cue" style={{ opacity: cueOpacity }}>
+            <span>SCROLL TO EXPLORE</span>
+            <i />
+          </m.div>
         </div>
       </section>
 
       <section className="writing shell section" id="posts">
-        <motion.div className="section-heading" initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }} whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} viewport={{ once: true, margin: '0px' }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-          <div><span className="section-index">01 /</span><span className="kicker">文章</span></div>
+        <m.div
+          className="section-heading"
+          initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }}
+          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          viewport={{ once: true, margin: '0px' }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div>
+            <span className="section-index">01 /</span>
+            <span className="kicker">文章</span>
+          </div>
           <h2>文章</h2>
           <p>首页按时间倒序展示原博客文章，正文、代码示例和旧链接均已保留。</p>
-        </motion.div>
+        </m.div>
 
         <div className="article-list">
-          {posts.slice(0, 3).map((post, index) => <FeaturedPost post={post} index={index} key={post.href} />)}
+          {posts.slice(0, 3).map((post, index) => (
+            <FeaturedPost post={post} index={index} key={post.href} />
+          ))}
         </div>
-        <motion.div className="more-posts" initial={{ opacity: 0, y: 42, filter: 'blur(12px)' }} whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-          <a href="/articles/"><span>更多文章</span><b>查看全部 {posts.length} 篇</b><i>↗</i></a>
-        </motion.div>
+        <m.div
+          className="more-posts"
+          initial={{ opacity: 0, y: 42, filter: 'blur(12px)' }}
+          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+        >
+          <Link href="/articles/">
+            <span>更多文章</span>
+            <b>查看全部 {posts.length} 篇</b>
+            <i>↗</i>
+          </Link>
+        </m.div>
       </section>
 
       <section className="topics shell section" id="topics">
-        <motion.div className="section-heading" initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }} whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-          <div><span className="section-index">02 /</span><span className="kicker">分类</span></div>
+        <m.div
+          className="section-heading"
+          initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }}
+          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div>
+            <span className="section-index">02 /</span>
+            <span className="kicker">分类</span>
+          </div>
           <h2>分类</h2>
           <p>按内容主题浏览文章，快速找到信息学竞赛、C / C++ 与 Web 相关笔记。</p>
-        </motion.div>
+        </m.div>
         <div className="category-grid">
           {categories.map((category, index) => (
-            <motion.a
+            <m.a
               href={`/categories/#${category.id}`}
               className="category-block"
               key={category.id}
@@ -353,7 +587,7 @@ export default function HomePage({ posts, categories }: { posts: ArticleSummary[
               <h3>{category.title}</h3>
               <p>{category.description}</p>
               <b>{category.posts.length} 篇相关文章</b>
-            </motion.a>
+            </m.a>
           ))}
         </div>
       </section>

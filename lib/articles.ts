@@ -55,13 +55,21 @@ function categoryId(tag: string) {
   if (known === 'WEB') return 'web';
   if (known === 'AI') return 'ai';
   if (known === 'VLOG') return 'vlog';
-  return `tag-${Array.from(tag.normalize('NFC')).map((character) => character.codePointAt(0)?.toString(16)).join('-')}`;
+  return `tag-${Array.from(tag.normalize('NFC'))
+    .map((character) => character.codePointAt(0)?.toString(16))
+    .join('-')}`;
 }
 
 function validateArticles(records: ArticleRecord[]) {
   const paths = new Set<string>();
   for (const article of records) {
-    if (!article.path?.length || !article.title || !article.date || !article.tags?.length || !article.content) {
+    if (
+      !article.path?.length ||
+      !article.title ||
+      !article.date ||
+      !article.tags?.length ||
+      !article.content
+    ) {
       throw new Error(`文章数据不完整：${article.title || '未命名文章'}`);
     }
     const articlePath = article.path.join('/').normalize('NFC');
@@ -73,7 +81,10 @@ function validateArticles(records: ArticleRecord[]) {
 validateArticles(articles);
 
 export const articleSummaries: ArticleSummary[] = [...articles]
-  .sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title, 'zh-CN'))
+  .sort(
+    (left, right) =>
+      right.date.localeCompare(left.date) || left.title.localeCompare(right.title, 'zh-CN'),
+  )
   .map((article, index) => {
     const card = article.card ?? inferCardPreset(article.tags, index);
     return {
@@ -90,12 +101,13 @@ export const articleSummaries: ArticleSummary[] = [...articles]
     };
   });
 
-const tags = [...new Set(articleSummaries.flatMap((article) => article.tags))]
-  .sort((left, right) => {
+const tags = [...new Set(articleSummaries.flatMap((article) => article.tags))].sort(
+  (left, right) => {
     const leftOrder = categoryDetails[left]?.order ?? Number.MAX_SAFE_INTEGER;
     const rightOrder = categoryDetails[right]?.order ?? Number.MAX_SAFE_INTEGER;
     return leftOrder - rightOrder || left.localeCompare(right, 'zh-CN');
-  });
+  },
+);
 
 export const categorySummaries: CategorySummary[] = tags.map((tag, index) => ({
   id: categoryId(tag),
@@ -107,7 +119,10 @@ export const categorySummaries: CategorySummary[] = tags.map((tag, index) => ({
 
 export function getArticleByPath(articlePath: string[]) {
   const normalizedPath = articlePath.map((segment) => segment.normalize('NFC')).join('/');
-  return articles.find((article) => article.path.map((segment) => segment.normalize('NFC')).join('/') === normalizedPath);
+  return articles.find(
+    (article) =>
+      article.path.map((segment) => segment.normalize('NFC')).join('/') === normalizedPath,
+  );
 }
 
 export { articles };

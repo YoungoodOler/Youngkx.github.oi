@@ -1,25 +1,38 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "youngkxblog",
-  "compatibility_date": "2026-07-21",
-  "main": "./worker.mjs",
+  "compatibility_date": "2026-08-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./worker.ts",
   "workers_dev": true,
   "preview_urls": true,
   "routes": [
     {
       "pattern": "youngkx.cn",
-      "custom_domain": true
+      "custom_domain": true,
     },
     {
       "pattern": "www.youngkx.cn",
-      "custom_domain": true
-    }
+      "custom_domain": true,
+    },
   ],
   "assets": {
     "directory": "./out",
     "binding": "ASSETS",
     "run_worker_first": true,
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
-  }
+    "html_handling": "auto-trailing-slash",
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 0.01,
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01,
+    },
+  },
 }

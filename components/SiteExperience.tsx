@@ -9,8 +9,12 @@ import {
   useRef,
   useState,
 } from 'react';
-import { usePathname } from 'next/navigation';
-import Scene from './Scene';
+import { LazyMotion } from 'framer-motion';
+import dynamic from 'next/dynamic';
+import { usePathname, useRouter } from 'next/navigation';
+
+const Scene = dynamic(() => import('./Scene'), { ssr: false });
+const loadMotionFeatures = () => import('./motion-features').then((module) => module.default);
 
 type Theme = 'dark' | 'light';
 type TransitionMode = 'theme' | 'page-in' | 'page-out' | null;
@@ -67,9 +71,8 @@ function ParticleTransitionCanvas({
     canvas.style.height = `${height}px`;
     context.scale(ratio, ratio);
 
-    const count = width < 700
-      ? 1600
-      : Math.max(2400, Math.min(5200, Math.round((width * height) / 420)));
+    const count =
+      width < 700 ? 1600 : Math.max(2400, Math.min(5200, Math.round((width * height) / 420)));
     const random = createRandom(width + height + (targetTheme === 'light' ? 37 : 71));
     const originX = origin.x * width;
     const originY = origin.y * height;
@@ -95,8 +98,10 @@ function ParticleTransitionCanvas({
         targetY,
         controlAX: startX + Math.cos(burstAngle + bend) * travelDistance * (0.24 + random() * 0.2),
         controlAY: startY + Math.sin(burstAngle + bend) * travelDistance * (0.24 + random() * 0.2),
-        controlBX: targetX - Math.cos(burstAngle - bend * 0.38) * travelDistance * (0.16 + random() * 0.2),
-        controlBY: targetY - Math.sin(burstAngle - bend * 0.38) * travelDistance * (0.16 + random() * 0.2),
+        controlBX:
+          targetX - Math.cos(burstAngle - bend * 0.38) * travelDistance * (0.16 + random() * 0.2),
+        controlBY:
+          targetY - Math.sin(burstAngle - bend * 0.38) * travelDistance * (0.16 + random() * 0.2),
         releaseAX: targetX + Math.cos(releaseAngle - bend * 0.22) * releaseDistance * 0.2,
         releaseAY: targetY + Math.sin(releaseAngle - bend * 0.22) * releaseDistance * 0.2,
         releaseBX: targetX + Math.cos(releaseAngle + bend * 0.3) * releaseDistance * 0.62,
@@ -111,6 +116,8 @@ function ParticleTransitionCanvas({
       };
     });
     const positions = new Float32Array(count * 5);
+    const particlesByColor = Array.from({ length: palette.length }, () => [] as number[]);
+    particles.forEach((particle, index) => particlesByColor[particle.colorIndex].push(index));
 
     const duration = mode === 'theme' ? 1400 : mode === 'page-in' ? 1100 : 1050;
     const startedAt = performance.now();
@@ -143,27 +150,31 @@ function ParticleTransitionCanvas({
         const endX = covering ? particle.targetX : particle.exitX;
         const endY = covering ? particle.targetY : particle.exitY;
         const turbulence = Math.sin(travel * Math.PI) * (18 + particle.size * 14);
-        const x = inverse * inverse * inverse * startX
-          + 3 * inverse * inverse * travel * controlAX
-          + 3 * inverse * travel * travel * controlBX
-          + travel * travel * travel * endX
-          + Math.sin(particle.phase + travel * 15.5) * turbulence;
-        const y = inverse * inverse * inverse * startY
-          + 3 * inverse * inverse * travel * controlAY
-          + 3 * inverse * travel * travel * controlBY
-          + travel * travel * travel * endY
-          + Math.cos(particle.phase * 1.37 + travel * 13.2) * turbulence;
+        const x =
+          inverse * inverse * inverse * startX +
+          3 * inverse * inverse * travel * controlAX +
+          3 * inverse * travel * travel * controlBX +
+          travel * travel * travel * endX +
+          Math.sin(particle.phase + travel * 15.5) * turbulence;
+        const y =
+          inverse * inverse * inverse * startY +
+          3 * inverse * inverse * travel * controlAY +
+          3 * inverse * travel * travel * controlBY +
+          travel * travel * travel * endY +
+          Math.cos(particle.phase * 1.37 + travel * 13.2) * turbulence;
         const previousTurbulence = Math.sin(previousTravel * Math.PI) * (18 + particle.size * 14);
-        const previousX = previousInverse * previousInverse * previousInverse * startX
-          + 3 * previousInverse * previousInverse * previousTravel * controlAX
-          + 3 * previousInverse * previousTravel * previousTravel * controlBX
-          + previousTravel * previousTravel * previousTravel * endX
-          + Math.sin(particle.phase + previousTravel * 15.5) * previousTurbulence;
-        const previousY = previousInverse * previousInverse * previousInverse * startY
-          + 3 * previousInverse * previousInverse * previousTravel * controlAY
-          + 3 * previousInverse * previousTravel * previousTravel * controlBY
-          + previousTravel * previousTravel * previousTravel * endY
-          + Math.cos(particle.phase * 1.37 + previousTravel * 13.2) * previousTurbulence;
+        const previousX =
+          previousInverse * previousInverse * previousInverse * startX +
+          3 * previousInverse * previousInverse * previousTravel * controlAX +
+          3 * previousInverse * previousTravel * previousTravel * controlBX +
+          previousTravel * previousTravel * previousTravel * endX +
+          Math.sin(particle.phase + previousTravel * 15.5) * previousTurbulence;
+        const previousY =
+          previousInverse * previousInverse * previousInverse * startY +
+          3 * previousInverse * previousInverse * previousTravel * controlAY +
+          3 * previousInverse * previousTravel * previousTravel * controlBY +
+          previousTravel * previousTravel * previousTravel * endY +
+          Math.cos(particle.phase * 1.37 + previousTravel * 13.2) * previousTurbulence;
         const offset = index * 5;
         positions[offset] = x;
         positions[offset + 1] = y;
@@ -175,9 +186,7 @@ function ParticleTransitionCanvas({
       context.globalCompositeOperation = targetTheme === 'light' ? 'source-over' : 'lighter';
       for (let colorIndex = 0; colorIndex < palette.length; colorIndex += 1) {
         context.beginPath();
-        for (let index = 0; index < particles.length; index += 1) {
-          const particle = particles[index];
-          if (particle.colorIndex !== colorIndex) continue;
+        for (const index of particlesByColor[colorIndex]) {
           const offset = index * 5;
           const local = positions[offset + 4];
           if ((covering && local <= 0) || local >= 0.995) continue;
@@ -191,15 +200,12 @@ function ParticleTransitionCanvas({
 
       for (let colorIndex = 0; colorIndex < palette.length; colorIndex += 1) {
         context.fillStyle = `rgb(${palette[colorIndex]})`;
-        for (let index = 0; index < particles.length; index += 1) {
+        for (const index of particlesByColor[colorIndex]) {
           const particle = particles[index];
-          if (particle.colorIndex !== colorIndex) continue;
           const offset = index * 5;
           const local = positions[offset + 4];
           if (covering && local <= 0) continue;
-          const alpha = covering
-            ? smoothstep(local / 0.14)
-            : 1 - smoothstep((local - 0.06) / 0.86);
+          const alpha = covering ? smoothstep(local / 0.14) : 1 - smoothstep((local - 0.06) / 0.86);
           const flip = 0.35 + Math.abs(Math.cos(particle.phase + local * Math.PI * 4.4)) * 1.65;
           context.globalAlpha = alpha * particle.strength * (targetTheme === 'light' ? 0.7 : 0.96);
           context.fillRect(
@@ -243,6 +249,7 @@ export function useSiteExperience() {
 
 export default function SiteExperience({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [theme, setTheme] = useState<Theme>('dark');
   const [transitionMode, setTransitionMode] = useState<TransitionMode>(null);
   const [transitionTheme, setTransitionTheme] = useState<Theme>('dark');
@@ -250,6 +257,8 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
   const timers = useRef<number[]>([]);
   const transitionModeRef = useRef<TransitionMode>(null);
   const lastPointerOrigin = useRef({ x: 0.86, y: 0.12 });
+  const pendingNavigation = useRef(false);
+  const previousPathname = useRef(pathname);
 
   const clearTimers = useCallback(() => {
     timers.current.forEach((timer) => window.clearTimeout(timer));
@@ -275,9 +284,11 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
       sessionStorage.removeItem('youngkx-page-transition');
       sessionStorage.removeItem('youngkx-transition-origin');
       setMode('page-in');
-      timers.current.push(window.setTimeout(() => {
-        document.documentElement.classList.remove('page-entering');
-      }, 50));
+      timers.current.push(
+        window.setTimeout(() => {
+          document.documentElement.classList.remove('page-entering');
+        }, 50),
+      );
       timers.current.push(window.setTimeout(() => setMode(null), 1150));
     }
 
@@ -286,6 +297,24 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
       document.documentElement.classList.remove('theme-changing', 'site-leaving');
     };
   }, [clearTimers, setMode]);
+
+  useEffect(() => {
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
+    if (!pendingNavigation.current) return;
+
+    pendingNavigation.current = false;
+    clearTimers();
+    document.documentElement.classList.remove('site-leaving');
+    document.documentElement.classList.add('page-entering');
+    setMode('page-in');
+    timers.current.push(
+      window.setTimeout(() => {
+        document.documentElement.classList.remove('page-entering');
+      }, 50),
+    );
+    timers.current.push(window.setTimeout(() => setMode(null), 1150));
+  }, [clearTimers, pathname, setMode]);
 
   useEffect(() => {
     const rememberPointer = (event: PointerEvent) => {
@@ -316,85 +345,105 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
     setMode('theme');
     document.documentElement.classList.add('theme-changing');
 
-    timers.current.push(window.setTimeout(() => {
-      setTheme(next);
-      document.documentElement.dataset.theme = next;
-      localStorage.setItem('youngkx-theme', next);
-    }, 690));
+    timers.current.push(
+      window.setTimeout(() => {
+        setTheme(next);
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem('youngkx-theme', next);
+      }, 690),
+    );
 
-    timers.current.push(window.setTimeout(() => {
-      document.documentElement.classList.remove('theme-changing');
-      setMode(null);
-    }, 1450));
+    timers.current.push(
+      window.setTimeout(() => {
+        document.documentElement.classList.remove('theme-changing');
+        setMode(null);
+      }, 1450),
+    );
   }, [setMode, theme]);
 
   useEffect(() => {
     const navigateWithTransition = (event: MouseEvent) => {
       if (
-        event.defaultPrevented
-        || event.button !== 0
-        || event.metaKey
-        || event.ctrlKey
-        || event.shiftKey
-        || event.altKey
-        || transitionModeRef.current
-      ) return;
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        transitionModeRef.current
+      )
+        return;
 
       const target = event.target;
       if (!(target instanceof Element)) return;
       const anchor = target.closest('a');
       if (
-        !anchor
-        || anchor.target === '_blank'
-        || anchor.hasAttribute('download')
-        || anchor.dataset.transition === 'off'
-      ) return;
+        !anchor ||
+        anchor.target === '_blank' ||
+        anchor.hasAttribute('download') ||
+        anchor.dataset.transition === 'off'
+      )
+        return;
 
       const destination = new URL(anchor.href, window.location.href);
       if (destination.origin !== window.location.origin) return;
 
-      const sameDocument = destination.pathname === window.location.pathname
-        && destination.search === window.location.search;
+      const sameDocument =
+        destination.pathname === window.location.pathname &&
+        destination.search === window.location.search;
       if (sameDocument) return;
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
       event.preventDefault();
       clearTimers();
-      const origin = {
-        x: event.clientX / Math.max(1, window.innerWidth),
-        y: event.clientY / Math.max(1, window.innerHeight),
-      };
+      const origin =
+        event.detail === 0
+          ? lastPointerOrigin.current
+          : {
+              x: event.clientX / Math.max(1, window.innerWidth),
+              y: event.clientY / Math.max(1, window.innerHeight),
+            };
       lastPointerOrigin.current = origin;
       setTransitionOrigin(origin);
       setTransitionTheme(theme);
       setMode('page-out');
       document.documentElement.classList.add('site-leaving');
-      sessionStorage.setItem('youngkx-page-transition', '1');
-      sessionStorage.setItem('youngkx-transition-origin', `${origin.x},${origin.y}`);
+      pendingNavigation.current = true;
 
-      timers.current.push(window.setTimeout(() => {
-        window.location.assign(destination.href);
-      }, 1070));
+      const href = `${destination.pathname}${destination.search}${destination.hash}`;
+      router.prefetch(href);
+
+      timers.current.push(
+        window.setTimeout(() => {
+          router.push(href);
+        }, 1020),
+      );
     };
 
-    document.addEventListener('click', navigateWithTransition);
-    return () => document.removeEventListener('click', navigateWithTransition);
-  }, [clearTimers, setMode, theme]);
+    document.addEventListener('click', navigateWithTransition, true);
+    return () => document.removeEventListener('click', navigateWithTransition, true);
+  }, [clearTimers, router, setMode, theme]);
 
   return (
     <SiteExperienceContext.Provider value={{ theme, toggleTheme }}>
-      <div className="scroll-morph global-particle-scene">
-        <Scene theme={theme} showSubject={pathname === '/'} />
-      </div>
-      {children}
-      {transitionMode && (
-        <div
-          className={`site-transition site-transition--${transitionMode} site-transition--to-${transitionTheme}`}
-          aria-hidden="true"
-        >
-          <ParticleTransitionCanvas mode={transitionMode} targetTheme={transitionTheme} origin={transitionOrigin} />
+      <LazyMotion features={loadMotionFeatures} strict>
+        <div className="scroll-morph global-particle-scene">
+          <Scene theme={theme} showSubject={pathname === '/'} />
         </div>
-      )}
+        {children}
+        {transitionMode && (
+          <div
+            className={`site-transition site-transition--${transitionMode} site-transition--to-${transitionTheme}`}
+            aria-hidden="true"
+          >
+            <ParticleTransitionCanvas
+              mode={transitionMode}
+              targetTheme={transitionTheme}
+              origin={transitionOrigin}
+            />
+          </div>
+        )}
+      </LazyMotion>
     </SiteExperienceContext.Provider>
   );
 }

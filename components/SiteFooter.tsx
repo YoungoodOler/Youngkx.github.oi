@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 const launchedAt = new Date('2023-10-23T00:00:00+08:00').getTime();
 
@@ -13,7 +14,13 @@ function getRuntime() {
   return `${days} 天 ${hours} 时 ${minutes} 分 ${seconds} 秒`;
 }
 
-export default function SiteFooter({ backHref, backLabel }: { backHref: string; backLabel: string }) {
+export default function SiteFooter({
+  backHref,
+  backLabel,
+}: {
+  backHref: string;
+  backLabel: string;
+}) {
   const [runtime, setRuntime] = useState('计算中');
 
   useEffect(() => {
@@ -28,9 +35,9 @@ export default function SiteFooter({ backHref, backLabel }: { backHref: string; 
       <span>Youngkx</span>
       <div className="site-status">
         <span>已运行：{runtime}</span>
-        <span>最近更新：2026 年 7 月 26 日</span>
+        <span>最近更新：2026 年 8 月 4 日</span>
       </div>
-      <a href={backHref}>{backLabel}</a>
+      <Link href={backHref}>{backLabel}</Link>
     </footer>
   );
 }

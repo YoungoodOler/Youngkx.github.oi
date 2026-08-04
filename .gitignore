@@ -1,6 +1,9 @@
 node_modules
 .next
+.wrangler
 out
+playwright-report
+test-results
 .DS_Store
 *.log
 *.tsbuildinfo

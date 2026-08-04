@@ -1,15 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600&display=swap');
-
 :root {
   --ink: #e8eaf2;
   --muted: #8b90a3;
   --line: rgba(255, 255, 255, 0.11);
   --bg: #08090d;
   --accent: #90a8ff;
-  --display: 'Noto Serif SC', Georgia, serif;
+  --display: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', STSong, SimSun, Georgia, serif;
   --serif: var(--display);
-  --sans: 'Noto Sans SC', system-ui, sans-serif;
-  --mono: 'DM Mono', ui-monospace, monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif;
+  --mono: var(--font-dm-mono);
 }
 
 * { box-sizing: border-box; }
@@ -47,7 +45,7 @@ html.theme-changing .modern-toc { transition-duration:.62s!important; transition
 .brand-mark { display: grid; place-items: center; width: 34px; height: 34px; color: #0a0b10; background: var(--ink); border-radius: 50%; font-size: 10px; letter-spacing: 0; }
 .brand-avatar { display:block; width:36px; height:36px; flex:0 0 36px; object-fit:cover; border:1px solid rgba(255,255,255,.18); border-radius:50%; box-shadow:0 5px 18px rgba(0,0,0,.24); }
 .nav-links { display: flex; gap: 40px; font: 400 12px/1 var(--mono); letter-spacing: .14em; }
-.nav-links a { position: relative; color: #b7bac7; transition: color .3s; }
+.nav-links a { position: relative; display:inline-flex; align-items:center; justify-content:center; min-width:24px; min-height:24px; color: #b7bac7; transition: color .3s; }
 .nav-links a::after { content: ''; position: absolute; height: 1px; inset: auto 0 -8px; background: var(--ink); transform: scaleX(0); transform-origin: right; transition: transform .35s; }
 .nav-links a:hover { color: white; }
 .nav-links a:hover::after { transform: scaleX(1); transform-origin: left; }
@@ -251,9 +249,9 @@ html.theme-changing .modern-toc { transition-duration:.62s!important; transition
 .contact-orb { position: absolute; width: 430px; height: 430px; right: -120px; top: -130px; border-radius: 50%; border: 1px solid rgba(144,168,255,.16); box-shadow: inset 0 0 100px rgba(88,108,205,.08), 0 0 130px rgba(87,103,190,.07); }
 .contact-orb::before, .contact-orb::after { content: ''; position: absolute; inset: 14%; border: 1px solid rgba(144,168,255,.12); border-radius: 50%; }
 .contact-orb::after { inset: 30%; }
-.footer { display: flex; justify-content: space-between; padding: 30px 0; border-top: 1px solid var(--line); color: #5e6271; font: 400 8px/1 var(--mono); letter-spacing: .13em; }
+.footer { display: flex; justify-content: space-between; padding: 30px 0; border-top: 1px solid var(--line); color: #7b8193; font: 400 8px/1 var(--mono); letter-spacing: .13em; }
 .site-footer { align-items:center; gap:32px; }
-.site-status { display:flex; flex:1; justify-content:center; gap:12px 30px; color:#686e7f; letter-spacing:.08em; }
+.site-status { display:flex; flex:1; justify-content:center; gap:12px 30px; color:#7b8193; letter-spacing:.08em; }
 .articles-page { position:relative; z-index:2; min-height:100vh; }
 .categories-page { position:relative; z-index:2; min-height:100vh; }
 .articles-hero { position:relative; min-height:540px; padding-top:190px; display:flex; align-items:flex-start; justify-content:space-between; border-bottom:1px solid var(--line); }
@@ -393,6 +391,8 @@ html[data-theme='light'] .modern-article-content { color:#505663; background:lin
 html[data-theme='light'] .modern-article-content h1,html[data-theme='light'] .modern-article-content h2,html[data-theme='light'] .modern-article-content h3 { color:#242732; }
 html[data-theme='light'] .modern-copyright { color:#59606e; background:#ecebe6; }
 html[data-theme='light'] .modern-copyright strong { color:#252934; }
+html[data-theme='light'] .modern-copyright code { color:#405aa8; }
+html[data-theme='light'] .site-status { color:#5b6070; }
 html[data-theme='light'] .modern-article-tools,html[data-theme='light'] .modern-toc { background:rgba(250,249,244,.92); box-shadow:0 18px 50px rgba(38,45,65,.12); }
 html[data-theme='light'] .modern-article-tools a:hover,html[data-theme='light'] .modern-article-tools button:hover,html[data-theme='light'] .modern-article-tools button.active { color:#304a9b; background:rgba(82,111,196,.1); }
 html[data-theme='light'] .pointer-dot { border-color:rgba(55,77,150,.5); background:rgba(79,105,192,.18); }

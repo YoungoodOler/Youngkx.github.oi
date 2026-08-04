@@ -17,7 +17,8 @@ export function isCardPreset(value: unknown): value is CardPreset {
 
 export function inferCardPreset(tags: string[], index = 0): CardPreset {
   const normalized = tags.map((tag) => tag.trim().toLowerCase());
-  const has = (...candidates: string[]) => candidates.some((candidate) => normalized.includes(candidate));
+  const has = (...candidates: string[]) =>
+    candidates.some((candidate) => normalized.includes(candidate));
 
   if (has('ai', 'ml', '机器学习', '人工智能', 'llm')) return 'ai';
   if (has('vlog', '摄影', '旅行', '生活')) return 'vlog';

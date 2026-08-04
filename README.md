@@ -14,11 +14,16 @@ npm run dev
 ## 检查与构建
 
 ```bash
+npm run format:check
 npm run check
+npm run lint
+npm run test
 npm run build
 ```
 
-Next.js 会将静态站点输出到 `out/`。Cloudflare Worker 负责提供静态资源，并将 `youngkx.cn` 永久重定向到 `www.youngkx.cn`。
+日常提交前也可以直接执行 `npm run validate`，它会依次完成类型检查、代码规范、单元测试和生产构建。Next.js 会将静态站点输出到 `out/`。
+
+仓库使用 Prettier 统一 TypeScript、组件和配置文件格式，ESLint 负责 Next.js 与 React 规则，Vitest 覆盖文章解析、路由生成和 Worker 行为。网站与 Worker 使用独立的 TypeScript 配置，防止两套运行时类型互相污染。推送及合并请求还会在 GitHub Actions 中重复这些检查。
 
 ## 文章维护
 
@@ -29,7 +34,18 @@ Next.js 会将静态站点输出到 `out/`。Cloudflare Worker 负责提供静�
 ## 部署
 
 ```bash
-npx wrangler deploy
+npm run deploy:dry
+npm run deploy
 ```
 
-Cloudflare 项目名称为 `youngkxblog`，正式站点为 `https://www.youngkx.cn`。
+`deploy:dry` 只验证构建产物和 Worker 配置，不会发布。正式部署前必须先通过 `npm run validate`。Cloudflare 项目名称为 `youngkxblog`，正式站点为 `https://www.youngkx.cn`。
+
+Cloudflare Worker 负责提供静态资源、将 `youngkx.cn` 永久重定向到 `www.youngkx.cn`，并阻止 workers.dev 镜像被搜索引擎收录。修改 `wrangler.jsonc` 后需要重新执行 `npx wrangler types`，同步 `worker-configuration.d.ts`。
+
+## 性能约束
+
+- Three.js 场景按需加载，不应重新并入所有页面的首屏公共包。
+- Framer Motion 通过 `LazyMotion` 加载 DOM 动画功能；新增动画优先使用 `m` 组件。
+- 字体由 Next.js 在构建时自托管，避免恢复浏览器端的 Google Fonts 外链。
+- 背景粒子在页面不可见时暂停，恢复可见后继续；移动端不额外降低动态效果数量。
+- `/_next/static/` 的带哈希资源使用一年不可变缓存，HTML 继续由平台按正常规则更新。
