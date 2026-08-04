@@ -374,15 +374,31 @@ export default function Scene({
     fillLight.position.set(1, -3, 3);
     scene.add(fillLight);
 
+    const heroStage = document.querySelector<HTMLElement>('.hero-stage');
+    let maximumScroll = 1;
+    let heroScrollTravel = Math.max(1, window.innerHeight * 0.85);
+    const measureScrollLayout = () => {
+      maximumScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      heroScrollTravel = Math.max(
+        1,
+        (heroStage?.offsetHeight ?? window.innerHeight * 1.85) - window.innerHeight,
+      );
+    };
+
     const resize = () => {
       mobileLayout = window.innerWidth < 700;
       renderer.setSize(mount.clientWidth, mount.clientHeight, false);
       camera.aspect = mount.clientWidth / mount.clientHeight;
       camera.updateProjectionMatrix();
+      measureScrollLayout();
     };
     const observer = new ResizeObserver(resize);
     observer.observe(mount);
     resize();
+
+    const layoutObserver = new ResizeObserver(measureScrollLayout);
+    layoutObserver.observe(document.body);
+    if (heroStage) layoutObserver.observe(heroStage);
 
     const interactionRingGeometry = new THREE.RingGeometry(0.16, 0.17, 36);
     const hoverRingMaterial = new THREE.MeshBasicMaterial({
@@ -422,14 +438,9 @@ export default function Scene({
     let previousFrameTime = performance.now();
 
     const updateScroll = () => {
-      const maximum = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      targetScroll = window.scrollY / maximum;
-      const heroStage = document.querySelector<HTMLElement>('.hero-stage');
-      const heroTravel = Math.max(
-        1,
-        (heroStage?.offsetHeight ?? window.innerHeight * 1.85) - window.innerHeight,
-      );
-      targetHeroProgress = THREE.MathUtils.clamp(window.scrollY / heroTravel, 0, 1);
+      const scrollY = window.scrollY;
+      targetScroll = scrollY / maximumScroll;
+      targetHeroProgress = THREE.MathUtils.clamp(scrollY / heroScrollTravel, 0, 1);
     };
 
     const mapPointer = (event: PointerEvent) => {
@@ -745,6 +756,7 @@ export default function Scene({
       window.removeEventListener('blur', onWindowBlur);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       observer.disconnect();
+      layoutObserver.disconnect();
       geometry.dispose();
       material.dispose();
       wireMaterial.dispose();
