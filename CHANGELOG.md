@@ -24,6 +24,12 @@
 - 新增桌面端与 390px 手机端 Playwright 回归测试，覆盖首页滚动布局、主题粒子幕、跨页面切换、代码复制、减少动态效果和移动导航。
 - GitHub Actions 自动执行依赖审计、Worker 类型检查、格式检查、单元测试、生产构建、性能预算和浏览器回归测试。
 
+### 发布
+
+- Git 提交：`c4b5c83`（`Optimize performance and release safeguards`）、`58a5f8f`（`Record August 5 optimization release`）
+- Cloudflare Worker：`youngkxblog`
+- Cloudflare 版本：`a1d48403-7da4-45d7-88cc-0cd66366960b`
+
 ## [2.4.5] - 2026-07-26
 
 ### 内容发布
