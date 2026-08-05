@@ -3,7 +3,7 @@
   "name": "youngkxblog",
   "compatibility_date": "2026-08-03",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "./worker.ts",
+  "main": "./cloudflare/worker.ts",
   "workers_dev": true,
   "preview_urls": true,
   "routes": [

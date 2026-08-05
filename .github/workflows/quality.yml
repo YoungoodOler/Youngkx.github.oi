@@ -30,7 +30,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
       - name: Check generated Worker types
-        run: npx wrangler types --check
+        run: npm run worker:types -- --check
 
       - name: Check formatting
         run: npm run format:check

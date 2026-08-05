@@ -8,6 +8,6 @@ package-lock.json
 content/articles.json
 content/posts
 CHANGELOG.md
-操作维护指南.md
+docs/操作维护指南.md
 app/globals.css
-worker-configuration.d.ts
+cloudflare/worker-configuration.d.ts

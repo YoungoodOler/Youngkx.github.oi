@@ -1,0 +1,18 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "package.json": "package-lock.json, .node-version",
+    ".prettierrc.json": ".prettierignore",
+    "tsconfig.json": "next-env.d.ts"
+  },
+  "files.exclude": {
+    "**/.next": true,
+    "**/.wrangler": true,
+    "**/node_modules": true,
+    "**/out": true,
+    "**/playwright-report": true,
+    "**/test-results": true,
+    "**/*.tsbuildinfo": true
+  }
+}

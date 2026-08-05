@@ -1,9 +1,11 @@
+import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
 const port = 8787;
+const projectRoot = path.resolve(__dirname, '..');
 
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: path.join(projectRoot, 'tests/e2e'),
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
@@ -40,6 +42,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run preview:test',
+    cwd: projectRoot,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

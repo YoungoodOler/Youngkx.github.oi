@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import worker from '../worker.ts';
+import worker from '../cloudflare/worker.ts';
 
 function createAssets() {
   return {
