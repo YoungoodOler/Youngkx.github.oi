@@ -599,15 +599,15 @@ export default function Scene({
       const sphereEntry = showSubjectRef.current
         ? smoothstep((currentHeroProgress - 0.25) / 0.48)
         : 0;
-      const subjectVisible = sphereEntry > 0.001;
-      group.visible = subjectVisible;
-      keyLight.visible = subjectVisible;
-      rimLight.visible = subjectVisible;
-      fillLight.visible = subjectVisible;
+      const shouldShowSubject = showSubjectRef.current;
+      group.visible = shouldShowSubject;
+      keyLight.visible = shouldShowSubject;
+      rimLight.visible = shouldShowSubject;
+      fillLight.visible = shouldShowSubject;
       const shapeChanged =
         Math.abs(subjectArticleMix - previousSubjectArticleMix) > 0.0005 ||
         Math.abs(categoryMix - previousCategoryMix) > 0.0005;
-      if (subjectVisible && shapeChanged) {
+      if (shouldShowSubject && shapeChanged) {
         for (let index = 0; index < sphere.length; index += 1) {
           const articleShape = THREE.MathUtils.lerp(
             sphere[index],

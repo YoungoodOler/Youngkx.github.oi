@@ -49,14 +49,14 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
   );
 });
 
-test('主题切换保留粒子幕并应用新主题', async ({ page }) => {
+test('主题切换保留粒子幕并快速应用新主题', async ({ page }) => {
   await useStoredTheme(page);
   await openPage(page, '/articles/');
 
   await page.locator('.theme-toggle').click();
   await expect(page.locator('.site-transition--theme')).toBeVisible();
   await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('light');
-  await expect(page.locator('.site-transition')).toHaveCount(0, { timeout: 3_000 });
+  await expect(page.locator('.site-transition')).toHaveCount(0, { timeout: 1_300 });
   await expect(page.getByRole('heading', { name: '所有文章' })).toBeVisible();
   await expect(page.locator('.scene canvas')).toBeVisible();
 });
@@ -105,4 +105,14 @@ test('手机导航能够展开并访问主要入口', async ({ page }, testInfo)
   await expect(page.locator('.nav-links')).toHaveClass(/open/);
   await expect(page.getByRole('link', { name: '文章', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: '分类', exact: true })).toBeVisible();
+
+  const menuBox = await page.locator('.nav-links').boundingBox();
+  const viewport = page.viewportSize();
+  expect(menuBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(menuBox?.width ?? Infinity).toBeLessThan(260);
+  expect(menuBox?.height ?? Infinity).toBeLessThan(240);
+  expect((menuBox?.x ?? 0) + (menuBox?.width ?? 0) / 2).toBeGreaterThan((viewport?.width ?? 0) / 2);
+  expect((viewport?.width ?? 0) - ((menuBox?.x ?? 0) + (menuBox?.width ?? 0))).toBeLessThan(24);
+  expect(menuBox?.y ?? 0).toBeGreaterThan(50);
 });

@@ -319,6 +319,8 @@ export default function HomePage({
   const heroRef = useRef<HTMLElement>(null);
   const titleHeadingRef = useRef<HTMLHeadingElement>(null);
   const detailLayerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { scrollYProgress: heroProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end end'],
@@ -356,9 +358,26 @@ export default function HomePage({
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    if (!menuOpen) return;
+
+    const closeFromOutside = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (menuRef.current?.contains(target) || menuButtonRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+    const closeFromKeyboard = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('pointerdown', closeFromOutside, { passive: true });
+    document.addEventListener('keydown', closeFromKeyboard);
     return () => {
-      document.body.style.overflow = '';
+      document.removeEventListener('pointerdown', closeFromOutside);
+      document.removeEventListener('keydown', closeFromKeyboard);
     };
   }, [menuOpen]);
 
@@ -411,7 +430,12 @@ export default function HomePage({
           />
           <span className="brand-name">Youngkx</span>
         </a>
-        <nav className={menuOpen ? 'nav-links open' : 'nav-links'} aria-label="主导航">
+        <nav
+          ref={menuRef}
+          id="home-mobile-menu"
+          className={menuOpen ? 'nav-links open' : 'nav-links'}
+          aria-label="主导航"
+        >
           <a href="#top" onClick={() => setMenuOpen(false)}>
             首页
           </a>
@@ -432,10 +456,12 @@ export default function HomePage({
           <span className="theme-label">{theme === 'dark' ? 'LIGHT' : 'DARK'}</span>
         </button>
         <button
-          className="menu"
-          onClick={() => setMenuOpen(!menuOpen)}
+          ref={menuButtonRef}
+          className={menuOpen ? 'menu open' : 'menu'}
+          onClick={() => setMenuOpen((current) => !current)}
           aria-label="切换菜单"
           aria-expanded={menuOpen}
+          aria-controls="home-mobile-menu"
         >
           <span />
           <span />

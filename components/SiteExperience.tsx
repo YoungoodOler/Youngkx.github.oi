@@ -20,6 +20,17 @@ type Theme = 'dark' | 'light';
 type TransitionMode = 'theme' | 'page-in' | 'page-out' | null;
 type ActiveTransitionMode = Exclude<TransitionMode, null>;
 
+const transitionWaveSize = 512;
+const transitionWaveMask = transitionWaveSize - 1;
+const transitionWaveScale = transitionWaveSize / (Math.PI * 2);
+const transitionWave = (() => {
+  const values = new Float32Array(transitionWaveSize);
+  for (let index = 0; index < values.length; index += 1) {
+    values[index] = Math.sin((index / transitionWaveSize) * Math.PI * 2);
+  }
+  return values;
+})();
+
 type SiteExperienceValue = {
   theme: Theme;
   toggleTheme: () => void;
@@ -45,6 +56,17 @@ function smoothstep(value: number) {
   return clamped * clamped * (3 - 2 * clamped);
 }
 
+function isCompactTransition() {
+  return window.innerWidth < 700 || window.matchMedia('(pointer: coarse)').matches;
+}
+
+function getTransitionDuration(mode: ActiveTransitionMode) {
+  const compact = isCompactTransition();
+  if (mode === 'theme') return compact ? 860 : 1120;
+  if (mode === 'page-in') return compact ? 720 : 900;
+  return compact ? 760 : 900;
+}
+
 function ParticleTransitionCanvas({
   mode,
   targetTheme,
@@ -64,15 +86,17 @@ function ParticleTransitionCanvas({
 
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const ratio = Math.min(window.devicePixelRatio, 1.2);
+    const compact = isCompactTransition();
+    const ratio = compact ? 1 : Math.min(window.devicePixelRatio, 1.2);
     canvas.width = Math.round(width * ratio);
     canvas.height = Math.round(height * ratio);
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     context.scale(ratio, ratio);
 
-    const count =
-      width < 700 ? 1600 : Math.max(2400, Math.min(5200, Math.round((width * height) / 420)));
+    const count = compact
+      ? 1050
+      : Math.max(2400, Math.min(5200, Math.round((width * height) / 420)));
     const random = createRandom(width + height + (targetTheme === 'light' ? 37 : 71));
     const originX = origin.x * width;
     const originY = origin.y * height;
@@ -91,35 +115,49 @@ function ParticleTransitionCanvas({
       const targetY = startY + Math.sin(burstAngle) * travelDistance;
       const releaseAngle = burstAngle + (random() - 0.5) * 1.7;
       const releaseDistance = maximumDimension * (0.62 + random() * 0.72);
+      const exitX = targetX + Math.cos(releaseAngle) * releaseDistance;
+      const exitY = targetY + Math.sin(releaseAngle) * releaseDistance;
+      const coverDistance = Math.max(1, Math.hypot(targetX - startX, targetY - startY));
+      const exitDistance = Math.max(1, Math.hypot(exitX - targetX, exitY - targetY));
+      const coverCurve =
+        maximumDimension * (0.08 + random() * 0.17) * (Math.sin(bend) < 0 ? -1 : 1);
+      const releaseCurve =
+        maximumDimension * (0.1 + random() * 0.2) * (Math.cos(bend) < 0 ? -1 : 1);
       return {
         startX,
         startY,
         targetX,
         targetY,
-        controlAX: startX + Math.cos(burstAngle + bend) * travelDistance * (0.24 + random() * 0.2),
-        controlAY: startY + Math.sin(burstAngle + bend) * travelDistance * (0.24 + random() * 0.2),
-        controlBX:
-          targetX - Math.cos(burstAngle - bend * 0.38) * travelDistance * (0.16 + random() * 0.2),
-        controlBY:
-          targetY - Math.sin(burstAngle - bend * 0.38) * travelDistance * (0.16 + random() * 0.2),
-        releaseAX: targetX + Math.cos(releaseAngle - bend * 0.22) * releaseDistance * 0.2,
-        releaseAY: targetY + Math.sin(releaseAngle - bend * 0.22) * releaseDistance * 0.2,
-        releaseBX: targetX + Math.cos(releaseAngle + bend * 0.3) * releaseDistance * 0.62,
-        releaseBY: targetY + Math.sin(releaseAngle + bend * 0.3) * releaseDistance * 0.62,
-        exitX: targetX + Math.cos(releaseAngle) * releaseDistance,
-        exitY: targetY + Math.sin(releaseAngle) * releaseDistance,
+        exitX,
+        exitY,
+        coverNormalX: -(targetY - startY) / coverDistance,
+        coverNormalY: (targetX - startX) / coverDistance,
+        releaseNormalX: -(exitY - targetY) / exitDistance,
+        releaseNormalY: (exitX - targetX) / exitDistance,
+        coverCurve,
+        releaseCurve,
         size: 0.42 + random() * 2.55,
         strength: 0.5 + random() * 0.5,
-        phase: random() * Math.PI * 2,
+        stretch: 0.55 + random() * 1.7,
+        phaseX: Math.floor(random() * transitionWaveSize),
+        phaseY: Math.floor(random() * transitionWaveSize),
         delay: random() * 0.2,
         colorIndex: index % palette.length,
       };
     });
     const positions = new Float32Array(count * 5);
     const particlesByColor = Array.from({ length: palette.length }, () => [] as number[]);
-    particles.forEach((particle, index) => particlesByColor[particle.colorIndex].push(index));
+    particles.forEach((particle, index) => {
+      particlesByColor[particle.colorIndex].push(index);
+      const offset = index * 5;
+      const startsFromRelease = mode === 'page-in';
+      positions[offset] = startsFromRelease ? particle.targetX : particle.startX;
+      positions[offset + 1] = startsFromRelease ? particle.targetY : particle.startY;
+      positions[offset + 2] = positions[offset];
+      positions[offset + 3] = positions[offset + 1];
+    });
 
-    const duration = mode === 'theme' ? 1400 : mode === 'page-in' ? 1100 : 1050;
+    const duration = getTransitionDuration(mode);
     const startedAt = performance.now();
     let frame = 0;
 
@@ -137,44 +175,32 @@ function ParticleTransitionCanvas({
         const particle = particles[index];
         const delay = covering ? particle.delay : particle.delay * 0.32;
         const local = Math.max(0, Math.min(1, (rawProgress - delay) / (1 - delay)));
-        const travel = 1 - Math.pow(1 - local, covering ? 2.7 : 2.25);
-        const inverse = 1 - travel;
-        const previousTravel = Math.max(0, travel - (0.018 + local * 0.052));
-        const previousInverse = 1 - previousTravel;
+        const remaining = 1 - local;
+        const travel = covering ? 1 - remaining * remaining * remaining : local * (2 - local);
         const startX = covering ? particle.startX : particle.targetX;
         const startY = covering ? particle.startY : particle.targetY;
-        const controlAX = covering ? particle.controlAX : particle.releaseAX;
-        const controlAY = covering ? particle.controlAY : particle.releaseAY;
-        const controlBX = covering ? particle.controlBX : particle.releaseBX;
-        const controlBY = covering ? particle.controlBY : particle.releaseBY;
         const endX = covering ? particle.targetX : particle.exitX;
         const endY = covering ? particle.targetY : particle.exitY;
-        const turbulence = Math.sin(travel * Math.PI) * (18 + particle.size * 14);
-        const x =
-          inverse * inverse * inverse * startX +
-          3 * inverse * inverse * travel * controlAX +
-          3 * inverse * travel * travel * controlBX +
-          travel * travel * travel * endX +
-          Math.sin(particle.phase + travel * 15.5) * turbulence;
-        const y =
-          inverse * inverse * inverse * startY +
-          3 * inverse * inverse * travel * controlAY +
-          3 * inverse * travel * travel * controlBY +
-          travel * travel * travel * endY +
-          Math.cos(particle.phase * 1.37 + travel * 13.2) * turbulence;
-        const previousTurbulence = Math.sin(previousTravel * Math.PI) * (18 + particle.size * 14);
-        const previousX =
-          previousInverse * previousInverse * previousInverse * startX +
-          3 * previousInverse * previousInverse * previousTravel * controlAX +
-          3 * previousInverse * previousTravel * previousTravel * controlBX +
-          previousTravel * previousTravel * previousTravel * endX +
-          Math.sin(particle.phase + previousTravel * 15.5) * previousTurbulence;
-        const previousY =
-          previousInverse * previousInverse * previousInverse * startY +
-          3 * previousInverse * previousInverse * previousTravel * controlAY +
-          3 * previousInverse * previousTravel * previousTravel * controlBY +
-          previousTravel * previousTravel * previousTravel * endY +
-          Math.cos(particle.phase * 1.37 + previousTravel * 13.2) * previousTurbulence;
+        const normalX = covering ? particle.coverNormalX : particle.releaseNormalX;
+        const normalY = covering ? particle.coverNormalY : particle.releaseNormalY;
+        const curve = covering ? particle.coverCurve : particle.releaseCurve;
+        const arcWave = transitionWave[Math.min(transitionWaveSize / 2, Math.round(travel * 256))];
+        const arc = arcWave * curve;
+        const turbulence = arcWave * (18 + particle.size * 14);
+        const waveX =
+          transitionWave[
+            (particle.phaseX + Math.round(travel * 15.5 * transitionWaveScale)) & transitionWaveMask
+          ];
+        const waveY =
+          transitionWave[
+            (particle.phaseY + Math.round(travel * 13.2 * transitionWaveScale) + 128) &
+              transitionWaveMask
+          ];
+        const x = startX + (endX - startX) * travel + normalX * arc + waveX * turbulence;
+        const y = startY + (endY - startY) * travel + normalY * arc + waveY * turbulence;
+        const trail = 0.012 + local * 0.025;
+        const previousX = x - (endX - startX) * trail;
+        const previousY = y - (endY - startY) * trail;
         const offset = index * 5;
         positions[offset] = x;
         positions[offset + 1] = y;
@@ -198,23 +224,26 @@ function ParticleTransitionCanvas({
         context.stroke();
       }
 
+      const particleAlpha =
+        (covering ? smoothstep(rawProgress / 0.18) : 1 - smoothstep((rawProgress - 0.08) / 0.84)) *
+        (targetTheme === 'light' ? 0.7 : 0.96);
       for (let colorIndex = 0; colorIndex < palette.length; colorIndex += 1) {
-        context.fillStyle = `rgb(${palette[colorIndex]})`;
+        context.beginPath();
         for (const index of particlesByColor[colorIndex]) {
           const particle = particles[index];
           const offset = index * 5;
           const local = positions[offset + 4];
           if (covering && local <= 0) continue;
-          const alpha = covering ? smoothstep(local / 0.14) : 1 - smoothstep((local - 0.06) / 0.86);
-          const flip = 0.35 + Math.abs(Math.cos(particle.phase + local * Math.PI * 4.4)) * 1.65;
-          context.globalAlpha = alpha * particle.strength * (targetTheme === 'light' ? 0.7 : 0.96);
-          context.fillRect(
-            positions[offset] - particle.size * flip * 0.5,
-            positions[offset + 1] - particle.size * 0.5,
-            particle.size * flip,
-            particle.size,
+          const size = particle.size * (0.72 + particle.strength * 0.28);
+          context.rect(
+            positions[offset] - size * particle.stretch * 0.5,
+            positions[offset + 1] - size * 0.5,
+            size * particle.stretch,
+            size,
           );
         }
+        context.fillStyle = `rgba(${palette[colorIndex]},${particleAlpha})`;
+        context.fill();
       }
       context.globalAlpha = 1;
       context.globalCompositeOperation = 'source-over';
@@ -284,12 +313,13 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
       sessionStorage.removeItem('youngkx-page-transition');
       sessionStorage.removeItem('youngkx-transition-origin');
       setMode('page-in');
+      const pageInDuration = getTransitionDuration('page-in');
       timers.current.push(
         window.setTimeout(() => {
           document.documentElement.classList.remove('page-entering');
         }, 50),
       );
-      timers.current.push(window.setTimeout(() => setMode(null), 1150));
+      timers.current.push(window.setTimeout(() => setMode(null), pageInDuration + 40));
     }
 
     return () => {
@@ -308,12 +338,13 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
     document.documentElement.classList.remove('site-leaving');
     document.documentElement.classList.add('page-entering');
     setMode('page-in');
+    const pageInDuration = getTransitionDuration('page-in');
     timers.current.push(
       window.setTimeout(() => {
         document.documentElement.classList.remove('page-entering');
       }, 50),
     );
-    timers.current.push(window.setTimeout(() => setMode(null), 1150));
+    timers.current.push(window.setTimeout(() => setMode(null), pageInDuration + 40));
   }, [clearTimers, pathname, setMode]);
 
   useEffect(() => {
@@ -344,20 +375,24 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
     setTransitionOrigin(lastPointerOrigin.current);
     setMode('theme');
     document.documentElement.classList.add('theme-changing');
+    const themeDuration = getTransitionDuration('theme');
 
     timers.current.push(
-      window.setTimeout(() => {
-        setTheme(next);
-        document.documentElement.dataset.theme = next;
-        localStorage.setItem('youngkx-theme', next);
-      }, 690),
+      window.setTimeout(
+        () => {
+          setTheme(next);
+          document.documentElement.dataset.theme = next;
+          localStorage.setItem('youngkx-theme', next);
+        },
+        themeDuration / 2 - 20,
+      ),
     );
 
     timers.current.push(
       window.setTimeout(() => {
         document.documentElement.classList.remove('theme-changing');
         setMode(null);
-      }, 1450),
+      }, themeDuration + 40),
     );
   }, [setMode, theme]);
 
@@ -412,11 +447,12 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
 
       const href = `${destination.pathname}${destination.search}${destination.hash}`;
       router.prefetch(href);
+      const pageOutDuration = getTransitionDuration('page-out');
 
       timers.current.push(
         window.setTimeout(() => {
           router.push(href);
-        }, 1020),
+        }, pageOutDuration - 30),
       );
     };
 
