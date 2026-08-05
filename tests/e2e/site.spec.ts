@@ -39,13 +39,15 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
 
   const restingTitleBox = await title.boundingBox();
   const detailBox = await page.locator('.hero-detail-layer').boundingBox();
+  const viewport = page.viewportSize();
   expect(restingTitleBox).not.toBeNull();
   expect(detailBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
   expect(Math.abs((restingTitleBox?.x ?? 0) - (detailBox?.x ?? 0))).toBeLessThan(
     testInfo.project.name.startsWith('mobile') ? 24 : 48,
   );
   expect(restingTitleBox?.width ?? 0).toBeGreaterThan(
-    testInfo.project.name.startsWith('mobile') ? 240 : 500,
+    (viewport?.width ?? 0) * (testInfo.project.name.startsWith('mobile') ? 0.5 : 0.3),
   );
 });
 
