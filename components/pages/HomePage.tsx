@@ -21,8 +21,8 @@ import {
 } from 'react';
 import type { ArticleSummary, CategorySummary } from '@/lib/articles';
 import type { CardPreset } from '@/lib/card-presets';
-import { useSiteExperience } from './SiteExperience';
-import SiteFooter from './SiteFooter';
+import { useSiteExperience } from '../shell/SiteExperience';
+import SiteFooter from '../shell/SiteFooter';
 
 const introQuotes = ['我见青山多妩媚，料青山见我应如是。', 'Life is real, life is earnest.'];
 

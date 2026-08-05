@@ -3,8 +3,8 @@
 import { m } from 'framer-motion';
 import Link from 'next/link';
 import type { ArticleSummary } from '@/lib/articles';
-import SiteFooter from './SiteFooter';
-import SiteHeader from './SiteHeader';
+import SiteFooter from '../shell/SiteFooter';
+import SiteHeader from '../shell/SiteHeader';
 
 const MotionLink = m.create(Link);
 

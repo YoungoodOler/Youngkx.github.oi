@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import HomePage from '@/components/HomePage';
+import HomePage from '@/components/pages/HomePage';
 import { articleSummaries, categorySummaries } from '@/lib/articles';
 
 export const metadata: Metadata = {

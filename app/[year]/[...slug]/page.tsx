@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import ArticleView from '@/components/ArticleView';
+import ArticleView from '@/components/pages/ArticleView';
 import { articles, getArticleByPath } from '@/lib/articles';
 
 type RouteProps = { params: Promise<{ year: string; slug: string[] }> };

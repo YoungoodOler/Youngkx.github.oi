@@ -4,8 +4,8 @@ import { m, useScroll, useSpring } from 'framer-motion';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ArticleRecord } from '@/lib/articles';
-import SiteFooter from './SiteFooter';
-import SiteHeader from './SiteHeader';
+import SiteFooter from '../shell/SiteFooter';
+import SiteHeader from '../shell/SiteHeader';
 
 type TocItem = { id: string; text: string; level: number };
 

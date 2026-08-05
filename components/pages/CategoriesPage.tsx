@@ -3,8 +3,8 @@
 import { m } from 'framer-motion';
 import Link from 'next/link';
 import type { CategorySummary } from '@/lib/articles';
-import SiteFooter from './SiteFooter';
-import SiteHeader from './SiteHeader';
+import SiteFooter from '../shell/SiteFooter';
+import SiteHeader from '../shell/SiteHeader';
 
 export default function CategoriesPage({
   categories,

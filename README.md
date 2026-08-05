@@ -7,7 +7,8 @@ Youngkx 的个人博客，使用 Next.js、React、Framer Motion 与 Three.js �
 | 想做的事情             | 入口位置               |
 | ---------------------- | ---------------------- |
 | 修改页面与路由         | `app/`                 |
-| 修改首页、文章页或动画 | `components/`          |
+| 修改首页、文章页内容     | `components/pages/`    |
+| 修改页头页脚或全站动画 | `components/shell/`     |
 | 发布 Markdown 文章     | `content/posts/`       |
 | 调整文章读取与分类逻辑 | `lib/`                 |
 | 修改 Cloudflare Worker | `cloudflare/`          |

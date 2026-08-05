@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { DM_Mono } from 'next/font/google';
 import './globals.css';
-import SiteExperience from '@/components/SiteExperience';
+import SiteExperience from '@/components/shell/SiteExperience';
 import { siteOrigin } from '@/lib/site';
 
 const monoFont = DM_Mono({
