@@ -4,6 +4,7 @@ node_modules
 out
 playwright-report
 test-results
+.claude
 package-lock.json
 content/articles.json
 content/posts

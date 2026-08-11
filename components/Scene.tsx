@@ -68,6 +68,7 @@ export default function Scene({
       alpha: true,
       antialias: !mobileAtMount,
       powerPreference: 'high-performance',
+      precision: mobileAtMount ? 'mediump' : 'highp',
     });
     renderer.setPixelRatio(pixelRatio);
     renderer.setClearColor(0x000000, 0);
@@ -283,6 +284,7 @@ export default function Scene({
     });
     const pointerTrail = new THREE.Points(trailGeometry, trailMaterial);
     pointerTrail.frustumCulled = false;
+    pointerTrail.visible = !mobileAtMount;
     scene.add(pointerTrail);
 
     const geometry = new THREE.IcosahedronGeometry(1.58, mobileAtMount ? 2 : 3);
@@ -310,6 +312,23 @@ export default function Scene({
       diamond[index + 2] = nz * octahedronRadius;
     }
 
+    const normal = geometry.getAttribute('normal') as THREE.BufferAttribute;
+    const sphereNormals = new Float32Array(normal.array);
+    const createShapeNormals = (shape: Float32Array) => {
+      const shapeGeometry = geometry.clone();
+      const shapePosition = shapeGeometry.getAttribute('position') as THREE.BufferAttribute;
+      shapePosition.copyArray(shape);
+      shapePosition.needsUpdate = true;
+      shapeGeometry.computeVertexNormals();
+      const result = new Float32Array(
+        (shapeGeometry.getAttribute('normal') as THREE.BufferAttribute).array,
+      );
+      shapeGeometry.dispose();
+      return result;
+    };
+    const ribbonNormals = createShapeNormals(ribbon);
+    const diamondNormals = createShapeNormals(diamond);
+
     const darkColors = ['#1c2b43', '#263750', '#192a3d'].map((color) => new THREE.Color(color));
     const lightColors = ['#687b98', '#778397', '#5e7388'].map((color) => new THREE.Color(color));
     const darkEmissives = ['#071426', '#0c1b30', '#08131f'].map((color) => new THREE.Color(color));
@@ -318,13 +337,13 @@ export default function Scene({
       color: darkColors[0].clone().lerp(lightColors[0], currentThemeMix),
       roughness: 0.3,
       metalness: 0.42,
-      transmission: 0.05,
+      transmission: mobileAtMount ? 0 : 0.05,
       transparent: true,
       opacity: THREE.MathUtils.lerp(0.54, 0.28, currentThemeMix),
       emissive: darkEmissives[0].clone().lerp(lightEmissives[0], currentThemeMix),
       emissiveIntensity: THREE.MathUtils.lerp(0.72, 0.18, currentThemeMix),
       flatShading: true,
-      side: THREE.DoubleSide,
+      side: mobileAtMount ? THREE.FrontSide : THREE.DoubleSide,
     });
     const subject = new THREE.Mesh(geometry, material);
     group.add(subject);
@@ -411,6 +430,7 @@ export default function Scene({
     });
     const hoverRing = new THREE.Mesh(interactionRingGeometry, hoverRingMaterial);
     hoverRing.renderOrder = 8;
+    hoverRing.visible = !mobileAtMount;
     scene.add(hoverRing);
 
     const pointer = { x: 0, y: 0 };
@@ -534,12 +554,14 @@ export default function Scene({
     };
 
     window.addEventListener('scroll', updateScroll, { passive: true });
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    window.addEventListener('pointerdown', onPointerDown, { passive: true });
-    window.addEventListener('pointerup', onPointerUp, { passive: true });
-    window.addEventListener('pointercancel', onPointerUp, { passive: true });
-    window.addEventListener('pointerout', onPointerOut, { passive: true });
-    window.addEventListener('blur', onWindowBlur);
+    if (!mobileAtMount) {
+      window.addEventListener('pointermove', onPointerMove, { passive: true });
+      window.addEventListener('pointerdown', onPointerDown, { passive: true });
+      window.addEventListener('pointerup', onPointerUp, { passive: true });
+      window.addEventListener('pointercancel', onPointerUp, { passive: true });
+      window.addEventListener('pointerout', onPointerOut, { passive: true });
+      window.addEventListener('blur', onWindowBlur);
+    }
     document.addEventListener('visibilitychange', onVisibilityChange);
     updateScroll();
 
@@ -570,6 +592,7 @@ export default function Scene({
       currentThemeMix = prefersReducedMotion
         ? targetThemeMix
         : THREE.MathUtils.damp(currentThemeMix, targetThemeMix, 5.2, delta);
+      if (Math.abs(currentThemeMix - targetThemeMix) < 0.0005) currentThemeMix = targetThemeMix;
       currentScroll = prefersReducedMotion
         ? targetScroll
         : THREE.MathUtils.damp(currentScroll, targetScroll, 4.6, delta);
@@ -615,9 +638,19 @@ export default function Scene({
             subjectArticleMix,
           );
           position.array[index] = THREE.MathUtils.lerp(articleShape, diamond[index], categoryMix);
+          const articleNormal = THREE.MathUtils.lerp(
+            sphereNormals[index],
+            ribbonNormals[index],
+            subjectArticleMix,
+          );
+          normal.array[index] = THREE.MathUtils.lerp(
+            articleNormal,
+            diamondNormals[index],
+            categoryMix,
+          );
         }
         position.needsUpdate = true;
-        geometry.computeVertexNormals();
+        normal.needsUpdate = true;
         previousSubjectArticleMix = subjectArticleMix;
         previousCategoryMix = categoryMix;
       }
@@ -660,8 +693,6 @@ export default function Scene({
         currentBlending = sceneBlending;
         particleMaterial.blending = sceneBlending;
         trailMaterial.blending = sceneBlending;
-        particleMaterial.needsUpdate = true;
-        trailMaterial.needsUpdate = true;
       }
       particleMaterial.uniforms.uOpacity.value = THREE.MathUtils.lerp(
         THREE.MathUtils.lerp(0.95, 0.66, currentThemeMix),
@@ -672,49 +703,57 @@ export default function Scene({
       particleField.rotation.y = currentScroll * -0.22 + motionTime * 0.005;
       particleField.position.x = pointer.x * -0.15;
       particleField.position.y = pointer.y * 0.12 - currentScroll * 0.08;
-      particleField.updateMatrixWorld();
-      particlePointerLocal.copy(currentPointerWorld);
-      particleField.worldToLocal(particlePointerLocal);
-      particlePulseLocal.copy(pulseOrigin);
-      particleField.worldToLocal(particlePulseLocal);
-      particleMaterial.uniforms.uPointer.value.set(particlePointerLocal.x, particlePointerLocal.y);
-      particleMaterial.uniforms.uPointerPower.value = currentPointerPower;
-      particleMaterial.uniforms.uPulseOrigin.value.set(particlePulseLocal.x, particlePulseLocal.y);
-      particleMaterial.uniforms.uPulseProgress.value = pulseProgress;
+      if (!mobileAtMount) {
+        particleField.updateMatrixWorld();
+        particlePointerLocal.copy(currentPointerWorld);
+        particleField.worldToLocal(particlePointerLocal);
+        particlePulseLocal.copy(pulseOrigin);
+        particleField.worldToLocal(particlePulseLocal);
+        particleMaterial.uniforms.uPointer.value.set(
+          particlePointerLocal.x,
+          particlePointerLocal.y,
+        );
+        particleMaterial.uniforms.uPointerPower.value = currentPointerPower;
+        particleMaterial.uniforms.uPulseOrigin.value.set(
+          particlePulseLocal.x,
+          particlePulseLocal.y,
+        );
+        particleMaterial.uniforms.uPulseProgress.value = pulseProgress;
 
-      hoverRing.position.copy(currentPointerWorld);
-      hoverRing.position.z = 0.16;
-      hoverRing.scale.setScalar(0.88 + currentPointerPower * 0.16);
-      hoverRingMaterial.color.copy(darkRingColor).lerp(lightRingColor, currentThemeMix);
-      hoverRingMaterial.opacity =
-        currentPointerPower * THREE.MathUtils.lerp(0.22, 0.14, currentThemeMix);
-      trailMaterial.uniforms.uOpacity.value = THREE.MathUtils.lerp(0.96, 0.78, currentThemeMix);
+        hoverRing.position.copy(currentPointerWorld);
+        hoverRing.position.z = 0.16;
+        hoverRing.scale.setScalar(0.88 + currentPointerPower * 0.16);
+        hoverRingMaterial.color.copy(darkRingColor).lerp(lightRingColor, currentThemeMix);
+        hoverRingMaterial.opacity =
+          currentPointerPower * THREE.MathUtils.lerp(0.22, 0.14, currentThemeMix);
+        trailMaterial.uniforms.uOpacity.value = THREE.MathUtils.lerp(0.96, 0.78, currentThemeMix);
 
-      let trailActive = false;
-      const trailDrag = Math.exp(-2.35 * delta);
-      for (let index = 0; index < trailCount; index += 1) {
-        if (trailLives[index] <= 0) continue;
-        trailActive = true;
-        const offset = index * 3;
-        trailAges[index] += delta;
-        const life = 1 - trailAges[index] / trailDurations[index];
-        trailLives[index] = Math.max(0, life);
-        if (life <= 0) {
-          trailPositions[offset] = 100;
-          trailPositions[offset + 1] = 100;
-          trailPositions[offset + 2] = 100;
-          continue;
+        let trailActive = false;
+        const trailDrag = Math.exp(-2.35 * delta);
+        for (let index = 0; index < trailCount; index += 1) {
+          if (trailLives[index] <= 0) continue;
+          trailActive = true;
+          const offset = index * 3;
+          trailAges[index] += delta;
+          const life = 1 - trailAges[index] / trailDurations[index];
+          trailLives[index] = Math.max(0, life);
+          if (life <= 0) {
+            trailPositions[offset] = 100;
+            trailPositions[offset + 1] = 100;
+            trailPositions[offset + 2] = 100;
+            continue;
+          }
+          trailPositions[offset] += trailVelocities[offset] * delta;
+          trailPositions[offset + 1] += trailVelocities[offset + 1] * delta;
+          trailPositions[offset + 2] += trailVelocities[offset + 2] * delta;
+          trailVelocities[offset] *= trailDrag;
+          trailVelocities[offset + 1] = trailVelocities[offset + 1] * trailDrag + delta * 0.025;
+          trailVelocities[offset + 2] *= trailDrag;
         }
-        trailPositions[offset] += trailVelocities[offset] * delta;
-        trailPositions[offset + 1] += trailVelocities[offset + 1] * delta;
-        trailPositions[offset + 2] += trailVelocities[offset + 2] * delta;
-        trailVelocities[offset] *= trailDrag;
-        trailVelocities[offset + 1] = trailVelocities[offset + 1] * trailDrag + delta * 0.025;
-        trailVelocities[offset + 2] *= trailDrag;
-      }
-      if (trailActive) {
-        trailPositionAttribute.needsUpdate = true;
-        trailLifeAttribute.needsUpdate = true;
+        if (trailActive) {
+          trailPositionAttribute.needsUpdate = true;
+          trailLifeAttribute.needsUpdate = true;
+        }
       }
 
       if (categoryMix > 0) {
@@ -748,12 +787,14 @@ export default function Scene({
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', updateScroll);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('pointercancel', onPointerUp);
-      window.removeEventListener('pointerout', onPointerOut);
-      window.removeEventListener('blur', onWindowBlur);
+      if (!mobileAtMount) {
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerdown', onPointerDown);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerUp);
+        window.removeEventListener('pointerout', onPointerOut);
+        window.removeEventListener('blur', onWindowBlur);
+      }
       document.removeEventListener('visibilitychange', onVisibilityChange);
       observer.disconnect();
       layoutObserver.disconnect();

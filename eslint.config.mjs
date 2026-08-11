@@ -15,6 +15,7 @@ export default defineConfig([
     'out/**',
     'playwright-report/**',
     'test-results/**',
+    '.claude/**',
     'node_modules/**',
     'next-env.d.ts',
     'cloudflare/worker-configuration.d.ts',

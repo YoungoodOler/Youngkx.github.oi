@@ -104,58 +104,84 @@ function ParticleTransitionCanvas({
     const darkPalette = ['242,246,252', '188,204,226', '132,155,186', '222,211,195'];
     const lightPalette = ['31,50,79', '70,95,128', '104,120,141', '119,109,97'];
     const palette = targetTheme === 'light' ? lightPalette : darkPalette;
-    const particles = Array.from({ length: count }, (_, index) => {
-      const startX = random() * width;
-      const startY = random() * height;
-      const originAngle = Math.atan2(startY - originY, startX - originX);
+    const startX = new Float32Array(count);
+    const startY = new Float32Array(count);
+    const targetX = new Float32Array(count);
+    const targetY = new Float32Array(count);
+    const coverDeltaX = new Float32Array(count);
+    const coverDeltaY = new Float32Array(count);
+    const exitDeltaX = new Float32Array(count);
+    const exitDeltaY = new Float32Array(count);
+    const coverNormalX = new Float32Array(count);
+    const coverNormalY = new Float32Array(count);
+    const releaseNormalX = new Float32Array(count);
+    const releaseNormalY = new Float32Array(count);
+    const coverCurve = new Float32Array(count);
+    const releaseCurve = new Float32Array(count);
+    const particleWidth = new Float32Array(count);
+    const particleHeight = new Float32Array(count);
+    const turbulenceSize = new Float32Array(count);
+    const phaseX = new Uint16Array(count);
+    const phaseY = new Uint16Array(count);
+    const delay = new Float32Array(count);
+
+    for (let index = 0; index < count; index += 1) {
+      const initialX = random() * width;
+      const initialY = random() * height;
+      const originAngle = Math.atan2(initialY - originY, initialX - originX);
       const burstAngle = originAngle + (random() - 0.5) * 2.45;
       const bend = (random() - 0.5) * Math.PI * 2.4;
       const travelDistance = maximumDimension * (0.25 + random() * 0.82);
-      const targetX = startX + Math.cos(burstAngle) * travelDistance;
-      const targetY = startY + Math.sin(burstAngle) * travelDistance;
+      const destinationX = initialX + Math.cos(burstAngle) * travelDistance;
+      const destinationY = initialY + Math.sin(burstAngle) * travelDistance;
       const releaseAngle = burstAngle + (random() - 0.5) * 1.7;
       const releaseDistance = maximumDimension * (0.62 + random() * 0.72);
-      const exitX = targetX + Math.cos(releaseAngle) * releaseDistance;
-      const exitY = targetY + Math.sin(releaseAngle) * releaseDistance;
-      const coverDistance = Math.max(1, Math.hypot(targetX - startX, targetY - startY));
-      const exitDistance = Math.max(1, Math.hypot(exitX - targetX, exitY - targetY));
-      const coverCurve =
-        maximumDimension * (0.08 + random() * 0.17) * (Math.sin(bend) < 0 ? -1 : 1);
-      const releaseCurve =
-        maximumDimension * (0.1 + random() * 0.2) * (Math.cos(bend) < 0 ? -1 : 1);
-      return {
-        startX,
-        startY,
-        targetX,
-        targetY,
-        exitX,
-        exitY,
-        coverNormalX: -(targetY - startY) / coverDistance,
-        coverNormalY: (targetX - startX) / coverDistance,
-        releaseNormalX: -(exitY - targetY) / exitDistance,
-        releaseNormalY: (exitX - targetX) / exitDistance,
-        coverCurve,
-        releaseCurve,
-        size: 0.42 + random() * 2.55,
-        strength: 0.5 + random() * 0.5,
-        stretch: 0.55 + random() * 1.7,
-        phaseX: Math.floor(random() * transitionWaveSize),
-        phaseY: Math.floor(random() * transitionWaveSize),
-        delay: random() * 0.2,
-        colorIndex: index % palette.length,
-      };
-    });
+      const releasedX = destinationX + Math.cos(releaseAngle) * releaseDistance;
+      const releasedY = destinationY + Math.sin(releaseAngle) * releaseDistance;
+      const coverDistance = Math.max(
+        1,
+        Math.hypot(destinationX - initialX, destinationY - initialY),
+      );
+      const exitDistance = Math.max(
+        1,
+        Math.hypot(releasedX - destinationX, releasedY - destinationY),
+      );
+      const coverBend = maximumDimension * (0.08 + random() * 0.17) * (Math.sin(bend) < 0 ? -1 : 1);
+      const releaseBend = maximumDimension * (0.1 + random() * 0.2) * (Math.cos(bend) < 0 ? -1 : 1);
+      const size = 0.42 + random() * 2.55;
+      const strength = 0.5 + random() * 0.5;
+      const stretch = 0.55 + random() * 1.7;
+      const renderedSize = size * (0.72 + strength * 0.28);
+      startX[index] = initialX;
+      startY[index] = initialY;
+      targetX[index] = destinationX;
+      targetY[index] = destinationY;
+      coverDeltaX[index] = destinationX - initialX;
+      coverDeltaY[index] = destinationY - initialY;
+      exitDeltaX[index] = releasedX - destinationX;
+      exitDeltaY[index] = releasedY - destinationY;
+      coverNormalX[index] = -(destinationY - initialY) / coverDistance;
+      coverNormalY[index] = (destinationX - initialX) / coverDistance;
+      releaseNormalX[index] = -(releasedY - destinationY) / exitDistance;
+      releaseNormalY[index] = (releasedX - destinationX) / exitDistance;
+      coverCurve[index] = coverBend;
+      releaseCurve[index] = releaseBend;
+      particleWidth[index] = renderedSize * stretch;
+      particleHeight[index] = renderedSize;
+      turbulenceSize[index] = size;
+      phaseX[index] = Math.floor(random() * transitionWaveSize);
+      phaseY[index] = Math.floor(random() * transitionWaveSize);
+      delay[index] = random() * 0.2;
+    }
     const positions = new Float32Array(count * 5);
-    const particlesByColor = Array.from({ length: palette.length }, () => [] as number[]);
-    particles.forEach((particle, index) => {
-      particlesByColor[particle.colorIndex].push(index);
+    for (let index = 0; index < count; index += 1) {
       const offset = index * 5;
       const startsFromRelease = mode === 'page-in';
-      positions[offset] = startsFromRelease ? particle.targetX : particle.startX;
-      positions[offset + 1] = startsFromRelease ? particle.targetY : particle.startY;
+      positions[offset] = startsFromRelease ? targetX[index] : startX[index];
+      positions[offset + 1] = startsFromRelease ? targetY[index] : startY[index];
       positions[offset + 2] = positions[offset];
       positions[offset + 3] = positions[offset + 1];
-    });
+    }
 
     const duration = getTransitionDuration(mode);
     const startedAt = performance.now();
@@ -171,36 +197,37 @@ function ParticleTransitionCanvas({
         context.fillRect(0, 0, width, height);
       }
 
-      for (let index = 0; index < particles.length; index += 1) {
-        const particle = particles[index];
-        const delay = covering ? particle.delay : particle.delay * 0.32;
-        const local = Math.max(0, Math.min(1, (rawProgress - delay) / (1 - delay)));
+      const phaseDelayScale = covering ? 1 : 0.32;
+      for (let index = 0; index < count; index += 1) {
+        const particleDelay = delay[index] * phaseDelayScale;
+        const local = Math.max(0, Math.min(1, (rawProgress - particleDelay) / (1 - particleDelay)));
         const remaining = 1 - local;
         const travel = covering ? 1 - remaining * remaining * remaining : local * (2 - local);
-        const startX = covering ? particle.startX : particle.targetX;
-        const startY = covering ? particle.startY : particle.targetY;
-        const endX = covering ? particle.targetX : particle.exitX;
-        const endY = covering ? particle.targetY : particle.exitY;
-        const normalX = covering ? particle.coverNormalX : particle.releaseNormalX;
-        const normalY = covering ? particle.coverNormalY : particle.releaseNormalY;
-        const curve = covering ? particle.coverCurve : particle.releaseCurve;
-        const arcWave = transitionWave[Math.min(transitionWaveSize / 2, Math.round(travel * 256))];
+        const particleStartX = covering ? startX[index] : targetX[index];
+        const particleStartY = covering ? startY[index] : targetY[index];
+        const deltaX = covering ? coverDeltaX[index] : exitDeltaX[index];
+        const deltaY = covering ? coverDeltaY[index] : exitDeltaY[index];
+        const normalX = covering ? coverNormalX[index] : releaseNormalX[index];
+        const normalY = covering ? coverNormalY[index] : releaseNormalY[index];
+        const curve = covering ? coverCurve[index] : releaseCurve[index];
+        const arcIndex = Math.min(transitionWaveSize / 2, (travel * 256 + 0.5) | 0);
+        const arcWave = transitionWave[arcIndex];
         const arc = arcWave * curve;
-        const turbulence = arcWave * (18 + particle.size * 14);
+        const turbulence = arcWave * (18 + turbulenceSize[index] * 14);
         const waveX =
           transitionWave[
-            (particle.phaseX + Math.round(travel * 15.5 * transitionWaveScale)) & transitionWaveMask
+            (phaseX[index] + ((travel * 15.5 * transitionWaveScale + 0.5) | 0)) & transitionWaveMask
           ];
         const waveY =
           transitionWave[
-            (particle.phaseY + Math.round(travel * 13.2 * transitionWaveScale) + 128) &
+            (phaseY[index] + ((travel * 13.2 * transitionWaveScale + 0.5) | 0) + 128) &
               transitionWaveMask
           ];
-        const x = startX + (endX - startX) * travel + normalX * arc + waveX * turbulence;
-        const y = startY + (endY - startY) * travel + normalY * arc + waveY * turbulence;
+        const x = particleStartX + deltaX * travel + normalX * arc + waveX * turbulence;
+        const y = particleStartY + deltaY * travel + normalY * arc + waveY * turbulence;
         const trail = 0.012 + local * 0.025;
-        const previousX = x - (endX - startX) * trail;
-        const previousY = y - (endY - startY) * trail;
+        const previousX = x - deltaX * trail;
+        const previousY = y - deltaY * trail;
         const offset = index * 5;
         positions[offset] = x;
         positions[offset + 1] = y;
@@ -212,7 +239,7 @@ function ParticleTransitionCanvas({
       context.globalCompositeOperation = targetTheme === 'light' ? 'source-over' : 'lighter';
       for (let colorIndex = 0; colorIndex < palette.length; colorIndex += 1) {
         context.beginPath();
-        for (const index of particlesByColor[colorIndex]) {
+        for (let index = colorIndex; index < count; index += palette.length) {
           const offset = index * 5;
           const local = positions[offset + 4];
           if ((covering && local <= 0) || local >= 0.995) continue;
@@ -229,17 +256,15 @@ function ParticleTransitionCanvas({
         (targetTheme === 'light' ? 0.7 : 0.96);
       for (let colorIndex = 0; colorIndex < palette.length; colorIndex += 1) {
         context.beginPath();
-        for (const index of particlesByColor[colorIndex]) {
-          const particle = particles[index];
+        for (let index = colorIndex; index < count; index += palette.length) {
           const offset = index * 5;
           const local = positions[offset + 4];
           if (covering && local <= 0) continue;
-          const size = particle.size * (0.72 + particle.strength * 0.28);
           context.rect(
-            positions[offset] - size * particle.stretch * 0.5,
-            positions[offset + 1] - size * 0.5,
-            size * particle.stretch,
-            size,
+            positions[offset] - particleWidth[index] * 0.5,
+            positions[offset + 1] - particleHeight[index] * 0.5,
+            particleWidth[index],
+            particleHeight[index],
           );
         }
         context.fillStyle = `rgba(${palette[colorIndex]},${particleAlpha})`;
