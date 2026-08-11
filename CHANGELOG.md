@@ -21,6 +21,12 @@
 - 390 × 844 手机尺寸在 4 倍 CPU 限速下，主题粒子幕约 60.2 FPS，连续快速滚动约 60.1 FPS；两项复测均未出现超过 32ms 的帧或主线程长任务。
 - 格式、类型、代码规范、9 项单元测试、生产构建、性能预算以及桌面/手机端浏览器回归均通过。
 
+### 发布
+
+- Git 提交：`52e95b2`（`Optimize mobile animation performance`）
+- Cloudflare Worker：`youngkxblog`
+- Cloudflare 版本：`140642f1-56b8-4adf-8585-0b37e3076ce6`
+
 ## [2.5.2] - 2026-08-05
 
 ### 手机导航
