@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import matter from 'gray-matter';
+import { load as parseYaml } from 'js-yaml';
 import { marked } from 'marked';
 import { isCardPreset, type CardPreset } from './card-presets';
 
@@ -13,6 +13,34 @@ export type MarkdownArticleRecord = {
   content: string;
   card?: CardPreset;
 };
+
+type FrontMatterResult = {
+  data: Record<string, unknown>;
+  content: string;
+};
+
+const frontMatterPattern = /^---[^\S\r\n]*\r?\n([\s\S]*?)\r?\n---[^\S\r\n]*(?:\r?\n|$)/;
+
+export function parseFrontMatter(source: string, filename = 'Markdown source'): FrontMatterResult {
+  const normalizedSource = source.replace(/^\uFEFF/, '');
+  if (!normalizedSource.startsWith('---')) return { data: {}, content: normalizedSource };
+
+  const match = frontMatterPattern.exec(normalizedSource);
+  if (!match) throw new Error(`${filename} 的 YAML front matter 缺少结束分隔线`);
+
+  const parsed = parseYaml(match[1]);
+  if (
+    parsed !== undefined &&
+    (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+  ) {
+    throw new Error(`${filename} 的 YAML front matter 必须是键值对象`);
+  }
+
+  return {
+    data: (parsed ?? {}) as Record<string, unknown>,
+    content: normalizedSource.slice(match[0].length),
+  };
+}
 
 function normalizeDate(value: unknown, filename: string) {
   const date =
@@ -78,7 +106,7 @@ export function loadMarkdownArticles(): MarkdownArticleRecord[] {
     .flatMap((entry) => {
       const fullPath = path.join(directory, entry.name);
       const source = readFileSync(fullPath, 'utf8');
-      const parsed = matter(source);
+      const parsed = parseFrontMatter(source, `content/posts/${entry.name}`);
       if (parsed.data.draft === true) return [];
 
       const filename = `content/posts/${entry.name}`;

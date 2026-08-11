@@ -2,7 +2,26 @@ import { describe, expect, it } from 'vitest';
 import robots from '@/app/robots';
 import sitemap from '@/app/sitemap';
 import { articles, articleSummaries, categorySummaries, getArticleByPath } from '@/lib/articles';
+import { parseFrontMatter } from '@/lib/markdown-articles';
 import { absoluteUrl } from '@/lib/site';
+
+describe('Markdown front matter', () => {
+  it('parses YAML metadata and preserves Markdown content', () => {
+    const parsed = parseFrontMatter(
+      '\uFEFF---\r\ntitle: "Example"\r\ndate: "2026-08-11"\r\ntags:\r\n  - Web\r\n---\r\n\r\n## Body\r\n',
+      'example.md',
+    );
+
+    expect(parsed.data).toEqual({ title: 'Example', date: '2026-08-11', tags: ['Web'] });
+    expect(parsed.content).toBe('\r\n## Body\r\n');
+  });
+
+  it('rejects unterminated YAML front matter', () => {
+    expect(() => parseFrontMatter('---\ntitle: Example\n', 'example.md')).toThrow(
+      'example.md 的 YAML front matter 缺少结束分隔线',
+    );
+  });
+});
 
 describe('article index', () => {
   it('keeps every route unique and resolvable', () => {
