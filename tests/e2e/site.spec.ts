@@ -36,6 +36,10 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
   await expect(page.locator('.hero-copy-intro')).toBeVisible();
   await expect(page.locator('.hero-copy-description')).toBeVisible();
   await expect(page.locator('.hero-copy-actions')).toBeVisible();
+  await expect(page.locator('.hero-detail-copy')).toContainText('RECORDING, LEARNING & BUILDING');
+  await expect(page.locator('.hero-quote')).toHaveText('Life is real, life is earnest.');
+  await expect(page.locator('.hero-detail-copy')).toContainText('EXPLORE POSTS');
+  await expect(page.locator('.hero-detail-copy')).toContainText('BROWSE TOPICS');
 
   const restingTitleBox = await title.boundingBox();
   const detailBox = await page.locator('.hero-detail-layer').boundingBox();
@@ -49,6 +53,21 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
   expect(restingTitleBox?.width ?? 0).toBeGreaterThan(
     (viewport?.width ?? 0) * (testInfo.project.name.startsWith('mobile') ? 0.5 : 0.3),
   );
+
+  const settledScroll = await page.locator('.hero-stage').evaluate((stage) => {
+    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
+    const travel = Math.max(1, stage.offsetHeight - window.innerHeight);
+    return stage.offsetTop + travel * 0.96;
+  });
+  await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), settledScroll);
+  await page.waitForTimeout(650);
+  for (const selector of ['.hero-copy-intro', '.hero-copy-description', '.hero-copy-actions']) {
+    await expect
+      .poll(() =>
+        page.locator(selector).evaluate((element) => Number(getComputedStyle(element).opacity)),
+      )
+      .toBeGreaterThan(0.98);
+  }
 });
 
 test('主题切换保留粒子幕并快速应用新主题', async ({ page }) => {

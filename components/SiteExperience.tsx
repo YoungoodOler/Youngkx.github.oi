@@ -95,8 +95,8 @@ function ParticleTransitionCanvas({
     context.scale(ratio, ratio);
 
     const count = compact
-      ? 1050
-      : Math.max(2400, Math.min(5200, Math.round((width * height) / 420)));
+      ? 1500
+      : Math.max(3400, Math.min(7200, Math.round((width * height) / 300)));
     const random = createRandom(width + height + (targetTheme === 'light' ? 37 : 71));
     const originX = origin.x * width;
     const originY = origin.y * height;
@@ -150,7 +150,6 @@ function ParticleTransitionCanvas({
       const releaseBend = maximumDimension * (0.1 + random() * 0.2) * (Math.cos(bend) < 0 ? -1 : 1);
       const size = 0.42 + random() * 2.55;
       const strength = 0.5 + random() * 0.5;
-      const stretch = 0.55 + random() * 1.7;
       const renderedSize = size * (0.72 + strength * 0.28);
       startX[index] = initialX;
       startY[index] = initialY;
@@ -166,22 +165,14 @@ function ParticleTransitionCanvas({
       releaseNormalY[index] = (releasedX - destinationX) / exitDistance;
       coverCurve[index] = coverBend;
       releaseCurve[index] = releaseBend;
-      particleWidth[index] = renderedSize * stretch;
+      particleWidth[index] = renderedSize;
       particleHeight[index] = renderedSize;
       turbulenceSize[index] = size;
       phaseX[index] = Math.floor(random() * transitionWaveSize);
       phaseY[index] = Math.floor(random() * transitionWaveSize);
       delay[index] = random() * 0.2;
     }
-    const positions = new Float32Array(count * 5);
-    for (let index = 0; index < count; index += 1) {
-      const offset = index * 5;
-      const startsFromRelease = mode === 'page-in';
-      positions[offset] = startsFromRelease ? targetX[index] : startX[index];
-      positions[offset + 1] = startsFromRelease ? targetY[index] : startY[index];
-      positions[offset + 2] = positions[offset];
-      positions[offset + 3] = positions[offset + 1];
-    }
+    const positions = new Float32Array(count * 3);
 
     const duration = getTransitionDuration(mode);
     const startedAt = performance.now();
@@ -225,40 +216,21 @@ function ParticleTransitionCanvas({
           ];
         const x = particleStartX + deltaX * travel + normalX * arc + waveX * turbulence;
         const y = particleStartY + deltaY * travel + normalY * arc + waveY * turbulence;
-        const trail = 0.012 + local * 0.025;
-        const previousX = x - deltaX * trail;
-        const previousY = y - deltaY * trail;
-        const offset = index * 5;
+        const offset = index * 3;
         positions[offset] = x;
         positions[offset + 1] = y;
-        positions[offset + 2] = previousX;
-        positions[offset + 3] = previousY;
-        positions[offset + 4] = local;
+        positions[offset + 2] = local;
       }
 
       context.globalCompositeOperation = targetTheme === 'light' ? 'source-over' : 'lighter';
-      for (let colorIndex = 0; colorIndex < palette.length; colorIndex += 1) {
-        context.beginPath();
-        for (let index = colorIndex; index < count; index += palette.length) {
-          const offset = index * 5;
-          const local = positions[offset + 4];
-          if ((covering && local <= 0) || local >= 0.995) continue;
-          context.moveTo(positions[offset + 2], positions[offset + 3]);
-          context.lineTo(positions[offset], positions[offset + 1]);
-        }
-        context.strokeStyle = `rgba(${palette[colorIndex]},${targetTheme === 'light' ? 0.22 : 0.34})`;
-        context.lineWidth = 0.68 + colorIndex * 0.11;
-        context.stroke();
-      }
-
       const particleAlpha =
         (covering ? smoothstep(rawProgress / 0.18) : 1 - smoothstep((rawProgress - 0.08) / 0.84)) *
         (targetTheme === 'light' ? 0.7 : 0.96);
       for (let colorIndex = 0; colorIndex < palette.length; colorIndex += 1) {
         context.beginPath();
         for (let index = colorIndex; index < count; index += palette.length) {
-          const offset = index * 5;
-          const local = positions[offset + 4];
+          const offset = index * 3;
+          const local = positions[offset + 2];
           if (covering && local <= 0) continue;
           context.rect(
             positions[offset] - particleWidth[index] * 0.5,

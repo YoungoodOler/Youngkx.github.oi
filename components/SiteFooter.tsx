@@ -7,11 +7,13 @@ const launchedAt = new Date('2023-10-23T00:00:00+08:00').getTime();
 
 function getRuntime() {
   const totalSeconds = Math.max(0, Math.floor((Date.now() - launchedAt) / 1000));
-  const days = Math.floor(totalSeconds / 86400);
+  const totalDays = Math.floor(totalSeconds / 86400);
+  const years = Math.floor(totalDays / 365);
+  const days = totalDays % 365;
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  return `${days} 天 ${hours} 时 ${minutes} 分 ${seconds} 秒`;
+  return `${years} 年 ${days} 天 ${hours} 时 ${minutes} 分 ${seconds} 秒`;
 }
 
 export default function SiteFooter({

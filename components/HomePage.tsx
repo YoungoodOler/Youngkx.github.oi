@@ -24,7 +24,7 @@ import type { CardPreset } from '@/lib/card-presets';
 import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
 
-const introQuotes = ['我见青山多妩媚，料青山见我应如是。', 'Life is real, life is earnest.'];
+const introQuotes = ['Life is real, life is earnest.'];
 
 export function CardArtwork({ kind }: { kind: CardPreset }) {
   if (kind === 'ai') {
@@ -348,12 +348,12 @@ export default function HomePage({
   const titleBlogY = useTransform(heroProgress, [0, 0.84, 0.94, 1], ['0%', '0%', '-42%', '-46%']);
   const titleEyebrowOpacity = useTransform(heroProgress, [0, 0.2, 0.42], [1, 0.5, 0]);
   const detailOpacity = useTransform(heroProgress, [0.22, 0.52], [0, 1]);
-  const introOpacity = useTransform(heroProgress, [0.24, 0.54, 0.94, 1], [0, 1, 1, 0]);
-  const introY = useTransform(heroProgress, [0.24, 0.56, 0.94, 1], [150, 0, 0, -105]);
-  const descriptionOpacity = useTransform(heroProgress, [0.3, 0.62, 0.94, 1], [0, 1, 1, 0]);
-  const descriptionY = useTransform(heroProgress, [0.3, 0.64, 0.94, 1], [170, 0, 0, -92]);
-  const actionsOpacity = useTransform(heroProgress, [0.38, 0.7, 0.94, 1], [0, 1, 1, 0]);
-  const actionsY = useTransform(heroProgress, [0.38, 0.72, 0.94, 1], [185, 0, 0, -78]);
+  const introOpacity = useTransform(heroProgress, [0.24, 0.54, 0.975, 1], [0, 1, 1, 0]);
+  const introY = useTransform(heroProgress, [0.24, 0.56, 0.975, 1], [150, 0, 0, -105]);
+  const descriptionOpacity = useTransform(heroProgress, [0.3, 0.62, 0.975, 1], [0, 1, 1, 0]);
+  const descriptionY = useTransform(heroProgress, [0.3, 0.64, 0.975, 1], [170, 0, 0, -92]);
+  const actionsOpacity = useTransform(heroProgress, [0.38, 0.7, 0.975, 1], [0, 1, 1, 0]);
+  const actionsY = useTransform(heroProgress, [0.38, 0.72, 0.975, 1], [185, 0, 0, -78]);
   const cueOpacity = useTransform(heroProgress, [0, 0.2, 0.36], [1, 1, 0]);
   const reduceMotion = useReducedMotion();
 
@@ -403,7 +403,7 @@ export default function HomePage({
   }, []);
 
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion || introQuotes.length < 2) return;
     const timer = window.setInterval(
       () => setQuoteIndex((current) => (current + 1) % introQuotes.length),
       4200,
@@ -498,7 +498,7 @@ export default function HomePage({
                 >
                   <span className="eyebrow">
                     <i className="status-dot" />
-                    记录、学习与持续构建
+                    RECORDING, LEARNING &amp; BUILDING
                   </span>
                   <div className="hero-quote">
                     <AnimatePresence mode="wait">
@@ -519,7 +519,8 @@ export default function HomePage({
                   style={{ opacity: descriptionOpacity, y: descriptionY }}
                 >
                   <p>
-                    记录 OI、C / C++、Web 与日常思考，在代码、文字和时间之间留下可以回看的坐标。
+                    A growing archive of OI, C / C++, the web, and everyday thoughts—coordinates in
+                    code, words, and time worth returning to.
                   </p>
                 </m.div>
                 <m.div
@@ -528,10 +529,10 @@ export default function HomePage({
                 >
                   <div className="hero-actions">
                     <MagneticLink className="button primary" href="#posts">
-                      浏览文章 <span>↓</span>
+                      EXPLORE POSTS <span>↓</span>
                     </MagneticLink>
                     <MagneticLink className="text-link" href="#topics">
-                      文章主题 <span>→</span>
+                      BROWSE TOPICS <span>→</span>
                     </MagneticLink>
                   </div>
                 </m.div>
