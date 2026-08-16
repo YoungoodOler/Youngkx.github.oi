@@ -28,6 +28,12 @@ import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
 
 const introQuotes = ['Life is real, life is earnest.'];
+const signalDeckGridSurfaceStyle: CSSProperties = {
+  overflow: 'visible',
+  border: 0,
+  background: 'transparent',
+  boxShadow: 'none',
+};
 
 export function CardArtwork({ kind }: { kind: CardPreset }) {
   if (kind === 'ai') {
@@ -401,6 +407,7 @@ export default function HomePage({
   const [quoteIndex, setQuoteIndex] = useState(0);
   const { scrollYProgress } = useScroll();
   const heroRef = useRef<HTMLElement>(null);
+  const signalDeckRef = useRef<HTMLElement>(null);
   const titleHeadingRef = useRef<HTMLHeadingElement>(null);
   const detailLayerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLElement>(null);
@@ -457,23 +464,70 @@ export default function HomePage({
     [0, 0.66, 0.74, 0.9, 1],
     [0.015, 0.015, 0.06, 1, 1],
   );
-  const deckGridClip = useTransform(
-    heroProgress,
-    [0, 0.66, 0.78, 0.94, 1],
-    [
-      'inset(48% 0 48% 0 round 36px)',
-      'inset(48% 0 48% 0 round 36px)',
-      'inset(36% 2% 36% 2% round 30px)',
-      'inset(2% 0 0 0 round 21px)',
-      'inset(0% 0 0 0 round 18px)',
-    ],
-  );
   const reduceMotion = useReducedMotion();
   const [displayedLinkCount, setDisplayedLinkCount] = useState(usefulLinkCount);
   const latestPost = selectLatestArticle(posts);
   const primaryCategories = categories.slice(0, 4);
   const archiveStart = posts.at(-1)?.date.slice(0, 4) ?? '2023';
   const archiveLatest = latestPost?.date.slice(0, 4) ?? archiveStart;
+
+  useEffect(() => {
+    let deckLockStarted = 0;
+    let releaseTimer: number | undefined;
+    let deckLocked = false;
+
+    const releaseDeckLock = () => {
+      window.clearTimeout(releaseTimer);
+      const elapsed = performance.now() - deckLockStarted;
+      releaseTimer = window.setTimeout(
+        () => {
+          deckLocked = false;
+        },
+        Math.max(180, 650 - elapsed),
+      );
+    };
+
+    const stopAtSignalDeck = (event: WheelEvent) => {
+      if (event.deltaY <= 0) {
+        deckLocked = false;
+        window.clearTimeout(releaseTimer);
+        return;
+      }
+
+      if (deckLocked) {
+        event.preventDefault();
+        releaseDeckLock();
+        return;
+      }
+
+      const stage = heroRef.current;
+      const deck = signalDeckRef.current;
+      if (!stage || !deck) return;
+
+      const deckStop = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
+      const remaining = deckStop - window.scrollY;
+      const deltaMultiplier =
+        event.deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? 16
+          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+            ? window.innerHeight
+            : 1;
+      const intendedTravel = event.deltaY * deltaMultiplier;
+      if (remaining <= 1 || intendedTravel < remaining) return;
+
+      event.preventDefault();
+      deckLocked = true;
+      deckLockStarted = performance.now();
+      window.scrollTo({ top: deckStop, behavior: reduceMotion ? 'auto' : 'smooth' });
+      releaseDeckLock();
+    };
+
+    window.addEventListener('wheel', stopAtSignalDeck, { passive: false });
+    return () => {
+      window.removeEventListener('wheel', stopAtSignalDeck);
+      window.clearTimeout(releaseTimer);
+    };
+  }, [reduceMotion]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -674,6 +728,7 @@ export default function HomePage({
       </section>
 
       <m.section
+        ref={signalDeckRef}
         className="signal-deck shell"
         aria-labelledby="signal-deck-title"
         style={reduceMotion ? undefined : { opacity: signalDeckOpacity, y: signalDeckY }}
@@ -696,14 +751,14 @@ export default function HomePage({
           className="signal-deck__grid"
           style={
             reduceMotion
-              ? undefined
+              ? signalDeckGridSurfaceStyle
               : {
+                  ...signalDeckGridSurfaceStyle,
                   opacity: deckGridOpacity,
                   y: deckGridY,
                   rotateX: deckGridRotateX,
                   scaleX: deckGridScaleX,
                   scaleY: deckGridScaleY,
-                  clipPath: deckGridClip,
                   transformPerspective: 1600,
                 }
           }

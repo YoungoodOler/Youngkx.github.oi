@@ -109,7 +109,7 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
     .poll(() =>
       page.locator('.signal-deck__grid').evaluate((element) => getComputedStyle(element).clipPath),
     )
-    .not.toBe('none');
+    .toBe('none');
 
   const settledScroll = await page.locator('.hero-stage').evaluate((stage) => {
     if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
@@ -161,6 +161,38 @@ test('界面字体变为现代粗体且主页展示标题保持原字体', async
   await expect(page.locator('.nav-links')).not.toContainText('HOME');
 });
 
+test('高速下滑会先停留在动态索引卡片页', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.startsWith('mobile'), '桌面滚轮回归测试');
+  await useStoredTheme(page);
+  await openPage(page, '/');
+
+  await page.mouse.wheel(0, 12_000);
+  await page.waitForTimeout(900);
+
+  const landing = await page.evaluate(() => {
+    const deck = document.querySelector('.signal-deck');
+    const articles = document.querySelector('#posts');
+    if (!(deck instanceof HTMLElement) || !(articles instanceof HTMLElement)) {
+      throw new Error('主页卡片页或文章区不存在');
+    }
+    const deckRect = deck.getBoundingClientRect();
+    const articlesRect = articles.getBoundingClientRect();
+    return {
+      deckTop: deckRect.top,
+      deckBottom: deckRect.bottom,
+      articlesTop: articlesRect.top,
+      viewportHeight: window.innerHeight,
+    };
+  });
+
+  expect(landing.deckTop).toBeGreaterThanOrEqual(70);
+  expect(landing.deckTop).toBeLessThan(120);
+  expect(landing.deckBottom).toBeGreaterThan(landing.viewportHeight * 0.7);
+  expect(landing.articlesTop).toBeGreaterThan(landing.viewportHeight * 0.85);
+  await expect(page.locator('.signal-card')).toHaveCount(4);
+  await expect(page.locator('.signal-card').first()).toBeVisible();
+});
+
 test('主页动态索引卡片支持鼠标景深并保持移动端布局', async ({ page }, testInfo) => {
   await useStoredTheme(page);
   await openPage(page, '/');
@@ -187,6 +219,41 @@ test('主页动态索引卡片支持鼠标景深并保持移动端布局', async
   );
   await expect(deck.getByRole('link', { name: '打开常用链接' })).toHaveAttribute('href', '/links/');
 
+  const grid = deck.locator('.signal-deck__grid');
+  const readGridSurface = () =>
+    grid.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        overflowX: style.overflowX,
+        overflowY: style.overflowY,
+        clipPath: style.clipPath,
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        borderWidths: [
+          style.borderTopWidth,
+          style.borderRightWidth,
+          style.borderBottomWidth,
+          style.borderLeftWidth,
+        ],
+        boxShadow: style.boxShadow,
+      };
+    });
+  const expectClearGridSurface = async () => {
+    const surface = await readGridSurface();
+    expect(surface.overflowX).toBe('visible');
+    expect(surface.overflowY).toBe('visible');
+    expect(surface.clipPath).toBe('none');
+    expect(surface.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(surface.backgroundImage).toBe('none');
+    expect(surface.borderWidths).toEqual(['0px', '0px', '0px', '0px']);
+    expect(surface.boxShadow).toBe('none');
+  };
+
+  await expectClearGridSurface();
+  await page.locator('.theme-toggle').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expectClearGridSurface();
+
   if (testInfo.project.name.startsWith('mobile')) {
     const layout = await cards.evaluateAll((elements) => ({
       viewportWidth: window.innerWidth,
@@ -207,7 +274,9 @@ test('主页动态索引卡片支持鼠标景深并保持移动端布局', async
 
   const leadCard = deck.locator('.signal-card--lead');
   const box = await leadCard.boundingBox();
+  const gridBox = await grid.boundingBox();
   expect(box).not.toBeNull();
+  expect(gridBox).not.toBeNull();
   const initialTransform = await leadCard.evaluate(
     (element) => getComputedStyle(element).transform,
   );
@@ -222,6 +291,10 @@ test('主页动态索引卡片支持鼠标景深并保持移动端布局', async
         .evaluate((element) => getComputedStyle(element).backgroundImage),
     )
     .toContain('radial-gradient');
+
+  const liftedBox = await leadCard.boundingBox();
+  expect(liftedBox).not.toBeNull();
+  expect(liftedBox?.y ?? 0).toBeLessThan((gridBox?.y ?? 0) - 1);
 });
 
 test('常用链接卡片进入独立目录页', async ({ page }) => {
