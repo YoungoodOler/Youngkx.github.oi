@@ -13,6 +13,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import {
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   useEffect,
@@ -20,7 +21,9 @@ import {
   useState,
 } from 'react';
 import type { ArticleSummary, CategorySummary } from '@/lib/articles';
+import { selectLatestArticle } from '@/lib/article-selection';
 import type { CardPreset } from '@/lib/card-presets';
+import { validateUsefulLinksPayload } from '@/lib/useful-links';
 import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
 
@@ -50,7 +53,7 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
             ))}
           </g>
         </svg>
-        <span className="ai-label">NEURAL FLOW</span>
+        <span className="ai-label">Neural Flow</span>
         <i className="ai-pulse pulse-one" />
         <i className="ai-pulse pulse-two" />
         <i className="ai-pulse pulse-three" />
@@ -71,7 +74,7 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
         <b className="cs-signal signal-one" />
         <b className="cs-signal signal-two" />
         <b className="cs-signal signal-three" />
-        <span className="cs-label">PROCESS / MEMORY / LOGIC</span>
+        <span className="cs-label">Process / Memory / Logic</span>
       </div>
     );
   }
@@ -96,7 +99,7 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
     return (
       <div className="artwork talk-art" aria-hidden="true">
         <div className="talk-bubble bubble-one">
-          <span>THOUGHTS</span>
+          <span>Thoughts</span>
           <i />
           <i />
           <i />
@@ -146,7 +149,7 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
             <circle key={cx} cx={cx} cy={cy} r={index === 3 ? 9 : 6} />
           ))}
         </svg>
-        <span className="network-label label-a">GRAPH</span>
+        <span className="network-label label-a">Graph</span>
         <span className="network-label label-b">DP</span>
         <span className="network-label label-c">CSP-S</span>
       </div>
@@ -181,9 +184,9 @@ export function CardArtwork({ kind }: { kind: CardPreset }) {
   }
   return (
     <div className="artwork protocol-art" aria-hidden="true">
-      <span>CLIENT</span>
+      <span>Client</span>
       <i>GET / HTTP/1.1 →</i>
-      <span>SERVER</span>
+      <span>Server</span>
     </div>
   );
 }
@@ -252,6 +255,85 @@ function MagneticLink({
   );
 }
 
+function InteractiveSignalCard({
+  href,
+  label,
+  className,
+  index,
+  visual,
+  children,
+}: {
+  href: string;
+  label: string;
+  className: string;
+  index: number;
+  visual: ReactNode;
+  children: ReactNode;
+}) {
+  const reduceMotion = useReducedMotion();
+  const pointerX = useMotionValue(50);
+  const pointerY = useMotionValue(50);
+  const rawRotateX = useMotionValue(0);
+  const rawRotateY = useMotionValue(0);
+  const rawLift = useMotionValue(0);
+  const smoothPointerX = useSpring(pointerX, { stiffness: 180, damping: 26, mass: 0.35 });
+  const smoothPointerY = useSpring(pointerY, { stiffness: 180, damping: 26, mass: 0.35 });
+  const rotateX = useSpring(rawRotateX, { stiffness: 190, damping: 24, mass: 0.42 });
+  const rotateY = useSpring(rawRotateY, { stiffness: 190, damping: 24, mass: 0.42 });
+  const lift = useSpring(rawLift, { stiffness: 220, damping: 25, mass: 0.38 });
+  const visualX = useTransform(smoothPointerX, [0, 100], [-18, 18]);
+  const visualY = useTransform(smoothPointerY, [0, 100], [-14, 14]);
+  const glare = useMotionTemplate`radial-gradient(430px circle at ${smoothPointerX}% ${smoothPointerY}%, var(--signal-glow), transparent 68%)`;
+
+  const move = (event: ReactPointerEvent<HTMLElement>) => {
+    if (reduceMotion || event.pointerType !== 'mouse') return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+    pointerX.set(x * 100);
+    pointerY.set(y * 100);
+    rawRotateX.set((0.5 - y) * 7.5);
+    rawRotateY.set((x - 0.5) * 7.5);
+  };
+
+  const reset = () => {
+    pointerX.set(50);
+    pointerY.set(50);
+    rawRotateX.set(0);
+    rawRotateY.set(0);
+    rawLift.set(0);
+  };
+
+  return (
+    <m.article
+      className={`signal-card ${className}`}
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
+      viewport={{ once: true, margin: '-70px' }}
+      transition={{ duration: 0.72, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
+      style={{ rotateX, rotateY, y: lift, transformPerspective: 1300 }}
+      onPointerEnter={(event) => {
+        if (!reduceMotion && event.pointerType === 'mouse') rawLift.set(-7);
+      }}
+      onPointerMove={move}
+      onPointerLeave={reset}
+    >
+      <Link href={href} className="signal-card__link" aria-label={label}>
+        <m.span className="signal-card__glare" style={{ background: glare }} aria-hidden="true" />
+        <span className="signal-card__grid" aria-hidden="true" />
+        <m.div
+          className="signal-card__visual"
+          style={{ x: visualX, y: visualY }}
+          aria-hidden="true"
+        >
+          {visual}
+        </m.div>
+        <div className="signal-card__content">{children}</div>
+      </Link>
+    </m.article>
+  );
+}
+
 function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) {
   const rawRotateX = useMotionValue(0);
   const rawRotateY = useMotionValue(0);
@@ -306,9 +388,11 @@ function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) 
 export default function HomePage({
   posts,
   categories,
+  usefulLinkCount,
 }: {
   posts: ArticleSummary[];
   categories: CategorySummary[];
+  usefulLinkCount: number;
 }) {
   const { theme, toggleTheme } = useSiteExperience();
   const [compactLayout, setCompactLayout] = useState(false);
@@ -344,18 +428,52 @@ export default function HomePage({
     [0, 0.18, 0.66, 0.84, 1],
     [1, 1, titleRestScale, titleRestScale, compactLayout ? 0.78 : 0.62],
   );
-  const titleOpacity = useTransform(heroProgress, [0, 0.94, 1], [1, 1, 0]);
+  const titleOpacity = useTransform(heroProgress, [0, 0.8, 0.9, 0.94, 1], [1, 1, 0.18, 0, 0]);
   const titleBlogY = useTransform(heroProgress, [0, 0.84, 0.94, 1], ['0%', '0%', '-42%', '-46%']);
   const titleEyebrowOpacity = useTransform(heroProgress, [0, 0.2, 0.42], [1, 0.5, 0]);
-  const detailOpacity = useTransform(heroProgress, [0.22, 0.52], [0, 1]);
-  const introOpacity = useTransform(heroProgress, [0.24, 0.54, 0.975, 1], [0, 1, 1, 0]);
-  const introY = useTransform(heroProgress, [0.24, 0.56, 0.975, 1], [150, 0, 0, -105]);
-  const descriptionOpacity = useTransform(heroProgress, [0.3, 0.62, 0.975, 1], [0, 1, 1, 0]);
-  const descriptionY = useTransform(heroProgress, [0.3, 0.64, 0.975, 1], [170, 0, 0, -92]);
-  const actionsOpacity = useTransform(heroProgress, [0.38, 0.7, 0.975, 1], [0, 1, 1, 0]);
-  const actionsY = useTransform(heroProgress, [0.38, 0.72, 0.975, 1], [185, 0, 0, -78]);
-  const cueOpacity = useTransform(heroProgress, [0, 0.2, 0.36], [1, 1, 0]);
+  const detailOpacity = useTransform(heroProgress, [0.18, 0.3, 0.72, 0.82], [0, 1, 1, 0]);
+  const introY = useTransform(heroProgress, [0.22, 0.38, 0.7, 0.84], [150, 0, 0, -105]);
+  const descriptionY = useTransform(heroProgress, [0.24, 0.4, 0.69, 0.83], [170, 0, 0, -92]);
+  const actionsY = useTransform(heroProgress, [0.26, 0.42, 0.68, 0.82], [185, 0, 0, -78]);
+  const signalDeckOpacity = useTransform(heroProgress, [0, 0.66, 0.72, 1], [0, 0, 1, 1]);
+  const signalDeckY = useTransform(heroProgress, [0, 0.66, 0.9, 1], [180, 180, 20, 0]);
+  const deckHeadingOpacity = useTransform(heroProgress, [0, 0.92, 0.97, 1], [0, 0, 0.76, 1]);
+  const deckHeadingY = useTransform(heroProgress, [0, 0.92, 0.97, 1], [74, 74, 12, 0]);
+  const deckHeadingClip = useTransform(
+    heroProgress,
+    [0, 0.92, 0.97, 1],
+    ['inset(0 50% 0 50%)', 'inset(0 50% 0 50%)', 'inset(0 7% 0 7%)', 'inset(0 0% 0 0%)'],
+  );
+  const deckGridOpacity = useTransform(heroProgress, [0, 0.66, 0.7, 1], [0, 0, 1, 1]);
+  const deckGridY = useTransform(heroProgress, [0, 0.66, 0.82, 0.94, 1], [220, 220, 112, 14, 0]);
+  const deckGridRotateX = useTransform(heroProgress, [0, 0.66, 0.78, 0.92, 1], [76, 76, 52, 6, 0]);
+  const deckGridScaleX = useTransform(
+    heroProgress,
+    [0, 0.66, 0.76, 0.9, 1],
+    [0.04, 0.04, 0.68, 1, 1],
+  );
+  const deckGridScaleY = useTransform(
+    heroProgress,
+    [0, 0.66, 0.74, 0.9, 1],
+    [0.015, 0.015, 0.06, 1, 1],
+  );
+  const deckGridClip = useTransform(
+    heroProgress,
+    [0, 0.66, 0.78, 0.94, 1],
+    [
+      'inset(48% 0 48% 0 round 36px)',
+      'inset(48% 0 48% 0 round 36px)',
+      'inset(36% 2% 36% 2% round 30px)',
+      'inset(2% 0 0 0 round 21px)',
+      'inset(0% 0 0 0 round 18px)',
+    ],
+  );
   const reduceMotion = useReducedMotion();
+  const [displayedLinkCount, setDisplayedLinkCount] = useState(usefulLinkCount);
+  const latestPost = selectLatestArticle(posts);
+  const primaryCategories = categories.slice(0, 4);
+  const archiveStart = posts.at(-1)?.date.slice(0, 4) ?? '2023';
+  const archiveLatest = latestPost?.date.slice(0, 4) ?? archiveStart;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -411,6 +529,27 @@ export default function HomePage({
     return () => window.clearInterval(timer);
   }, [reduceMotion]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/links', { cache: 'no-store', signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Links API returned ${response.status}`);
+        return response.json() as Promise<unknown>;
+      })
+      .then((value) => {
+        const validation = validateUsefulLinksPayload(value);
+        if (!validation.ok) return;
+        setDisplayedLinkCount(
+          validation.data.groups.reduce((total, group) => total + group.links.length, 0),
+        );
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        console.error('Unable to load useful link count.', error);
+      });
+    return () => controller.abort();
+  }, []);
+
   return (
     <main className="home-page">
       <m.div className="progress" style={{ scaleX: progress }} />
@@ -437,13 +576,13 @@ export default function HomePage({
           aria-label="主导航"
         >
           <a href="#top" onClick={() => setMenuOpen(false)}>
-            首页
+            Home
           </a>
           <a href="#posts" onClick={() => setMenuOpen(false)}>
-            文章
+            Articles
           </a>
           <a href="#topics" onClick={() => setMenuOpen(false)}>
-            分类
+            Topics
           </a>
         </nav>
         <button
@@ -453,7 +592,7 @@ export default function HomePage({
           title={`切换到${theme === 'dark' ? '亮色' : '暗色'}主题`}
         >
           <span className="theme-icon">{theme === 'dark' ? '☼' : '◐'}</span>
-          <span className="theme-label">{theme === 'dark' ? 'LIGHT' : 'DARK'}</span>
+          <span className="theme-label">{theme === 'dark' ? 'Light' : 'Dark'}</span>
         </button>
         <button
           ref={menuButtonRef}
@@ -475,7 +614,7 @@ export default function HomePage({
             style={{ x: titleX, y: titleY, scale: titleScale, opacity: titleOpacity }}
           >
             <m.span className="hero-title-eyebrow" style={{ opacity: titleEyebrowOpacity }}>
-              PERSONAL ARCHIVE / SINCE 2023
+              Personal Archive / Since 2023
             </m.span>
             <h1 ref={titleHeadingRef}>
               <span className="hero-title-word">Youngkx</span>
@@ -492,13 +631,10 @@ export default function HomePage({
           >
             <div className="hero-detail-grid">
               <div className="hero-detail-copy">
-                <m.div
-                  className="hero-copy-block hero-copy-intro"
-                  style={{ opacity: introOpacity, y: introY }}
-                >
+                <m.div className="hero-copy-block hero-copy-intro" style={{ y: introY }}>
                   <span className="eyebrow">
                     <i className="status-dot" />
-                    RECORDING, LEARNING &amp; BUILDING
+                    Recording, Learning &amp; Building
                   </span>
                   <div className="hero-quote">
                     <AnimatePresence mode="wait">
@@ -516,23 +652,17 @@ export default function HomePage({
                 </m.div>
                 <m.div
                   className="hero-copy-block hero-copy-description"
-                  style={{ opacity: descriptionOpacity, y: descriptionY }}
+                  style={{ y: descriptionY }}
                 >
-                  <p>
-                    A growing archive of OI, C / C++, the web, and everyday thoughts—coordinates in
-                    code, words, and time worth returning to.
-                  </p>
+                  <p>Notes on OI, C / C++, the web, and everyday life.</p>
                 </m.div>
-                <m.div
-                  className="hero-copy-block hero-copy-actions"
-                  style={{ opacity: actionsOpacity, y: actionsY }}
-                >
+                <m.div className="hero-copy-block hero-copy-actions" style={{ y: actionsY }}>
                   <div className="hero-actions">
                     <MagneticLink className="button primary" href="#posts">
-                      EXPLORE POSTS <span>↓</span>
+                      Explore Posts <span>↓</span>
                     </MagneticLink>
                     <MagneticLink className="text-link" href="#topics">
-                      BROWSE TOPICS <span>→</span>
+                      Browse Topics <span>→</span>
                     </MagneticLink>
                   </div>
                 </m.div>
@@ -540,13 +670,193 @@ export default function HomePage({
               <div className="hero-detail-spacer" aria-hidden="true" />
             </div>
           </m.div>
-
-          <m.div className="hero-scroll-cue" style={{ opacity: cueOpacity }}>
-            <span>SCROLL TO EXPLORE</span>
-            <i />
-          </m.div>
         </div>
       </section>
+
+      <m.section
+        className="signal-deck shell"
+        aria-labelledby="signal-deck-title"
+        style={reduceMotion ? undefined : { opacity: signalDeckOpacity, y: signalDeckY }}
+      >
+        <m.div
+          className="signal-deck__heading"
+          style={
+            reduceMotion
+              ? undefined
+              : { opacity: deckHeadingOpacity, y: deckHeadingY, clipPath: deckHeadingClip }
+          }
+        >
+          <div>
+            <span>00 / Interactive Index</span>
+          </div>
+          <h2 id="signal-deck-title">Explore the archive through motion.</h2>
+        </m.div>
+
+        <m.div
+          className="signal-deck__grid"
+          style={
+            reduceMotion
+              ? undefined
+              : {
+                  opacity: deckGridOpacity,
+                  y: deckGridY,
+                  rotateX: deckGridRotateX,
+                  scaleX: deckGridScaleX,
+                  scaleY: deckGridScaleY,
+                  clipPath: deckGridClip,
+                  transformPerspective: 1600,
+                }
+          }
+        >
+          {latestPost && (
+            <InteractiveSignalCard
+              href={latestPost.href}
+              label={`打开最新文章：${latestPost.title}`}
+              className="signal-card--lead"
+              index={0}
+              visual={
+                <div className="signal-constellation">
+                  <svg viewBox="0 0 640 520" preserveAspectRatio="xMidYMid slice">
+                    <g
+                      fill="none"
+                      stroke="var(--accent)"
+                      strokeWidth="1"
+                      strokeDasharray="7 13"
+                      opacity=".25"
+                    >
+                      <path d="M42 352 C118 112 270 92 332 260 S492 432 610 138" />
+                      <path d="M18 226 C148 390 260 394 374 184 S522 86 630 302" opacity=".72" />
+                      <path d="M96 478 C174 306 282 264 420 334 S550 372 620 250" opacity=".52" />
+                    </g>
+                    <g fill="var(--accent)" stroke="var(--ink)" strokeWidth="1">
+                      {[
+                        [70, 312, 5],
+                        [154, 172, 8],
+                        [252, 148, 4],
+                        [334, 264, 10],
+                        [420, 350, 5],
+                        [506, 318, 7],
+                        [584, 174, 4],
+                      ].map(([cx, cy, radius]) => (
+                        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={radius} />
+                      ))}
+                    </g>
+                  </svg>
+                </div>
+              }
+            >
+              <div className="signal-card__topline">
+                <span>Latest Signal</span>
+                <i>Live</i>
+              </div>
+              <div className="signal-card__lead-copy">
+                <small>{latestPost.dateLabel}</small>
+                <h3>{latestPost.title}</h3>
+                <p>{latestPost.excerpt}</p>
+              </div>
+              <div className="signal-card__footer">
+                <span>{latestPost.tagLabel}</span>
+                <b>Open Entry ↗</b>
+              </div>
+            </InteractiveSignalCard>
+          )}
+
+          <InteractiveSignalCard
+            href="/categories/"
+            label="浏览文章主题"
+            className="signal-card--topics"
+            index={1}
+            visual={
+              <svg className="signal-radar" viewBox="0 0 300 300">
+                <circle cx="150" cy="150" r="148" />
+                <circle cx="150" cy="150" r="96" />
+                <circle cx="150" cy="150" r="48" />
+                <path d="M150 150 L248 93" />
+                <circle className="signal-radar__point" cx="248" cy="93" r="5" />
+                <circle className="signal-radar__point" cx="88" cy="212" r="4" />
+              </svg>
+            }
+          >
+            <div className="signal-card__topline">
+              <span>Topic Field</span>
+              <i>{String(categories.length).padStart(2, '0')}</i>
+            </div>
+            <div className="signal-topic-list">
+              {primaryCategories.map((category) => (
+                <div key={category.id}>
+                  <span>{category.number}</span>
+                  <strong>{category.title}</strong>
+                  <small>{category.posts.length}</small>
+                </div>
+              ))}
+            </div>
+            <div className="signal-card__footer">
+              <span>Filter The Archive</span>
+              <b>Explore ↗</b>
+            </div>
+          </InteractiveSignalCard>
+
+          <InteractiveSignalCard
+            href="/articles/"
+            label="查看全部文章"
+            className="signal-card--pulse"
+            index={2}
+            visual={
+              <div className="signal-pulse-field">
+                {[32, 56, 38, 82, 48, 68, 42, 92, 61, 76, 36, 58].map((height, index) => (
+                  <i
+                    key={`${height}-${index}`}
+                    style={{ '--pulse-height': `${height}%` } as CSSProperties}
+                  />
+                ))}
+              </div>
+            }
+          >
+            <div className="signal-card__topline">
+              <span>Archive Pulse</span>
+              <i>Synced</i>
+            </div>
+            <div className="signal-card__metric">
+              <strong>{String(posts.length).padStart(2, '0')}</strong>
+              <span>Published Notes</span>
+            </div>
+            <div className="signal-card__footer">
+              <span>
+                {archiveStart}—{archiveLatest}
+              </span>
+              <b>All Posts ↗</b>
+            </div>
+          </InteractiveSignalCard>
+
+          <InteractiveSignalCard
+            href="/links/"
+            label="打开常用链接"
+            className="signal-card--portal"
+            index={3}
+            visual={
+              <svg className="signal-portal-mark" viewBox="0 0 210 210">
+                <circle cx="105" cy="105" r="103" />
+                <circle cx="105" cy="105" r="64" />
+                <circle cx="105" cy="105" r="28" />
+                <path d="M89 121 L121 89 M99 89 H121 V111" />
+              </svg>
+            }
+          >
+            <div className="signal-card__topline">
+              <span>Useful Links</span>
+              <i>{String(displayedLinkCount).padStart(2, '0')}</i>
+            </div>
+            <div className="signal-card__portal-copy">
+              <small>Tools / References / Places</small>
+              <h3>Open Links.</h3>
+            </div>
+            <div className="signal-card__footer">
+              <span>Open Directory</span>
+              <b>↗</b>
+            </div>
+          </InteractiveSignalCard>
+        </m.div>
+      </m.section>
 
       <section className="writing shell section" id="posts">
         <m.div
@@ -558,10 +868,9 @@ export default function HomePage({
         >
           <div>
             <span className="section-index">01 /</span>
-            <span className="kicker">文章</span>
+            <span className="kicker">Articles</span>
           </div>
-          <h2>文章</h2>
-          <p>首页按时间倒序展示原博客文章，正文、代码示例和旧链接均已保留。</p>
+          <h2>Articles</h2>
         </m.div>
 
         <div className="article-list">
@@ -594,10 +903,9 @@ export default function HomePage({
         >
           <div>
             <span className="section-index">02 /</span>
-            <span className="kicker">分类</span>
+            <span className="kicker">Topics</span>
           </div>
-          <h2>分类</h2>
-          <p>按内容主题浏览文章，快速找到信息学竞赛、C / C++ 与 Web 相关笔记。</p>
+          <h2>Topics</h2>
         </m.div>
         <div className="category-grid">
           {categories.map((category, index) => (

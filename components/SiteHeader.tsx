@@ -27,13 +27,13 @@ export default function SiteHeader({
         <span className="brand-name">Youngkx</span>
       </Link>
       <nav className={`nav-links ${navClassName}`} aria-label="主导航">
-        <Link href="/#top">首页</Link>
-        <Link href={articleHref}>文章</Link>
-        <Link href="/categories/">分类</Link>
+        <Link href="/#top">Home</Link>
+        <Link href={articleHref}>Articles</Link>
+        <Link href="/categories/">Topics</Link>
       </nav>
       <button className="theme-toggle" onClick={toggleTheme} aria-label="切换主题">
         <span className="theme-icon">{theme === 'dark' ? '☼' : '◐'}</span>
-        <span className="theme-label">{theme === 'dark' ? 'LIGHT' : 'DARK'}</span>
+        <span className="theme-label">{theme === 'dark' ? 'Light' : 'Dark'}</span>
       </button>
     </header>
   );

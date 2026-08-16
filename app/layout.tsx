@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { DM_Mono } from 'next/font/google';
+import { Archivo_Black, DM_Mono } from 'next/font/google';
 import './globals.css';
 import SiteExperience from '@/components/SiteExperience';
 import { siteOrigin } from '@/lib/site';
@@ -10,6 +10,14 @@ const monoFont = DM_Mono({
   subsets: ['latin'],
   display: 'swap',
   fallback: ['ui-monospace', 'monospace'],
+});
+
+const interfaceFont = Archivo_Black({
+  variable: '--font-interface',
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+  fallback: ['Arial Black', 'Arial', 'sans-serif'],
 });
 
 export const metadata: Metadata = {
@@ -29,7 +37,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN" className={monoFont.variable} suppressHydrationWarning>
+    <html
+      lang="zh-CN"
+      className={`${monoFont.variable} ${interfaceFont.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{

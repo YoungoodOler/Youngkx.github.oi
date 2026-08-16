@@ -19,8 +19,8 @@ export default function ArticlesPage({ posts }: { posts: ArticleSummary[] }) {
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ duration: 0.92, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h1>所有文章</h1>
-          <p>共 {posts.length} 篇文章</p>
+          <h1>All Articles</h1>
+          <p>{posts.length} Entries In The Archive</p>
         </m.div>
         <m.div
           className="articles-hero-number"

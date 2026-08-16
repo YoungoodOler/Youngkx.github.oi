@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
 
 const smoothstep = (value: number) => {
@@ -42,13 +42,15 @@ export default function Scene({
   const mountRef = useRef<HTMLDivElement>(null);
   const themeRef = useRef(theme);
   const showSubjectRef = useRef(showSubject);
+  const syncLayoutRef = useRef<(snapSubject: boolean) => void>(() => undefined);
 
   useEffect(() => {
     themeRef.current = theme;
   }, [theme]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     showSubjectRef.current = showSubject;
+    syncLayoutRef.current(showSubject);
   }, [showSubject]);
 
   useEffect(() => {
@@ -393,15 +395,16 @@ export default function Scene({
     fillLight.position.set(1, -3, 3);
     scene.add(fillLight);
 
-    const heroStage = document.querySelector<HTMLElement>('.hero-stage');
     let maximumScroll = 1;
     let heroScrollTravel = Math.max(1, window.innerHeight * 0.85);
     const measureScrollLayout = () => {
+      const heroStage = document.querySelector<HTMLElement>('.hero-stage');
       maximumScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
       heroScrollTravel = Math.max(
         1,
         (heroStage?.offsetHeight ?? window.innerHeight * 1.85) - window.innerHeight,
       );
+      mount.dataset.heroScrollTravel = heroScrollTravel.toFixed(2);
     };
 
     const resize = () => {
@@ -417,7 +420,6 @@ export default function Scene({
 
     const layoutObserver = new ResizeObserver(measureScrollLayout);
     layoutObserver.observe(document.body);
-    if (heroStage) layoutObserver.observe(heroStage);
 
     const interactionRingGeometry = new THREE.RingGeometry(0.16, 0.17, 36);
     const hoverRingMaterial = new THREE.MeshBasicMaterial({
@@ -461,6 +463,17 @@ export default function Scene({
       const scrollY = window.scrollY;
       targetScroll = scrollY / maximumScroll;
       targetHeroProgress = THREE.MathUtils.clamp(scrollY / heroScrollTravel, 0, 1);
+    };
+
+    syncLayoutRef.current = (snapSubject) => {
+      resize();
+      updateScroll();
+      if (!snapSubject) return;
+      currentScroll = targetScroll;
+      currentHeroProgress = targetHeroProgress;
+      previousSubjectArticleMix = -1;
+      previousCategoryMix = -1;
+      mount.dataset.subjectLayout = 'synced';
     };
 
     const mapPointer = (event: PointerEvent) => {
@@ -785,6 +798,7 @@ export default function Scene({
     frame = window.requestAnimationFrame(render);
 
     return () => {
+      syncLayoutRef.current = () => undefined;
       window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', updateScroll);
       if (!mobileAtMount) {

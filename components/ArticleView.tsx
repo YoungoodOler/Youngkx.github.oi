@@ -4,6 +4,7 @@ import { m, useScroll, useSpring } from 'framer-motion';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ArticleRecord } from '@/lib/articles';
+import { getTagTitle } from '@/lib/tag-titles';
 import SiteFooter from './SiteFooter';
 import SiteHeader from './SiteHeader';
 
@@ -295,7 +296,7 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ duration: 0.98, ease: [0.22, 1, 0.36, 1] }}
         >
-          <span className="article-breadcrumb">{article.tags.join(' / ')}</span>
+          <span className="article-breadcrumb">{article.tags.map(getTagTitle).join(' / ')}</span>
           <h1>{article.title}</h1>
           <div className="article-meta">
             <span>发布于 {article.date}</span>
@@ -321,8 +322,8 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
 
       <aside className={tocOpen ? 'modern-toc open' : 'modern-toc'}>
         <div>
-          <strong>文章目录</strong>
-          <small>{toc.length} 节</small>
+          <strong>Contents</strong>
+          <small>{toc.length} Sections</small>
         </div>
         {toc.map((item) => (
           <a
@@ -343,8 +344,8 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
         <button
           className={tocOpen ? 'active' : ''}
           onClick={() => setTocOpen(!tocOpen)}
-          title="文章目录"
-          aria-label="文章目录"
+          title="Contents"
+          aria-label="Contents"
         >
           ☷
         </button>

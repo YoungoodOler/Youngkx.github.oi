@@ -16,10 +16,11 @@
     "format:check": "prettier --check .",
     "test": "vitest run --config config/vitest.config.mts",
     "test:watch": "vitest --config config/vitest.config.mts",
-    "preview:test": "wrangler dev --local --port 8787 --local-upstream www.youngkx.cn --log-level error",
+    "preview:test": "wrangler dev --local --port 8787 --local-upstream www.youngkx.cn --var LINKS_LOCAL_PREVIEW:true --log-level error",
     "test:e2e": "playwright test --config config/playwright.config.ts",
     "perf:check": "node scripts/check-performance-budget.mjs",
     "worker:types": "wrangler types cloudflare/worker-configuration.d.ts",
+    "links:secret": "wrangler secret put LINKS_ADMIN_TOKEN",
     "validate": "npm run check && npm run lint && npm run test && npm run build && npm run perf:check",
     "deploy:dry": "wrangler deploy --dry-run",
     "deploy": "wrangler deploy"

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import robots from '@/app/robots';
 import sitemap from '@/app/sitemap';
 import { articles, articleSummaries, categorySummaries, getArticleByPath } from '@/lib/articles';
+import { selectLatestArticle } from '@/lib/article-selection';
 import { parseFrontMatter } from '@/lib/markdown-articles';
 import { absoluteUrl } from '@/lib/site';
 
@@ -38,6 +39,10 @@ describe('article index', () => {
     const sortedDates = [...dates].sort((left, right) => right.localeCompare(left));
 
     expect(dates).toEqual(sortedDates);
+  });
+
+  it('selects the newest article for the lead card regardless of input order', () => {
+    expect(selectLatestArticle([...articleSummaries].reverse())).toBe(articleSummaries[0]);
   });
 
   it('publishes the Markdown CodeX guide with generated heading anchors', () => {

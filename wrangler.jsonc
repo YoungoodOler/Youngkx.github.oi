@@ -23,6 +23,14 @@
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash",
   },
+  "kv_namespaces": [
+    {
+      "binding": "LINKS",
+    },
+  ],
+  "secrets": {
+    "required": ["LINKS_ADMIN_TOKEN"],
+  },
   "observability": {
     "enabled": true,
     "logs": {

@@ -8,4 +8,7 @@ test-results
 *.log
 *.tsbuildinfo
 .env*.local
+.dev.vars*
+.env*
+!.env.example
 .claude/

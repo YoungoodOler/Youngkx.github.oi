@@ -1,6 +1,7 @@
 import rawArticles from '@/content/articles.json';
 import { cardTone, inferCardPreset, isCardPreset, type CardPreset } from './card-presets';
 import { loadMarkdownArticles } from './markdown-articles';
+import { getTagTitle } from './tag-titles';
 
 export type ArticleRecord = {
   path: string[];
@@ -94,7 +95,7 @@ export const articleSummaries: ArticleSummary[] = [...articles]
       date: article.date,
       dateLabel: article.date.replaceAll('-', '.'),
       tags: article.tags,
-      tagLabel: article.tags.join(' / '),
+      tagLabel: article.tags.map(getTagTitle).join(' / '),
       href: `/${article.path.join('/')}/`,
       tone: cardTone(card),
       card,

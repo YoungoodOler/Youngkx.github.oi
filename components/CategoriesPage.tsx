@@ -23,9 +23,9 @@ export default function CategoriesPage({
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ duration: 0.92, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h1>文章分类</h1>
+          <h1>Topics</h1>
           <p>
-            {categories.length} 个主题 · {articleCount} 篇文章
+            {categories.length} Topics · {articleCount} Articles
           </p>
         </m.div>
       </section>
@@ -47,7 +47,7 @@ export default function CategoriesPage({
                 <h2>{group.title}</h2>
                 <p>{group.description}</p>
               </div>
-              <b>{group.posts.length} 篇文章</b>
+              <b>{group.posts.length} Articles</b>
             </header>
             <div className="category-posts">
               {group.posts.map((post) => (
