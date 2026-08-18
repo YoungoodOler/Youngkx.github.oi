@@ -55,7 +55,7 @@ html.theme-changing .modern-toc { transition:none!important; }
 .theme-icon { display: grid; place-items: center; width: 14px; height: 14px; font-size: 14px; }
 .menu { display: none; }
 
-.hero-stage { position: relative; height: 360svh; isolation: isolate; }
+.hero-stage { position: relative; height: 480svh; isolation: isolate; }
 .hero-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .hero-title-layer { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; text-align: center; transform-origin: 50% 45%; will-change: transform,opacity; }
 .hero-title-eyebrow { margin-bottom: 34px; color: #7c8497; font: 400 8px/1 var(--interface); letter-spacing: .14em; }
@@ -88,10 +88,10 @@ html.theme-changing .modern-toc { transition:none!important; }
 .scroll-morph::before { display:none; }
 .scene { position: absolute; inset: 0; z-index:1; }
 .scene canvas { width: 100%; height: 100%; display: block; }
-.signal-deck { position:relative; z-index:6; margin-top:calc(-100svh + 82px); padding-bottom:88px; transform-origin:50% 0; will-change:transform,opacity; }
+.signal-deck { position:relative; z-index:6; margin-top:calc(-100svh + 82px); padding-top:clamp(48px,6svh,68px); padding-bottom:88px; transform-origin:50% 0; will-change:transform,opacity; }
 .signal-deck__heading { display:grid; grid-template-columns:.8fr 2.2fr; gap:54px; align-items:end; margin-bottom:34px; }
 .signal-deck__heading>div { color:var(--muted); font:400 8px/1 var(--interface); letter-spacing:.09em; }
-.signal-deck__heading h2 { max-width:720px; margin:0; font:400 clamp(38px,4vw,64px)/1.02 var(--display); letter-spacing:-.045em; }
+.signal-deck__heading h2 { max-width:720px; margin:0; font:400 clamp(48px,5vw,76px)/1.02 var(--display); letter-spacing:-.045em; }
 .signal-deck__grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-template-rows:260px 260px; gap:16px; perspective:1600px; }
 .signal-card { --signal-tone:#789cff; --signal-glow:color-mix(in srgb,var(--signal-tone) 24%,transparent); position:relative; min-width:0; overflow:hidden; isolation:isolate; color:var(--ink); border:1px solid var(--line); border-radius:18px; background:linear-gradient(145deg,color-mix(in srgb,var(--bg) 82%,var(--signal-tone)),var(--bg) 72%); box-shadow:0 24px 80px rgba(0,0,0,.2); transform-style:preserve-3d; will-change:transform; }
 .signal-card:hover,.signal-card:focus-within { border-color:rgba(151,174,255,.3); box-shadow:0 34px 95px rgba(0,0,0,.32); }
@@ -424,7 +424,7 @@ html[data-theme='light'] .timeline-track i { background:#f3f1eb; }
   .home-page .nav-links.open { visibility:visible; opacity:1; pointer-events:auto; transform:translateY(0) scale(1); transition-delay:0s; }
   html[data-theme='light'] .menu { color:#171922; }
   html[data-theme='light'] .home-page .nav-links { border-color:rgba(31,40,58,.13); background:rgba(245,244,239,.92); box-shadow:0 18px 55px rgba(38,45,65,.14); }
-  .hero-stage { height:340svh; }
+  .hero-stage { height:450svh; }
   .hero-title-layer h1 { font-size:clamp(82px,18vw,150px); }
   .hero-detail-layer { padding:82px 0 7svh; }
   .hero-detail-grid { grid-template-columns:minmax(360px,1fr) minmax(0,.9fr); gap:42px; align-items:end; }
@@ -490,7 +490,7 @@ html[data-theme='light'] .timeline-track i { background:#f3f1eb; }
   .home-page .nav-links { background:rgba(11,14,20,.97); backdrop-filter:none; }
   html[data-theme='light'] .home-page .nav-links { background:rgba(245,244,239,.98); }
   .brand-name { display: none; }
-  .hero-stage { height:350svh; }
+  .hero-stage { height:450svh; }
   .hero-title-layer { place-content:center; padding-bottom:8svh; }
   .hero-title-eyebrow { margin-bottom:25px; font-size:7px; }
   .hero-title-layer h1 { font-size:20vw; letter-spacing:-.085em; }
@@ -507,8 +507,8 @@ html[data-theme='light'] .timeline-track i { background:#f3f1eb; }
   .button { min-width: 145px; }
   .scroll-morph { opacity:.9; }
   .signal-deck { margin-top:calc(-100svh + 76px); padding-bottom:32px; }
-  .signal-deck__heading { grid-template-columns:1fr; gap:18px; margin-bottom:28px; }
-  .signal-deck__heading h2 { font-size:clamp(34px,11vw,48px); }
+  .signal-deck__heading { grid-template-columns:1fr; gap:10px; margin-bottom:28px; }
+  .signal-deck__heading>div { padding-top:0; }
   .signal-deck__grid { grid-template-columns:1fr; gap:12px; }
   .signal-card { border-radius:14px; transform:none!important; will-change:auto; }
   .signal-card--lead,.signal-card--topics,.signal-card--pulse,.signal-card--portal { grid-column:1; grid-row:auto; }

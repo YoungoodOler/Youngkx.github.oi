@@ -28,7 +28,7 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
     if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
     return (stage.offsetHeight - window.innerHeight) / window.innerHeight;
   });
-  expect(transitionTravel).toBeGreaterThan(2.3);
+  expect(transitionTravel).toBeGreaterThan(3.4);
 
   const readableScroll = await page.locator('.hero-stage').evaluate((stage) => {
     if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
@@ -159,6 +159,8 @@ test('界面字体变为现代粗体且主页展示标题保持原字体', async
   expect(fonts.title.toLowerCase()).toContain('georgia');
   await expect(page.locator('.nav-links')).toContainText('Home');
   await expect(page.locator('.nav-links')).not.toContainText('HOME');
+  await expect(page.locator('.nav-links a')).toHaveText(['Home', 'Cards', 'Articles', 'Topics']);
+  await expect(page.locator('.nav-links a[href="#interactive-cards"]')).toHaveText('Cards');
 });
 
 test('高速下滑会先停留在动态索引卡片页', async ({ page }, testInfo) => {
@@ -204,9 +206,19 @@ test('主页动态索引卡片支持鼠标景深并保持移动端布局', async
 
   await expect(cards).toHaveCount(4);
   await expect(cards.first()).toBeVisible();
-  await expect(
-    deck.getByRole('heading', { name: 'Explore the archive through motion.' }),
-  ).toBeVisible();
+  await expect(deck.getByRole('heading', { name: 'Cards', exact: true })).toBeVisible();
+  const sectionHeadingSizes = await page.evaluate(() => {
+    const cardsHeading = document.querySelector('#signal-deck-title');
+    const articlesHeading = document.querySelector('#posts .section-heading h2');
+    if (!(cardsHeading instanceof HTMLElement) || !(articlesHeading instanceof HTMLElement)) {
+      throw new Error('Cards 或 Articles 标题不存在');
+    }
+    return {
+      cards: Number.parseFloat(getComputedStyle(cardsHeading).fontSize),
+      articles: Number.parseFloat(getComputedStyle(articlesHeading).fontSize),
+    };
+  });
+  expect(Math.abs(sectionHeadingSizes.cards - sectionHeadingSizes.articles)).toBeLessThan(0.5);
   await expect(deck).not.toContainText('移动鼠标');
   await expect(deck).not.toContainText('CURSOR REACTIVE');
   await expect(page.locator('.signal-deck__heading > p, .section-heading > p')).toHaveCount(0);
@@ -496,25 +508,99 @@ test('减少动态效果时立即切换且不创建粒子幕', async ({ page }) 
     .toBe('none');
 });
 
-test('手机导航能够展开并访问主要入口', async ({ page }, testInfo) => {
-  test.skip(!testInfo.project.name.startsWith('mobile'), '仅在手机视口验证');
+test('Cards 导航落在动画终点且手机菜单保持可用', async ({ page }, testInfo) => {
   await useStoredTheme(page);
   await openPage(page, '/');
 
+  const mobile = testInfo.project.name.startsWith('mobile');
   const menu = page.getByRole('button', { name: '切换菜单' });
-  await menu.click();
-  await expect(menu).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.locator('.nav-links')).toHaveClass(/open/);
+  if (mobile) {
+    await menu.click();
+    await expect(menu).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('.nav-links')).toHaveClass(/open/);
+  }
+
+  const interactiveCardsLink = page.getByRole('link', {
+    name: 'Cards',
+    exact: true,
+  });
+  await expect(interactiveCardsLink).toBeVisible();
   await expect(page.getByRole('link', { name: 'Articles', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Topics', exact: true })).toBeVisible();
 
-  const menuBox = await page.locator('.nav-links').boundingBox();
-  const viewport = page.viewportSize();
-  expect(menuBox).not.toBeNull();
-  expect(viewport).not.toBeNull();
-  expect(menuBox?.width ?? Infinity).toBeLessThan(260);
-  expect(menuBox?.height ?? Infinity).toBeLessThan(240);
-  expect((menuBox?.x ?? 0) + (menuBox?.width ?? 0) / 2).toBeGreaterThan((viewport?.width ?? 0) / 2);
-  expect((viewport?.width ?? 0) - ((menuBox?.x ?? 0) + (menuBox?.width ?? 0))).toBeLessThan(24);
-  expect(menuBox?.y ?? 0).toBeGreaterThan(50);
+  if (mobile) {
+    const menuBox = await page.locator('.nav-links').boundingBox();
+    const viewport = page.viewportSize();
+    expect(menuBox).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(menuBox?.width ?? Infinity).toBeLessThan(260);
+    expect(menuBox?.height ?? Infinity).toBeLessThan(240);
+    expect((menuBox?.x ?? 0) + (menuBox?.width ?? 0) / 2).toBeGreaterThan(
+      (viewport?.width ?? 0) / 2,
+    );
+    expect((viewport?.width ?? 0) - ((menuBox?.x ?? 0) + (menuBox?.width ?? 0))).toBeLessThan(24);
+    expect(menuBox?.y ?? 0).toBeGreaterThan(50);
+  }
+
+  await interactiveCardsLink.click();
+  await expect(page).toHaveURL(/#interactive-cards$/);
+  if (mobile) {
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('.nav-links')).not.toHaveClass(/open/);
+  }
+  await expect
+    .poll(() =>
+      page.locator('.hero-stage').evaluate((stage) => {
+        if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
+        const expected = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
+        return Math.abs(window.scrollY - expected);
+      }),
+    )
+    .toBeLessThan(3);
+
+  const landing = await page.evaluate(() => {
+    const nav = document.querySelector('.nav');
+    const deck = document.querySelector('#interactive-cards');
+    const heading = document.querySelector('#signal-deck-title');
+    if (
+      !(nav instanceof HTMLElement) ||
+      !(deck instanceof HTMLElement) ||
+      !(heading instanceof HTMLElement)
+    ) {
+      throw new Error('导航或 Cards 栏目不存在');
+    }
+    return {
+      navBottom: nav.getBoundingClientRect().bottom,
+      deckTop: deck.getBoundingClientRect().top,
+      headingTop: heading.getBoundingClientRect().top,
+    };
+  });
+  expect(Math.abs(landing.deckTop - landing.navBottom)).toBeLessThan(3);
+  expect(landing.headingTop - landing.navBottom).toBeGreaterThanOrEqual(46);
+  expect(landing.headingTop - landing.navBottom).toBeLessThanOrEqual(70);
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page).toHaveURL(/#interactive-cards$/);
+  await expect(page.locator('.scene canvas')).toBeVisible({ timeout: 12_000 });
+  await expect(page.locator('#interactive-cards')).toHaveClass(/signal-deck--settled/);
+  await expect
+    .poll(() =>
+      page.locator('.hero-stage').evaluate((stage) => {
+        if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
+        const expected = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
+        return Math.abs(window.scrollY - expected);
+      }),
+    )
+    .toBeLessThan(3);
+  const reloadedHeadingGap = () =>
+    page.evaluate(() => {
+      const nav = document.querySelector('.nav');
+      const heading = document.querySelector('#signal-deck-title');
+      if (!(nav instanceof HTMLElement) || !(heading instanceof HTMLElement)) {
+        throw new Error('导航或 Cards 标题不存在');
+      }
+      return heading.getBoundingClientRect().top - nav.getBoundingClientRect().bottom;
+    });
+  await expect.poll(reloadedHeadingGap).toBeGreaterThanOrEqual(46);
+  await expect.poll(reloadedHeadingGap).toBeLessThanOrEqual(70);
 });

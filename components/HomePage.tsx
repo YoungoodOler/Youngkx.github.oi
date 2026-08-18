@@ -14,6 +14,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   useEffect,
@@ -404,6 +405,7 @@ export default function HomePage({
   const [compactLayout, setCompactLayout] = useState(false);
   const [titleDestinationX, setTitleDestinationX] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signalDeckHashSettled, setSignalDeckHashSettled] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const { scrollYProgress } = useScroll();
   const heroRef = useRef<HTMLElement>(null);
@@ -442,26 +444,26 @@ export default function HomePage({
   const introY = useTransform(heroProgress, [0.22, 0.38, 0.7, 0.84], [150, 0, 0, -105]);
   const descriptionY = useTransform(heroProgress, [0.24, 0.4, 0.69, 0.83], [170, 0, 0, -92]);
   const actionsY = useTransform(heroProgress, [0.26, 0.42, 0.68, 0.82], [185, 0, 0, -78]);
-  const signalDeckOpacity = useTransform(heroProgress, [0, 0.66, 0.72, 1], [0, 0, 1, 1]);
-  const signalDeckY = useTransform(heroProgress, [0, 0.66, 0.9, 1], [180, 180, 20, 0]);
-  const deckHeadingOpacity = useTransform(heroProgress, [0, 0.92, 0.97, 1], [0, 0, 0.76, 1]);
-  const deckHeadingY = useTransform(heroProgress, [0, 0.92, 0.97, 1], [74, 74, 12, 0]);
+  const signalDeckOpacity = useTransform(heroProgress, [0, 0.56, 0.84, 1], [0, 0, 1, 1]);
+  const signalDeckY = useTransform(heroProgress, [0, 0.56, 0.9, 1], [180, 180, 20, 0]);
+  const deckHeadingOpacity = useTransform(heroProgress, [0, 0.72, 0.92, 1], [0, 0, 0.72, 1]);
+  const deckHeadingY = useTransform(heroProgress, [0, 0.72, 0.92, 1], [74, 74, 12, 0]);
   const deckHeadingClip = useTransform(
     heroProgress,
-    [0, 0.92, 0.97, 1],
+    [0, 0.72, 0.92, 1],
     ['inset(0 50% 0 50%)', 'inset(0 50% 0 50%)', 'inset(0 7% 0 7%)', 'inset(0 0% 0 0%)'],
   );
-  const deckGridOpacity = useTransform(heroProgress, [0, 0.66, 0.7, 1], [0, 0, 1, 1]);
-  const deckGridY = useTransform(heroProgress, [0, 0.66, 0.82, 0.94, 1], [220, 220, 112, 14, 0]);
-  const deckGridRotateX = useTransform(heroProgress, [0, 0.66, 0.78, 0.92, 1], [76, 76, 52, 6, 0]);
+  const deckGridOpacity = useTransform(heroProgress, [0, 0.58, 0.86, 1], [0, 0, 1, 1]);
+  const deckGridY = useTransform(heroProgress, [0, 0.56, 0.72, 0.92, 1], [220, 220, 112, 14, 0]);
+  const deckGridRotateX = useTransform(heroProgress, [0, 0.56, 0.7, 0.94, 1], [76, 76, 52, 6, 0]);
   const deckGridScaleX = useTransform(
     heroProgress,
-    [0, 0.66, 0.76, 0.9, 1],
+    [0, 0.56, 0.7, 0.94, 1],
     [0.04, 0.04, 0.68, 1, 1],
   );
   const deckGridScaleY = useTransform(
     heroProgress,
-    [0, 0.66, 0.74, 0.9, 1],
+    [0, 0.56, 0.68, 0.96, 1],
     [0.015, 0.015, 0.06, 1, 1],
   );
   const reduceMotion = useReducedMotion();
@@ -470,6 +472,50 @@ export default function HomePage({
   const primaryCategories = categories.slice(0, 4);
   const archiveStart = posts.at(-1)?.date.slice(0, 4) ?? '2023';
   const archiveLatest = latestPost?.date.slice(0, 4) ?? archiveStart;
+
+  const navigateToSignalDeck = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return;
+
+    const stage = heroRef.current;
+    if (!stage) return;
+
+    event.preventDefault();
+    setMenuOpen(false);
+    if (window.location.hash !== '#interactive-cards') {
+      window.history.pushState(window.history.state, '', '#interactive-cards');
+    }
+    const deckStop = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
+    window.scrollTo({ top: deckStop, behavior: reduceMotion ? 'auto' : 'smooth' });
+  };
+
+  useEffect(() => {
+    let alignmentFrame = 0;
+    const alignSignalDeckHash = () => {
+      window.cancelAnimationFrame(alignmentFrame);
+      const isSignalDeckHash = window.location.hash === '#interactive-cards';
+      setSignalDeckHashSettled(isSignalDeckHash);
+      if (!isSignalDeckHash) return;
+
+      alignmentFrame = window.requestAnimationFrame(() => {
+        const stage = heroRef.current;
+        if (!stage) return;
+        const deckStop = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
+        window.scrollTo({ top: deckStop, behavior: 'auto' });
+        heroProgress.set(1);
+        window.dispatchEvent(new Event('scroll'));
+      });
+    };
+
+    alignSignalDeckHash();
+    window.addEventListener('hashchange', alignSignalDeckHash);
+    window.addEventListener('popstate', alignSignalDeckHash);
+    return () => {
+      window.cancelAnimationFrame(alignmentFrame);
+      window.removeEventListener('hashchange', alignSignalDeckHash);
+      window.removeEventListener('popstate', alignSignalDeckHash);
+    };
+  }, [heroProgress]);
 
   useEffect(() => {
     let deckLockStarted = 0;
@@ -632,6 +678,9 @@ export default function HomePage({
           <a href="#top" onClick={() => setMenuOpen(false)}>
             Home
           </a>
+          <a href="#interactive-cards" onClick={navigateToSignalDeck}>
+            Cards
+          </a>
           <a href="#posts" onClick={() => setMenuOpen(false)}>
             Articles
           </a>
@@ -728,30 +777,50 @@ export default function HomePage({
       </section>
 
       <m.section
+        key={signalDeckHashSettled ? 'settled' : 'animated'}
         ref={signalDeckRef}
-        className="signal-deck shell"
+        id="interactive-cards"
+        className={
+          signalDeckHashSettled ? 'signal-deck signal-deck--settled shell' : 'signal-deck shell'
+        }
         aria-labelledby="signal-deck-title"
-        style={reduceMotion ? undefined : { opacity: signalDeckOpacity, y: signalDeckY }}
+        style={
+          reduceMotion
+            ? undefined
+            : signalDeckHashSettled
+              ? { opacity: 1, y: 0 }
+              : { opacity: signalDeckOpacity, y: signalDeckY }
+        }
       >
         <m.div
           className="signal-deck__heading"
           style={
             reduceMotion
               ? undefined
-              : { opacity: deckHeadingOpacity, y: deckHeadingY, clipPath: deckHeadingClip }
+              : signalDeckHashSettled
+                ? { opacity: 1, y: 0, clipPath: 'inset(0 0% 0 0%)' }
+                : { opacity: deckHeadingOpacity, y: deckHeadingY, clipPath: deckHeadingClip }
           }
         >
           <div>
             <span>00 / Interactive Index</span>
           </div>
-          <h2 id="signal-deck-title">Explore the archive through motion.</h2>
+          <h2 id="signal-deck-title">Cards</h2>
         </m.div>
 
         <m.div
           className="signal-deck__grid"
           style={
-            reduceMotion
-              ? signalDeckGridSurfaceStyle
+            reduceMotion || signalDeckHashSettled
+              ? {
+                  ...signalDeckGridSurfaceStyle,
+                  opacity: 1,
+                  y: 0,
+                  rotateX: 0,
+                  scaleX: 1,
+                  scaleY: 1,
+                  transformPerspective: 1600,
+                }
               : {
                   ...signalDeckGridSurfaceStyle,
                   opacity: deckGridOpacity,
