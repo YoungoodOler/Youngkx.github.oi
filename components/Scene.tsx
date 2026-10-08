@@ -32,6 +32,37 @@ function createRandom(seed = 137) {
   };
 }
 
+const softwareRendererPattern = /swiftshader|llvmpipe|softpipe|software|mesa offscreen/;
+let softwareRendererCache: boolean | undefined;
+
+// Chromium falls back to SwiftShader and Firefox to llvmpipe when no GPU is
+// available, where the lit subject mesh costs hundreds of milliseconds a frame.
+function detectSoftwareRenderer() {
+  if (softwareRendererCache !== undefined) return softwareRendererCache;
+
+  try {
+    const probe = document.createElement('canvas');
+    const context = probe.getContext('webgl2') ?? probe.getContext('webgl');
+    if (!context) {
+      softwareRendererCache = true;
+      return true;
+    }
+
+    const info = context.getExtension('WEBGL_debug_renderer_info');
+    const description = String(
+      (info ? context.getParameter(info.UNMASKED_RENDERER_WEBGL) : '') ||
+        context.getParameter(context.RENDERER) ||
+        '',
+    );
+    context.getExtension('WEBGL_lose_context')?.loseContext();
+    softwareRendererCache = softwareRendererPattern.test(description.toLowerCase());
+  } catch {
+    softwareRendererCache = false;
+  }
+
+  return softwareRendererCache;
+}
+
 export default function Scene({
   theme = 'dark',
   showSubject = true,
@@ -64,11 +95,12 @@ export default function Scene({
 
     const mobileAtMount = window.innerWidth < 700 || window.matchMedia('(pointer: coarse)').matches;
     let mobileLayout = window.innerWidth < 700;
-    const pixelRatio = Math.min(window.devicePixelRatio, mobileAtMount ? 1 : 1.5);
+    const lowPower = mobileAtMount || detectSoftwareRenderer();
+    const pixelRatio = Math.min(window.devicePixelRatio, lowPower ? 1 : 1.5);
     let currentThemeMix = themeRef.current === 'light' ? 1 : 0;
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
-      antialias: !mobileAtMount,
+      antialias: !lowPower,
       powerPreference: 'high-performance',
       precision: mobileAtMount ? 'mediump' : 'highp',
     });
@@ -339,13 +371,13 @@ export default function Scene({
       color: darkColors[0].clone().lerp(lightColors[0], currentThemeMix),
       roughness: 0.3,
       metalness: 0.42,
-      transmission: mobileAtMount ? 0 : 0.05,
+      transmission: lowPower ? 0 : 0.05,
       transparent: true,
       opacity: THREE.MathUtils.lerp(0.54, 0.28, currentThemeMix),
       emissive: darkEmissives[0].clone().lerp(lightEmissives[0], currentThemeMix),
       emissiveIntensity: THREE.MathUtils.lerp(0.72, 0.18, currentThemeMix),
       flatShading: true,
-      side: mobileAtMount ? THREE.FrontSide : THREE.DoubleSide,
+      side: lowPower ? THREE.FrontSide : THREE.DoubleSide,
     });
     const subject = new THREE.Mesh(geometry, material);
     group.add(subject);
