@@ -1,9 +1,9 @@
 ---
 title: "C++ STL"
-date: "2026-10-8"
-slug: "article-slug"
+date: "2026-10-08"
+slug: "cpp-stl"
 tags:
-  - C/C++
+  - C
 # 可选：code / cs / ai / vlog / talk / web / network / timeline
 card: code
 excerpt: "讲解C++ STL"
