@@ -2,6 +2,36 @@
 
 本文件记录 Youngkx Blog 的主要功能与架构变更。早期 Hexo 自动生成提交不逐条展开，仅保留阶段性记录。
 
+## [2.6.2] - 2026-10-08
+
+### 无 GPU 环境下的场景降级
+
+- `Scene.tsx` 新增软件渲染器检测：Chromium 在拿不到 GPU 时回退 SwiftShader、Firefox 回退 llvmpipe，命中时与手机端共用低配档位，关闭球体的 `transmission` 折射、双面渲染和抗锯齿，并把设备像素比压到 1。检测不到渲染器信息时按有 GPU 处理，正常桌面端画质与档位不变。
+- 球体的 `transmission: 0.05` 会让 Three.js 把整个场景额外渲染一遍再做屏幕空间折射采样，在软件光栅化下单帧要 260–370ms，是主页首屏滚动动画的 E2E 回归从 8 月中旬起持续超时的原因。关闭后同一场景实测 2.7fps → 42fps。
+- 粒子数量与几何细分保持桌面端原值，未以性能为由降低；只收敛无效绘制与重复渲染。
+
+### 生产依赖安全升级
+
+- `next` 15.5.22 → 15.5.27，修复未认证 RCE、AVIF 图像优化 RCE 与 SSG/ISR 缓存投毒（critical）。
+- `sharp` 覆写 0.35.3 → 0.35.5，修复 libheif 与 librsvg 漏洞；新增 `source-map-js` 覆写 `^1.2.2`，修复经 postcss 传入的事件循环拒绝服务。
+- `js-yaml` `^4.3.1` → `^4.3.2`，修复空 merge 源绕过 `maxTotalMergeKeys` 导致的 CPU 占用。
+- `npm audit --omit=dev` 现在为 0 漏洞。此前该步骤失败会让工作流在审计阶段中断，其后的类型检查、构建和 E2E 全部被跳过。
+
+### 内容
+
+- 发布《C++ STL》。
+- 修正该文 front matter：`date` 未补零写成 `2026-10-8`，会让 `next build` 抛出“date 必须使用 YYYY-MM-DD 格式”，静态导出失败并中断 Cloudflare 构建；同时把模板遗留的 `slug: article-slug` 改为 `cpp-stl`，标签 `C/C++` 归入已有的 `C` 分类，避免多出一个同名分类。
+
+### 验证与发布
+
+- 格式、TypeScript、ESLint、20 项单元测试、24 项桌面/手机 E2E 测试通过，另有 2 项按设备条件跳过；生产构建、性能预算与 Wrangler dry-run 通过。
+- 额外在软件渲染环境（`--use-angle=swiftshader`）下重跑完整 E2E 套件，同样 24 项通过，确认低配档位不影响其他用例。
+- 首页初始脚本约 165.9 KiB Brotli，CSS 约 12.4 KiB Brotli，原始 CSS 保持在 64.0 KiB 预算内。
+- Git 提交：`9d55ca6`（文章修正）、`5135921`（依赖升级）、`b04a86e`（场景降级）
+- Cloudflare Worker：`youngkxblog`；承载本次改动的自动部署版本为 `12b7b308-c8a0-4743-b5bb-e06bb2c14b5e`（构建 `17efae97-b51a-4893-b3d7-a08eb42a9b1f`，对应提交 `b04a86e`）。本条目之后的提交只会用同一份内容触发重建。
+- 正式域名返回 HTTP 200，`youngkx.cn` 仍以 308 跳转到 `www`；`/articles/`、`/categories/`、`/links/`、`/links/manage/`、`/2026/10/08/cpp-stl/`、`icon.png`、`apple-icon.png`、`robots.txt`、`sitemap.xml` 均为 200，不存在的地址返回 404，sitemap 已收录新文章。
+- 线上首页脚本已确认包含软件渲染器检测，软件渲染下实测 41.7–43.9fps。
+
 ## [2.6.1] - 2026-08-18
 
 ### Cards 导航与动画
