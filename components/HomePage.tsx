@@ -484,7 +484,8 @@ export default function HomePage({
         const stage = heroRef.current;
         if (!stage) return;
         const deckStop = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
-        window.scrollTo({ top: deckStop, behavior: 'auto' });
+        // `auto` inherits CSS smooth scrolling and can clear the settled state mid-alignment.
+        window.scrollTo({ top: deckStop, behavior: 'instant' });
         rawHeroProgress.set(1);
         smoothHeroProgress.jump(1);
         heroProgress.set(1);

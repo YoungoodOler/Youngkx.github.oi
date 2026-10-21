@@ -690,6 +690,7 @@ test('Cards 导航落在动画终点且手机菜单保持可用', async ({ page 
   await expect(page).toHaveURL(/#interactive-cards$/);
   await expect(page.locator('.scene canvas')).toBeVisible({ timeout: 12_000 });
   await expect(page.locator('#interactive-cards')).toHaveClass(/signal-deck--settled/);
+  await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'smooth');
   await expect
     .poll(() =>
       page.locator('.hero-stage').evaluate((stage) => {
