@@ -12,3 +12,4 @@ CHANGELOG.md
 docs/操作维护指南.md
 app/globals.css
 cloudflare/worker-configuration.d.ts
+*.code-workspace

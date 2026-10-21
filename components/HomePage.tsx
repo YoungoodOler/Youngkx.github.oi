@@ -1,10 +1,10 @@
 'use client';
 
 import {
-  AnimatePresence,
   m,
   useMotionTemplate,
   useMotionValue,
+  useMotionValueEvent,
   useReducedMotion,
   useScroll,
   useSpring,
@@ -25,10 +25,13 @@ import type { ArticleSummary, CategorySummary } from '@/lib/articles';
 import { selectLatestArticle } from '@/lib/article-selection';
 import type { CardPreset } from '@/lib/card-presets';
 import { validateUsefulLinksPayload } from '@/lib/useful-links';
+import { heroPhase, heroTimeline } from '@/lib/hero-timeline';
 import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
 
-const introQuotes = ['Life is real, life is earnest.'];
+const heroStageStyle = {
+  '--cards-travel': `calc(var(--hero-travel) * ${1 - heroTimeline.cards[0]})`,
+} as CSSProperties;
 const signalDeckGridSurfaceStyle: CSSProperties = {
   overflow: 'visible',
   border: 0,
@@ -266,14 +269,12 @@ function InteractiveSignalCard({
   href,
   label,
   className,
-  index,
   visual,
   children,
 }: {
   href: string;
   label: string;
   className: string;
-  index: number;
   visual: ReactNode;
   children: ReactNode;
 }) {
@@ -282,12 +283,10 @@ function InteractiveSignalCard({
   const pointerY = useMotionValue(50);
   const rawRotateX = useMotionValue(0);
   const rawRotateY = useMotionValue(0);
-  const rawLift = useMotionValue(0);
   const smoothPointerX = useSpring(pointerX, { stiffness: 180, damping: 26, mass: 0.35 });
   const smoothPointerY = useSpring(pointerY, { stiffness: 180, damping: 26, mass: 0.35 });
   const rotateX = useSpring(rawRotateX, { stiffness: 190, damping: 24, mass: 0.42 });
   const rotateY = useSpring(rawRotateY, { stiffness: 190, damping: 24, mass: 0.42 });
-  const lift = useSpring(rawLift, { stiffness: 220, damping: 25, mass: 0.38 });
   const visualX = useTransform(smoothPointerX, [0, 100], [-18, 18]);
   const visualY = useTransform(smoothPointerY, [0, 100], [-14, 14]);
   const glare = useMotionTemplate`radial-gradient(430px circle at ${smoothPointerX}% ${smoothPointerY}%, var(--signal-glow), transparent 68%)`;
@@ -308,20 +307,12 @@ function InteractiveSignalCard({
     pointerY.set(50);
     rawRotateX.set(0);
     rawRotateY.set(0);
-    rawLift.set(0);
   };
 
   return (
     <m.article
       className={`signal-card ${className}`}
-      initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
-      whileInView={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
-      viewport={{ once: true, margin: '-70px' }}
-      transition={{ duration: 0.72, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
-      style={{ rotateX, rotateY, y: lift, transformPerspective: 1300 }}
-      onPointerEnter={(event) => {
-        if (!reduceMotion && event.pointerType === 'mouse') rawLift.set(-7);
-      }}
+      style={{ rotateX, rotateY, transformPerspective: 1300 }}
       onPointerMove={move}
       onPointerLeave={reset}
     >
@@ -401,12 +392,11 @@ export default function HomePage({
   categories: CategorySummary[];
   usefulLinkCount: number;
 }) {
-  const { theme, toggleTheme } = useSiteExperience();
+  const { theme, toggleTheme, heroProgress } = useSiteExperience();
   const [compactLayout, setCompactLayout] = useState(false);
   const [titleDestinationX, setTitleDestinationX] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [signalDeckHashSettled, setSignalDeckHashSettled] = useState(false);
-  const [quoteIndex, setQuoteIndex] = useState(0);
   const { scrollYProgress } = useScroll();
   const heroRef = useRef<HTMLElement>(null);
   const signalDeckRef = useRef<HTMLElement>(null);
@@ -414,59 +404,51 @@ export default function HomePage({
   const detailLayerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const { scrollYProgress: heroProgress } = useScroll({
+  const settledDeckRef = useRef(false);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress: rawHeroProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end end'],
   });
+  const smoothHeroProgress = useSpring(rawHeroProgress, {
+    stiffness: 80,
+    damping: 18,
+    mass: 1,
+    restDelta: 0.0001,
+  });
+  const timelineProgress = reduceMotion ? rawHeroProgress : smoothHeroProgress;
+  useMotionValueEvent(timelineProgress, 'change', (value) => heroProgress.set(value));
+  useMotionValueEvent(rawHeroProgress, 'change', (value) => {
+    if (settledDeckRef.current && value < 0.995) {
+      settledDeckRef.current = false;
+      setSignalDeckHashSettled(false);
+    }
+  });
+  useEffect(() => {
+    heroProgress.set(rawHeroProgress.get());
+    return () => heroProgress.set(0);
+  }, [heroProgress, rawHeroProgress]);
+
   const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.001 });
+  const entrance = useTransform(heroProgress, (value) => heroPhase(value, heroTimeline.entrance));
+  const details = useTransform(heroProgress, (value) => heroPhase(value, heroTimeline.details));
+  const exit = useTransform(heroProgress, (value) => heroPhase(value, heroTimeline.exit));
+  const cards = useTransform(heroProgress, (value) => heroPhase(value, heroTimeline.cards));
   const titleRestScale = compactLayout ? 0.88 : 0.69;
-  const titleX = useTransform(heroProgress, [0, 0.18, 0.66], [0, 0, titleDestinationX]);
+  const titleX = useTransform(entrance, [0, 1], [0, titleDestinationX]);
   const titleY = useTransform(
-    heroProgress,
-    [0, 0.18, 0.66, 0.84, 1],
-    [
-      '0vh',
-      '0vh',
-      compactLayout ? '-23vh' : '-13vh',
-      compactLayout ? '-23vh' : '-13vh',
-      compactLayout ? '-38vh' : '-30vh',
-    ],
+    () => `${entrance.get() * (compactLayout ? -23 : -13) - exit.get() * 12}vh`,
   );
   const titleScale = useTransform(
-    heroProgress,
-    [0, 0.18, 0.66, 0.84, 1],
-    [1, 1, titleRestScale, titleRestScale, compactLayout ? 0.78 : 0.62],
+    () => 1 + entrance.get() * (titleRestScale - 1) - exit.get() * 0.06,
   );
-  const titleOpacity = useTransform(heroProgress, [0, 0.8, 0.9, 0.94, 1], [1, 1, 0.18, 0, 0]);
-  const titleBlogY = useTransform(heroProgress, [0, 0.84, 0.94, 1], ['0%', '0%', '-42%', '-46%']);
-  const titleEyebrowOpacity = useTransform(heroProgress, [0, 0.2, 0.42], [1, 0.5, 0]);
-  const detailOpacity = useTransform(heroProgress, [0.18, 0.3, 0.72, 0.82], [0, 1, 1, 0]);
-  const introY = useTransform(heroProgress, [0.22, 0.38, 0.7, 0.84], [150, 0, 0, -105]);
-  const descriptionY = useTransform(heroProgress, [0.24, 0.4, 0.69, 0.83], [170, 0, 0, -92]);
-  const actionsY = useTransform(heroProgress, [0.26, 0.42, 0.68, 0.82], [185, 0, 0, -78]);
-  const signalDeckOpacity = useTransform(heroProgress, [0, 0.56, 0.84, 1], [0, 0, 1, 1]);
-  const signalDeckY = useTransform(heroProgress, [0, 0.56, 0.9, 1], [180, 180, 20, 0]);
-  const deckHeadingOpacity = useTransform(heroProgress, [0, 0.72, 0.92, 1], [0, 0, 0.72, 1]);
-  const deckHeadingY = useTransform(heroProgress, [0, 0.72, 0.92, 1], [74, 74, 12, 0]);
-  const deckHeadingClip = useTransform(
-    heroProgress,
-    [0, 0.72, 0.92, 1],
-    ['inset(0 50% 0 50%)', 'inset(0 50% 0 50%)', 'inset(0 7% 0 7%)', 'inset(0 0% 0 0%)'],
-  );
-  const deckGridOpacity = useTransform(heroProgress, [0, 0.58, 0.86, 1], [0, 0, 1, 1]);
-  const deckGridY = useTransform(heroProgress, [0, 0.56, 0.72, 0.92, 1], [220, 220, 112, 14, 0]);
-  const deckGridRotateX = useTransform(heroProgress, [0, 0.56, 0.7, 0.94, 1], [76, 76, 52, 6, 0]);
-  const deckGridScaleX = useTransform(
-    heroProgress,
-    [0, 0.56, 0.7, 0.94, 1],
-    [0.04, 0.04, 0.68, 1, 1],
-  );
-  const deckGridScaleY = useTransform(
-    heroProgress,
-    [0, 0.56, 0.68, 0.96, 1],
-    [0.015, 0.015, 0.06, 1, 1],
-  );
-  const reduceMotion = useReducedMotion();
+  const titleOpacity = useTransform(exit, [0, 1], [1, 0]);
+  const titleBlogY = useTransform(exit, [0, 1], ['0%', '-32%']);
+  const titleEyebrowOpacity = useTransform(entrance, [0, 1], [1, 0]);
+  const detailOpacity = useTransform(() => details.get() * (1 - exit.get()));
+  const detailY = useTransform(() => (1 - details.get()) * 64 - exit.get() * 80);
+  const deckY = useTransform(cards, [0, 1], ['16svh', '0svh']);
+  const deckPointerEvents = useTransform(cards, (value) => (value > 0.15 ? 'auto' : 'none'));
   const [displayedLinkCount, setDisplayedLinkCount] = useState(usefulLinkCount);
   const latestPost = selectLatestArticle(posts);
   const primaryCategories = categories.slice(0, 4);
@@ -493,6 +475,7 @@ export default function HomePage({
     let alignmentFrame = 0;
     const alignSignalDeckHash = () => {
       window.cancelAnimationFrame(alignmentFrame);
+      settledDeckRef.current = false;
       const isSignalDeckHash = window.location.hash === '#interactive-cards';
       setSignalDeckHashSettled(isSignalDeckHash);
       if (!isSignalDeckHash) return;
@@ -502,7 +485,10 @@ export default function HomePage({
         if (!stage) return;
         const deckStop = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
         window.scrollTo({ top: deckStop, behavior: 'auto' });
+        rawHeroProgress.set(1);
+        smoothHeroProgress.jump(1);
         heroProgress.set(1);
+        settledDeckRef.current = true;
         window.dispatchEvent(new Event('scroll'));
       });
     };
@@ -515,65 +501,7 @@ export default function HomePage({
       window.removeEventListener('hashchange', alignSignalDeckHash);
       window.removeEventListener('popstate', alignSignalDeckHash);
     };
-  }, [heroProgress]);
-
-  useEffect(() => {
-    let deckLockStarted = 0;
-    let releaseTimer: number | undefined;
-    let deckLocked = false;
-
-    const releaseDeckLock = () => {
-      window.clearTimeout(releaseTimer);
-      const elapsed = performance.now() - deckLockStarted;
-      releaseTimer = window.setTimeout(
-        () => {
-          deckLocked = false;
-        },
-        Math.max(180, 650 - elapsed),
-      );
-    };
-
-    const stopAtSignalDeck = (event: WheelEvent) => {
-      if (event.deltaY <= 0) {
-        deckLocked = false;
-        window.clearTimeout(releaseTimer);
-        return;
-      }
-
-      if (deckLocked) {
-        event.preventDefault();
-        releaseDeckLock();
-        return;
-      }
-
-      const stage = heroRef.current;
-      const deck = signalDeckRef.current;
-      if (!stage || !deck) return;
-
-      const deckStop = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
-      const remaining = deckStop - window.scrollY;
-      const deltaMultiplier =
-        event.deltaMode === WheelEvent.DOM_DELTA_LINE
-          ? 16
-          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
-            ? window.innerHeight
-            : 1;
-      const intendedTravel = event.deltaY * deltaMultiplier;
-      if (remaining <= 1 || intendedTravel < remaining) return;
-
-      event.preventDefault();
-      deckLocked = true;
-      deckLockStarted = performance.now();
-      window.scrollTo({ top: deckStop, behavior: reduceMotion ? 'auto' : 'smooth' });
-      releaseDeckLock();
-    };
-
-    window.addEventListener('wheel', stopAtSignalDeck, { passive: false });
-    return () => {
-      window.removeEventListener('wheel', stopAtSignalDeck);
-      window.clearTimeout(releaseTimer);
-    };
-  }, [reduceMotion]);
+  }, [rawHeroProgress, smoothHeroProgress, heroProgress]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -621,15 +549,6 @@ export default function HomePage({
   }, []);
 
   useEffect(() => {
-    if (reduceMotion || introQuotes.length < 2) return;
-    const timer = window.setInterval(
-      () => setQuoteIndex((current) => (current + 1) % introQuotes.length),
-      4200,
-    );
-    return () => window.clearInterval(timer);
-  }, [reduceMotion]);
-
-  useEffect(() => {
     const controller = new AbortController();
     fetch('/api/links', { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
@@ -651,7 +570,7 @@ export default function HomePage({
   }, []);
 
   return (
-    <main className="home-page">
+    <main className="home-page" style={heroStageStyle}>
       <m.div className="progress" style={{ scaleX: progress }} />
       <ReactivePointer />
       <div className="ambient ambient-one" />
@@ -730,36 +649,23 @@ export default function HomePage({
           <m.div
             ref={detailLayerRef}
             className="hero-detail-layer shell"
-            style={{ opacity: detailOpacity }}
+            style={{ opacity: detailOpacity, y: detailY }}
           >
             <div className="hero-detail-grid">
               <div className="hero-detail-copy">
-                <m.div className="hero-copy-block hero-copy-intro" style={{ y: introY }}>
+                <div className="hero-copy-block hero-copy-intro">
                   <span className="eyebrow">
                     <i className="status-dot" />
                     Recording, Learning &amp; Building
                   </span>
                   <div className="hero-quote">
-                    <AnimatePresence mode="wait">
-                      <m.p
-                        key={quoteIndex}
-                        initial={{ opacity: 0, x: -18, clipPath: 'inset(0 100% 0 0)' }}
-                        animate={{ opacity: 1, x: 0, clipPath: 'inset(0 0% 0 0)' }}
-                        exit={{ opacity: 0, x: 18, clipPath: 'inset(0 0 0 100%)' }}
-                        transition={{ duration: 0.58, ease: [0.22, 1, 0.36, 1] }}
-                      >
-                        {introQuotes[quoteIndex]}
-                      </m.p>
-                    </AnimatePresence>
+                    <p>Life is real, life is earnest.</p>
                   </div>
-                </m.div>
-                <m.div
-                  className="hero-copy-block hero-copy-description"
-                  style={{ y: descriptionY }}
-                >
+                </div>
+                <div className="hero-copy-block hero-copy-description">
                   <p>Notes on OI, C / C++, the web, and everyday life.</p>
-                </m.div>
-                <m.div className="hero-copy-block hero-copy-actions" style={{ y: actionsY }}>
+                </div>
+                <div className="hero-copy-block hero-copy-actions">
                   <div className="hero-actions">
                     <MagneticLink className="button primary" href="#posts">
                       Explore Posts <span>↓</span>
@@ -768,7 +674,7 @@ export default function HomePage({
                       Browse Topics <span>→</span>
                     </MagneticLink>
                   </div>
-                </m.div>
+                </div>
               </div>
               <div className="hero-detail-spacer" aria-hidden="true" />
             </div>
@@ -788,197 +694,166 @@ export default function HomePage({
           reduceMotion
             ? undefined
             : signalDeckHashSettled
-              ? { opacity: 1, y: 0 }
-              : { opacity: signalDeckOpacity, y: signalDeckY }
+              ? { opacity: 1 }
+              : { opacity: cards, pointerEvents: deckPointerEvents }
         }
       >
         <m.div
-          className="signal-deck__heading"
-          style={
-            reduceMotion
-              ? undefined
-              : signalDeckHashSettled
-                ? { opacity: 1, y: 0, clipPath: 'inset(0 0% 0 0%)' }
-                : { opacity: deckHeadingOpacity, y: deckHeadingY, clipPath: deckHeadingClip }
-          }
+          className="signal-deck__content"
+          style={reduceMotion || signalDeckHashSettled ? undefined : { y: deckY }}
         >
-          <div>
-            <span>00 / Interactive Index</span>
+          <div className="signal-deck__heading">
+            <div>
+              <span>00 / Interactive Index</span>
+            </div>
+            <h2 id="signal-deck-title">Cards</h2>
           </div>
-          <h2 id="signal-deck-title">Cards</h2>
-        </m.div>
 
-        <m.div
-          className="signal-deck__grid"
-          style={
-            reduceMotion || signalDeckHashSettled
-              ? {
-                  ...signalDeckGridSurfaceStyle,
-                  opacity: 1,
-                  y: 0,
-                  rotateX: 0,
-                  scaleX: 1,
-                  scaleY: 1,
-                  transformPerspective: 1600,
+          <div className="signal-deck__grid" style={signalDeckGridSurfaceStyle}>
+            {latestPost && (
+              <InteractiveSignalCard
+                href={latestPost.href}
+                label={`打开最新文章：${latestPost.title}`}
+                className="signal-card--lead"
+                visual={
+                  <div className="signal-constellation">
+                    <svg viewBox="0 0 640 520" preserveAspectRatio="xMidYMid slice">
+                      <g
+                        fill="none"
+                        stroke="var(--accent)"
+                        strokeWidth="1"
+                        strokeDasharray="7 13"
+                        opacity=".25"
+                      >
+                        <path d="M42 352 C118 112 270 92 332 260 S492 432 610 138" />
+                        <path d="M18 226 C148 390 260 394 374 184 S522 86 630 302" opacity=".72" />
+                        <path d="M96 478 C174 306 282 264 420 334 S550 372 620 250" opacity=".52" />
+                      </g>
+                      <g fill="var(--accent)" stroke="var(--ink)" strokeWidth="1">
+                        {[
+                          [70, 312, 5],
+                          [154, 172, 8],
+                          [252, 148, 4],
+                          [334, 264, 10],
+                          [420, 350, 5],
+                          [506, 318, 7],
+                          [584, 174, 4],
+                        ].map(([cx, cy, radius]) => (
+                          <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={radius} />
+                        ))}
+                      </g>
+                    </svg>
+                  </div>
                 }
-              : {
-                  ...signalDeckGridSurfaceStyle,
-                  opacity: deckGridOpacity,
-                  y: deckGridY,
-                  rotateX: deckGridRotateX,
-                  scaleX: deckGridScaleX,
-                  scaleY: deckGridScaleY,
-                  transformPerspective: 1600,
-                }
-          }
-        >
-          {latestPost && (
+              >
+                <div className="signal-card__topline">
+                  <span>Latest Signal</span>
+                  <i>Live</i>
+                </div>
+                <div className="signal-card__lead-copy">
+                  <small>{latestPost.dateLabel}</small>
+                  <h3>{latestPost.title}</h3>
+                  <p>{latestPost.excerpt}</p>
+                </div>
+                <div className="signal-card__footer">
+                  <span>{latestPost.tagLabel}</span>
+                  <b>Open Entry ↗</b>
+                </div>
+              </InteractiveSignalCard>
+            )}
+
             <InteractiveSignalCard
-              href={latestPost.href}
-              label={`打开最新文章：${latestPost.title}`}
-              className="signal-card--lead"
-              index={0}
+              href="/categories/"
+              label="浏览文章主题"
+              className="signal-card--topics"
               visual={
-                <div className="signal-constellation">
-                  <svg viewBox="0 0 640 520" preserveAspectRatio="xMidYMid slice">
-                    <g
-                      fill="none"
-                      stroke="var(--accent)"
-                      strokeWidth="1"
-                      strokeDasharray="7 13"
-                      opacity=".25"
-                    >
-                      <path d="M42 352 C118 112 270 92 332 260 S492 432 610 138" />
-                      <path d="M18 226 C148 390 260 394 374 184 S522 86 630 302" opacity=".72" />
-                      <path d="M96 478 C174 306 282 264 420 334 S550 372 620 250" opacity=".52" />
-                    </g>
-                    <g fill="var(--accent)" stroke="var(--ink)" strokeWidth="1">
-                      {[
-                        [70, 312, 5],
-                        [154, 172, 8],
-                        [252, 148, 4],
-                        [334, 264, 10],
-                        [420, 350, 5],
-                        [506, 318, 7],
-                        [584, 174, 4],
-                      ].map(([cx, cy, radius]) => (
-                        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={radius} />
-                      ))}
-                    </g>
-                  </svg>
+                <svg className="signal-radar" viewBox="0 0 300 300">
+                  <circle cx="150" cy="150" r="148" />
+                  <circle cx="150" cy="150" r="96" />
+                  <circle cx="150" cy="150" r="48" />
+                  <path d="M150 150 L248 93" />
+                  <circle className="signal-radar__point" cx="248" cy="93" r="5" />
+                  <circle className="signal-radar__point" cx="88" cy="212" r="4" />
+                </svg>
+              }
+            >
+              <div className="signal-card__topline">
+                <span>Topic Field</span>
+                <i>{String(categories.length).padStart(2, '0')}</i>
+              </div>
+              <div className="signal-topic-list">
+                {primaryCategories.map((category) => (
+                  <div key={category.id}>
+                    <span>{category.number}</span>
+                    <strong>{category.title}</strong>
+                    <small>{category.posts.length}</small>
+                  </div>
+                ))}
+              </div>
+              <div className="signal-card__footer">
+                <span>Filter The Archive</span>
+                <b>Explore ↗</b>
+              </div>
+            </InteractiveSignalCard>
+
+            <InteractiveSignalCard
+              href="/articles/"
+              label="查看全部文章"
+              className="signal-card--pulse"
+              visual={
+                <div className="signal-pulse-field">
+                  {[32, 56, 38, 82, 48, 68, 42, 92, 61, 76, 36, 58].map((height, index) => (
+                    <i
+                      key={`${height}-${index}`}
+                      style={{ '--pulse-height': `${height}%` } as CSSProperties}
+                    />
+                  ))}
                 </div>
               }
             >
               <div className="signal-card__topline">
-                <span>Latest Signal</span>
-                <i>Live</i>
+                <span>Archive Pulse</span>
+                <i>Synced</i>
               </div>
-              <div className="signal-card__lead-copy">
-                <small>{latestPost.dateLabel}</small>
-                <h3>{latestPost.title}</h3>
-                <p>{latestPost.excerpt}</p>
+              <div className="signal-card__metric">
+                <strong>{String(posts.length).padStart(2, '0')}</strong>
+                <span>Published Notes</span>
               </div>
               <div className="signal-card__footer">
-                <span>{latestPost.tagLabel}</span>
-                <b>Open Entry ↗</b>
+                <span>
+                  {archiveStart}—{archiveLatest}
+                </span>
+                <b>All Posts ↗</b>
               </div>
             </InteractiveSignalCard>
-          )}
 
-          <InteractiveSignalCard
-            href="/categories/"
-            label="浏览文章主题"
-            className="signal-card--topics"
-            index={1}
-            visual={
-              <svg className="signal-radar" viewBox="0 0 300 300">
-                <circle cx="150" cy="150" r="148" />
-                <circle cx="150" cy="150" r="96" />
-                <circle cx="150" cy="150" r="48" />
-                <path d="M150 150 L248 93" />
-                <circle className="signal-radar__point" cx="248" cy="93" r="5" />
-                <circle className="signal-radar__point" cx="88" cy="212" r="4" />
-              </svg>
-            }
-          >
-            <div className="signal-card__topline">
-              <span>Topic Field</span>
-              <i>{String(categories.length).padStart(2, '0')}</i>
-            </div>
-            <div className="signal-topic-list">
-              {primaryCategories.map((category) => (
-                <div key={category.id}>
-                  <span>{category.number}</span>
-                  <strong>{category.title}</strong>
-                  <small>{category.posts.length}</small>
-                </div>
-              ))}
-            </div>
-            <div className="signal-card__footer">
-              <span>Filter The Archive</span>
-              <b>Explore ↗</b>
-            </div>
-          </InteractiveSignalCard>
-
-          <InteractiveSignalCard
-            href="/articles/"
-            label="查看全部文章"
-            className="signal-card--pulse"
-            index={2}
-            visual={
-              <div className="signal-pulse-field">
-                {[32, 56, 38, 82, 48, 68, 42, 92, 61, 76, 36, 58].map((height, index) => (
-                  <i
-                    key={`${height}-${index}`}
-                    style={{ '--pulse-height': `${height}%` } as CSSProperties}
-                  />
-                ))}
+            <InteractiveSignalCard
+              href="/links/"
+              label="打开常用链接"
+              className="signal-card--portal"
+              visual={
+                <svg className="signal-portal-mark" viewBox="0 0 210 210">
+                  <circle cx="105" cy="105" r="103" />
+                  <circle cx="105" cy="105" r="64" />
+                  <circle cx="105" cy="105" r="28" />
+                  <path d="M89 121 L121 89 M99 89 H121 V111" />
+                </svg>
+              }
+            >
+              <div className="signal-card__topline">
+                <span>Useful Links</span>
+                <i>{String(displayedLinkCount).padStart(2, '0')}</i>
               </div>
-            }
-          >
-            <div className="signal-card__topline">
-              <span>Archive Pulse</span>
-              <i>Synced</i>
-            </div>
-            <div className="signal-card__metric">
-              <strong>{String(posts.length).padStart(2, '0')}</strong>
-              <span>Published Notes</span>
-            </div>
-            <div className="signal-card__footer">
-              <span>
-                {archiveStart}—{archiveLatest}
-              </span>
-              <b>All Posts ↗</b>
-            </div>
-          </InteractiveSignalCard>
-
-          <InteractiveSignalCard
-            href="/links/"
-            label="打开常用链接"
-            className="signal-card--portal"
-            index={3}
-            visual={
-              <svg className="signal-portal-mark" viewBox="0 0 210 210">
-                <circle cx="105" cy="105" r="103" />
-                <circle cx="105" cy="105" r="64" />
-                <circle cx="105" cy="105" r="28" />
-                <path d="M89 121 L121 89 M99 89 H121 V111" />
-              </svg>
-            }
-          >
-            <div className="signal-card__topline">
-              <span>Useful Links</span>
-              <i>{String(displayedLinkCount).padStart(2, '0')}</i>
-            </div>
-            <div className="signal-card__portal-copy">
-              <small>Tools / References / Places</small>
-              <h3>Open Links.</h3>
-            </div>
-            <div className="signal-card__footer">
-              <span>Open Directory</span>
-              <b>↗</b>
-            </div>
-          </InteractiveSignalCard>
+              <div className="signal-card__portal-copy">
+                <small>Tools / References / Places</small>
+                <h3>Open Links.</h3>
+              </div>
+              <div className="signal-card__footer">
+                <span>Open Directory</span>
+                <b>↗</b>
+              </div>
+            </InteractiveSignalCard>
+          </div>
         </m.div>
       </m.section>
 

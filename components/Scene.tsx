@@ -1,27 +1,13 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import type { MotionValue } from 'framer-motion';
 import * as THREE from 'three';
+import { heroPhase, heroTimeline } from '@/lib/hero-timeline';
 
 const smoothstep = (value: number) => {
   const t = THREE.MathUtils.clamp(value, 0, 1);
   return t * t * (3 - 2 * t);
-};
-
-const cubicBezier = (
-  start: number,
-  controlA: number,
-  controlB: number,
-  end: number,
-  progress: number,
-) => {
-  const inverse = 1 - progress;
-  return (
-    inverse * inverse * inverse * start +
-    3 * inverse * inverse * progress * controlA +
-    3 * inverse * progress * progress * controlB +
-    progress * progress * progress * end
-  );
 };
 
 function createRandom(seed = 137) {
@@ -66,9 +52,11 @@ function detectSoftwareRenderer() {
 export default function Scene({
   theme = 'dark',
   showSubject = true,
+  heroProgress,
 }: {
   theme?: 'dark' | 'light';
   showSubject?: boolean;
+  heroProgress: MotionValue<number>;
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const themeRef = useRef(theme);
@@ -479,8 +467,6 @@ export default function Scene({
     const interactionPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     let targetScroll = 0;
     let currentScroll = 0;
-    let targetHeroProgress = 0;
-    let currentHeroProgress = 0;
     let pointerInside = false;
     let pointerPressed = false;
     let currentPointerPower = 0;
@@ -494,7 +480,6 @@ export default function Scene({
     const updateScroll = () => {
       const scrollY = window.scrollY;
       targetScroll = scrollY / maximumScroll;
-      targetHeroProgress = THREE.MathUtils.clamp(scrollY / heroScrollTravel, 0, 1);
     };
 
     syncLayoutRef.current = (snapSubject) => {
@@ -502,7 +487,6 @@ export default function Scene({
       updateScroll();
       if (!snapSubject) return;
       currentScroll = targetScroll;
-      currentHeroProgress = targetHeroProgress;
       previousSubjectArticleMix = -1;
       previousCategoryMix = -1;
       mount.dataset.subjectLayout = 'synced';
@@ -641,9 +625,6 @@ export default function Scene({
       currentScroll = prefersReducedMotion
         ? targetScroll
         : THREE.MathUtils.damp(currentScroll, targetScroll, 4.6, delta);
-      currentHeroProgress = prefersReducedMotion
-        ? targetHeroProgress
-        : THREE.MathUtils.damp(currentHeroProgress, targetHeroProgress, 4.8, delta);
       const targetPointerPower =
         pointerInside && !prefersReducedMotion ? (pointerPressed ? 1.08 : 0.82) : 0;
       currentPointerPower = THREE.MathUtils.damp(
@@ -662,10 +643,10 @@ export default function Scene({
       const articleMix = smoothstep((currentScroll - 0.055) / 0.3);
       const categoryMix = smoothstep((currentScroll - 0.61) / 0.24);
       const subjectArticleMix = showSubjectRef.current
-        ? smoothstep((currentHeroProgress - 0.84) / 0.16)
+        ? heroPhase(heroProgress.get(), heroTimeline.exit)
         : articleMix;
       const sphereEntry = showSubjectRef.current
-        ? smoothstep((currentHeroProgress - 0.25) / 0.48)
+        ? heroPhase(heroProgress.get(), heroTimeline.entrance)
         : 0;
       const shouldShowSubject = showSubjectRef.current;
       group.visible = shouldShowSubject;
@@ -707,12 +688,12 @@ export default function Scene({
       const firstX = THREE.MathUtils.lerp(heroX, articleX, subjectArticleMix);
       const contentX = THREE.MathUtils.lerp(firstX, categoryX, categoryMix);
       const contentY = THREE.MathUtils.lerp(-0.05, 0.28, subjectArticleMix) - categoryMix * 0.46;
-      const edgeX = mobile ? 4.4 : 5.8;
-      const edgeY = mobile ? -2.4 : -3.2;
-      const flightX = cubicBezier(edgeX, edgeX * 0.82, heroX + 1.35, heroX, sphereEntry);
-      const flightY = cubicBezier(edgeY, 1.7, -1.05, -0.05, sphereEntry);
-      group.position.x = flightX + (contentX - heroX) + pointer.x * 0.1;
-      group.position.y = flightY + (contentY + 0.05) - pointer.y * 0.1;
+      const edgeX = mobile ? 2.5 : 3.6;
+      const edgeY = mobile ? -0.6 : -0.75;
+      const flightX = THREE.MathUtils.lerp(edgeX, heroX, sphereEntry);
+      const flightY = THREE.MathUtils.lerp(edgeY, -0.05, sphereEntry);
+      group.position.x = flightX + (contentX - heroX) + pointer.x * 0.05;
+      group.position.y = flightY + (contentY + 0.05) - pointer.y * 0.05;
       const heroScale = mobile ? 0.8 : 1.02;
       const desiredScale =
         THREE.MathUtils.lerp(heroScale, mobile ? 0.54 : 0.64, subjectArticleMix) +
@@ -720,15 +701,15 @@ export default function Scene({
       group.scale.setScalar(desiredScale * THREE.MathUtils.lerp(0.18, 1, sphereEntry));
 
       group.rotation.x =
-        currentScroll * Math.PI * 1.08 - pointer.y * 0.24 + (1 - sphereEntry) * 1.45;
+        currentScroll * Math.PI * 0.45 - pointer.y * 0.12 + (1 - sphereEntry) * 0.32;
       group.rotation.y =
-        currentScroll * Math.PI * 1.7 +
-        pointer.x * 0.28 +
-        motionTime * 0.035 -
-        (1 - sphereEntry) * 2.6;
-      group.rotation.z = currentScroll * -0.72 + (1 - sphereEntry) * 1.2;
-      halos[0].rotation.z = motionTime * 0.055 + currentScroll * 1.8;
-      halos[1].rotation.y = -motionTime * 0.04 - currentScroll * 1.3;
+        currentScroll * Math.PI * 0.65 +
+        pointer.x * 0.14 +
+        motionTime * 0.012 -
+        (1 - sphereEntry) * 0.55;
+      group.rotation.z = currentScroll * -0.28 + (1 - sphereEntry) * 0.18;
+      halos[0].rotation.z = motionTime * 0.018 + currentScroll * 0.7;
+      halos[1].rotation.y = -motionTime * 0.014 - currentScroll * 0.5;
 
       particleMaterial.uniforms.uTime.value = motionTime;
       particleMaterial.uniforms.uScroll.value = currentScroll;
@@ -858,7 +839,7 @@ export default function Scene({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, []);
+  }, [heroProgress]);
 
   return <div ref={mountRef} className="scene" aria-hidden="true" />;
 }

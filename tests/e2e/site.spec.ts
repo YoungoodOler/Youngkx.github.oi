@@ -16,6 +16,11 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
   await useStoredTheme(page);
   await openPage(page, '/');
 
+  // Perspective layers must not enlarge the mobile layout viewport while they enter.
+  await expect
+    .poll(() => page.evaluate(() => window.innerWidth - document.documentElement.clientWidth))
+    .toBeLessThan(2);
+
   const title = page.locator('.hero-title-layer h1');
   await expect(title).toContainText('Youngkx');
   await expect(title).toContainText('Blog');
@@ -28,7 +33,17 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
     if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
     return (stage.offsetHeight - window.innerHeight) / window.innerHeight;
   });
-  expect(transitionTravel).toBeGreaterThan(3.4);
+  expect(transitionTravel).toBeGreaterThanOrEqual(2.7);
+  expect(transitionTravel).toBeLessThanOrEqual(3.1);
+
+  // The first wheel movement must already move the title instead of consuming a blank lead-in.
+  await page.evaluate(() => window.scrollTo({ top: 100, behavior: 'instant' }));
+  await expect
+    .poll(async () => {
+      const box = await title.boundingBox();
+      return (initialTitleBox?.width ?? 0) - (box?.width ?? 0);
+    })
+    .toBeGreaterThan(0.5);
 
   const readableScroll = await page.locator('.hero-stage').evaluate((stage) => {
     if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
@@ -53,10 +68,13 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
   const targetScroll = await page.locator('.hero-stage').evaluate((stage) => {
     if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
     const travel = Math.max(1, stage.offsetHeight - window.innerHeight);
-    return stage.offsetTop + travel * 0.75;
+    return stage.offsetTop + travel * 0.46;
   });
   await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), targetScroll);
   await page.waitForTimeout(650);
+
+  const stickyBox = await page.locator('.hero-sticky').boundingBox();
+  expect(Math.abs(stickyBox?.y ?? Infinity)).toBeLessThan(2);
 
   await expect(page.locator('.hero-copy-intro')).toBeVisible();
   await expect(page.locator('.hero-copy-description')).toBeVisible();
@@ -83,10 +101,42 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
     (viewport?.width ?? 0) * (testInfo.project.name.startsWith('mobile') ? 0.5 : 0.3),
   );
 
+  const exitScroll = await page.locator('.hero-stage').evaluate((stage) => {
+    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
+    return stage.offsetTop + (stage.offsetHeight - window.innerHeight) * 0.64;
+  });
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), exitScroll);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const titleOpacity = Number(
+          getComputedStyle(document.querySelector('.hero-title-layer')!).opacity,
+        );
+        const detailOpacity = Number(
+          getComputedStyle(document.querySelector('.hero-detail-layer')!).opacity,
+        );
+        return (
+          titleOpacity > 0.2 && titleOpacity < 0.8 && Math.abs(titleOpacity - detailOpacity) < 0.01
+        );
+      }),
+    )
+    .toBe(true);
+
+  const emergingScroll = await page.locator('.hero-stage').evaluate((stage) => {
+    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
+    return stage.offsetTop + (stage.offsetHeight - window.innerHeight) * 0.76;
+  });
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), emergingScroll);
+  await expect
+    .poll(async () => (await page.locator('.signal-deck__grid').boundingBox())?.y ?? Infinity)
+    .toBeLessThan((viewport?.height ?? 0) * 0.55);
+  const emergingGridBox = await page.locator('.signal-deck__grid').boundingBox();
+  expect(emergingGridBox?.y ?? 0).toBeGreaterThan((viewport?.height ?? 0) * 0.25);
+
   const transitionScroll = await page.locator('.hero-stage').evaluate((stage) => {
     if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
     const travel = Math.max(1, stage.offsetHeight - window.innerHeight);
-    return stage.offsetTop + travel * 0.86;
+    return stage.offsetTop + travel * 0.92;
   });
   await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), transitionScroll);
   await page.waitForTimeout(450);
@@ -102,9 +152,12 @@ test('主页首屏和第二阶段保持完整分层布局', async ({ page }, tes
     .toBeGreaterThan(0.8);
   await expect
     .poll(() =>
-      page.locator('.signal-deck__grid').evaluate((element) => getComputedStyle(element).transform),
+      page
+        .locator('.signal-deck__content')
+        .evaluate((element) => getComputedStyle(element).transform),
     )
     .not.toBe('none');
+  await expect(page.locator('.signal-deck__grid')).toHaveCSS('transform', 'none');
   await expect
     .poll(() =>
       page.locator('.signal-deck__grid').evaluate((element) => getComputedStyle(element).clipPath),
@@ -163,36 +216,62 @@ test('界面字体变为现代粗体且主页展示标题保持原字体', async
   await expect(page.locator('.nav-links a[href="#interactive-cards"]')).toHaveText('Cards');
 });
 
-test('高速下滑会先停留在动态索引卡片页', async ({ page }, testInfo) => {
+test('滚轮连续通过 Cards 且可以立即反向滚动', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name.startsWith('mobile'), '桌面滚轮回归测试');
   await useStoredTheme(page);
   await openPage(page, '/');
 
-  await page.mouse.wheel(0, 12_000);
-  await page.waitForTimeout(900);
+  const deckStop = await page.locator('.hero-stage').evaluate((stage) => {
+    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
+    return stage.offsetTop + stage.offsetHeight - window.innerHeight;
+  });
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), deckStop - 100);
+  await page.mouse.wheel(0, 800);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(deckStop + 500);
+  const forwardScroll = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, -600);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(forwardScroll - 400);
+});
 
-  const landing = await page.evaluate(() => {
-    const deck = document.querySelector('.signal-deck');
-    const articles = document.querySelector('#posts');
-    if (!(deck instanceof HTMLElement) || !(articles instanceof HTMLElement)) {
-      throw new Error('主页卡片页或文章区不存在');
-    }
-    const deckRect = deck.getBoundingClientRect();
-    const articlesRect = articles.getBoundingClientRect();
+test('Cards 连续浮出时不回跳且保持卡片尺寸', async ({ page }) => {
+  await useStoredTheme(page);
+  await openPage(page, '/');
+  const motion = await page.evaluate(async () => {
+    const stage = document.querySelector<HTMLElement>('.hero-stage')!;
+    const grid = document.querySelector<HTMLElement>('.signal-deck__grid')!;
+    const travel = stage.offsetHeight - window.innerHeight;
+    window.scrollTo({ top: travel * 0.645, behavior: 'instant' });
+    await new Promise((resolve) => window.setTimeout(resolve, 700));
+    const samples: { top: number; height: number }[] = [];
+    await new Promise<void>((resolve) => {
+      const started = performance.now();
+      const frame = (now: number) => {
+        const elapsed = now - started;
+        const progress = Math.min(1, elapsed / 1_400);
+        window.scrollTo({ top: travel * (0.645 + progress * 0.355), behavior: 'instant' });
+        const box = grid.getBoundingClientRect();
+        samples.push({ top: box.top, height: box.height });
+        if (elapsed < 1_800) requestAnimationFrame(frame);
+        else resolve();
+      };
+      requestAnimationFrame(frame);
+    });
     return {
-      deckTop: deckRect.top,
-      deckBottom: deckRect.bottom,
-      articlesTop: articlesRect.top,
+      downwardStep: Math.max(
+        0,
+        ...samples.slice(1).map((sample, index) => sample.top - samples[index].top),
+      ),
+      heightChange:
+        Math.max(...samples.map((sample) => sample.height)) -
+        Math.min(...samples.map((sample) => sample.height)),
+      upwardTravel: samples[0].top - samples.at(-1)!.top,
       viewportHeight: window.innerHeight,
     };
   });
-
-  expect(landing.deckTop).toBeGreaterThanOrEqual(70);
-  expect(landing.deckTop).toBeLessThan(120);
-  expect(landing.deckBottom).toBeGreaterThan(landing.viewportHeight * 0.7);
-  expect(landing.articlesTop).toBeGreaterThan(landing.viewportHeight * 0.85);
-  await expect(page.locator('.signal-card')).toHaveCount(4);
-  await expect(page.locator('.signal-card').first()).toBeVisible();
+  expect(motion.downwardStep).toBeLessThan(0.75);
+  expect(motion.heightChange).toBeLessThan(0.5);
+  expect(motion.upwardTravel).toBeGreaterThan(60);
+  expect(motion.upwardTravel).toBeLessThan(motion.viewportHeight * 0.2);
 });
 
 test('主页动态索引卡片支持鼠标景深并保持移动端布局', async ({ page }, testInfo) => {
@@ -201,7 +280,13 @@ test('主页动态索引卡片支持鼠标景深并保持移动端布局', async
 
   const deck = page.locator('.signal-deck');
   const cards = deck.locator('.signal-card');
-  await deck.scrollIntoViewIfNeeded();
+  await page.locator('.hero-stage').evaluate((stage) => {
+    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
+    window.scrollTo({
+      top: stage.offsetTop + stage.offsetHeight - window.innerHeight,
+      behavior: 'instant',
+    });
+  });
   await page.waitForTimeout(900);
 
   await expect(cards).toHaveCount(4);
@@ -304,9 +389,10 @@ test('主页动态索引卡片支持鼠标景深并保持移动端布局', async
     )
     .toContain('radial-gradient');
 
-  const liftedBox = await leadCard.boundingBox();
-  expect(liftedBox).not.toBeNull();
-  expect(liftedBox?.y ?? 0).toBeLessThan((gridBox?.y ?? 0) - 1);
+  const hoverTranslation = await leadCard.evaluate(
+    (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
+  );
+  expect(Math.abs(hoverTranslation)).toBeLessThan(0.1);
 });
 
 test('常用链接卡片进入独立目录页', async ({ page }) => {
@@ -461,6 +547,18 @@ test('从内页返回首页后重新同步星球滚动坐标', async ({ page }) 
   };
 
   await assertHeroCoordinates();
+  await page.locator('.hero-stage').evaluate((stage) => {
+    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
+    window.scrollTo({
+      top: stage.offsetTop + stage.offsetHeight - window.innerHeight,
+      behavior: 'instant',
+    });
+  });
+  await expect
+    .poll(() =>
+      page.locator('.signal-deck').evaluate((deck) => Number(getComputedStyle(deck).opacity)),
+    )
+    .toBeGreaterThan(0.98);
   await page.locator('.signal-card--topics a').click();
   await expect(page).toHaveURL(/\/categories\/$/, { timeout: 5_000 });
   await expect(page.locator('.site-transition')).toHaveCount(0, { timeout: 1_300 });
@@ -558,9 +656,17 @@ test('Cards 导航落在动画终点且手机菜单保持可用', async ({ page 
     )
     .toBeLessThan(3);
 
+  await expect
+    .poll(() =>
+      page.locator('#signal-deck-title').evaluate((content) => {
+        const nav = document.querySelector('.nav')!;
+        return content.getBoundingClientRect().top - nav.getBoundingClientRect().bottom;
+      }),
+    )
+    .toBeLessThanOrEqual(70);
   const landing = await page.evaluate(() => {
     const nav = document.querySelector('.nav');
-    const deck = document.querySelector('#interactive-cards');
+    const deck = document.querySelector('.signal-deck__content');
     const heading = document.querySelector('#signal-deck-title');
     if (
       !(nav instanceof HTMLElement) ||
@@ -575,7 +681,8 @@ test('Cards 导航落在动画终点且手机菜单保持可用', async ({ page 
       headingTop: heading.getBoundingClientRect().top,
     };
   });
-  expect(Math.abs(landing.deckTop - landing.navBottom)).toBeLessThan(3);
+  expect(landing.deckTop - landing.navBottom).toBeGreaterThanOrEqual(46);
+  expect(landing.deckTop - landing.navBottom).toBeLessThanOrEqual(70);
   expect(landing.headingTop - landing.navBottom).toBeGreaterThanOrEqual(46);
   expect(landing.headingTop - landing.navBottom).toBeLessThanOrEqual(70);
 
@@ -603,4 +710,22 @@ test('Cards 导航落在动画终点且手机菜单保持可用', async ({ page 
     });
   await expect.poll(reloadedHeadingGap).toBeGreaterThanOrEqual(46);
   await expect.poll(reloadedHeadingGap).toBeLessThanOrEqual(70);
+
+  await page.locator('.hero-stage').evaluate((stage) => {
+    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
+    window.scrollTo({ top: (stage.offsetHeight - window.innerHeight) * 0.44, behavior: 'instant' });
+  });
+  await expect(page.locator('#interactive-cards')).not.toHaveClass(/signal-deck--settled/);
+  await expect
+    .poll(() =>
+      page.locator('.signal-deck').evaluate((deck) => Number(getComputedStyle(deck).opacity)),
+    )
+    .toBeLessThan(0.02);
+  await expect
+    .poll(() =>
+      page
+        .locator('.hero-title-layer')
+        .evaluate((title) => Number(getComputedStyle(title).opacity)),
+    )
+    .toBeGreaterThan(0.98);
 });

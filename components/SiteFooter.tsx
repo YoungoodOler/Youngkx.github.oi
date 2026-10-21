@@ -37,7 +37,7 @@ export default function SiteFooter({
       <span>Youngkx</span>
       <div className="site-status">
         <span>已运行：{runtime}</span>
-        <span>最近更新：2026 年 8 月 11 日</span>
+        <span>最近更新：2026 年 10 月 22 日</span>
       </div>
       <Link href={backHref}>{backLabel}</Link>
     </footer>

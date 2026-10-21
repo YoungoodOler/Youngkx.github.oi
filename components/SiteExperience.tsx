@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion, type MotionValue, useMotionValue } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -34,6 +34,7 @@ const transitionWave = (() => {
 type SiteExperienceValue = {
   theme: Theme;
   toggleTheme: () => void;
+  heroProgress: MotionValue<number>;
 };
 
 const SiteExperienceContext = createContext<SiteExperienceValue | null>(null);
@@ -276,6 +277,7 @@ export function useSiteExperience() {
 export default function SiteExperience({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const heroProgress = useMotionValue(0);
   const [theme, setTheme] = useState<Theme>('dark');
   const [transitionMode, setTransitionMode] = useState<TransitionMode>(null);
   const [transitionTheme, setTransitionTheme] = useState<Theme>('dark');
@@ -458,10 +460,10 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
   }, [clearTimers, router, setMode, theme]);
 
   return (
-    <SiteExperienceContext.Provider value={{ theme, toggleTheme }}>
+    <SiteExperienceContext.Provider value={{ theme, toggleTheme, heroProgress }}>
       <LazyMotion features={loadMotionFeatures} strict>
         <div className="scroll-morph global-particle-scene">
-          <Scene theme={theme} showSubject={pathname === '/'} />
+          <Scene theme={theme} showSubject={pathname === '/'} heroProgress={heroProgress} />
         </div>
         {children}
         {transitionMode && (
