@@ -22,7 +22,7 @@
 
 - 全仓格式、TypeScript、ESLint、20 项单元测试和 26 项桌面/手机浏览器回归通过，另有 2 项按设备条件跳过；生产依赖审计为 0 漏洞，生成的 Worker 类型与源码一致。
 - 生产构建、性能预算与 Wrangler dry-run 通过；首页初始脚本约 163.7 KiB Brotli，CSS 约 12.4 KiB Brotli，原始 CSS 未超过 64 KiB 预算。
-- 正式发布通过 GitHub `main` 推送触发 Cloudflare Workers 自动构建，发布后核验构建状态、正式域名及实际加载的页面与样式资源。
+- 源码推送到 GitHub `main`，并通过 Cloudflare Workers 正式发布；发布后核验构建状态、正式域名及实际加载的页面与样式资源，不以 Git 推送成功代替上线验证。
 
 ## [2.6.2] - 2026-10-08
 
