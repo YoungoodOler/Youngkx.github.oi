@@ -80,7 +80,13 @@ const page: RepositoryListing = await response.json();
 
 每页最多 100 个文件，按上传时间从新到旧。`cursor` 非空时请求 `/api/files?cursor=${encodeURIComponent(cursor)}`，管理列表对应 `/api/files/admin?cursor=...` 并携带 token。R2 可能提前截断一页，必须以 `cursor` 判断是否还有后续文件。
 
-前端追加分页时按 `id` 去重。文件名搜索、按名称或大小排序可以先在已加载文件中完成；有分页时说明搜索范围，或者先读完所有页面再进行完整搜索。
+前端追加分页时按 `id` 去重。公开页搜索按文件名及说明匹配整个仓库，自动读取剩余所有页面，不受当前文件夹限制，并显示搜索进度或失败提示；清空搜索后恢复文件夹浏览。排序应用于当前已加载的结果。
+
+## 图片和视频预览
+
+`GET /api/files/:id?preview=1`（也支持 HEAD）沿用下载权限、暂停开关和 Range/If-Range 语义，流式返回媒体正文，使用 `Content-Disposition: inline` 和与扩展名对应的媒体 Content-Type。支持 PNG、JPG/JPEG、GIF、WebP、AVIF、BMP、ICO 和 MP4/M4V、WebM、OGV、MOV；具体编解码器是否可播放取决于浏览器。SVG、HTML、文档等未列入白名单的格式返回 `415`，仍可通过原下载地址保存。
+
+共享工具为 `filePreviewType(name)`、`filePreviewPath(id)`。不带 `preview=1` 的原地址继续强制附件下载。预览同样返回 no-store、nosniff 和 sandbox 响应头；公开暂停时不能通过预览地址绕过权限。旧文件无需迁移或重新上传。
 
 `publicEnabled: false` 时，公开列表仍返回设置，但 `files: []`、`folders: []`、`cursor: null`；公开直链返回 `403`。管理列表和上传、删除不受影响。暂停期间管理员也可以携带 token 请求下载接口。
 

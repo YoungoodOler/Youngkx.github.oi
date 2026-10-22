@@ -668,6 +668,40 @@ describe('file repository API', () => {
     expect(await downloaded.text()).toBe('<script>alert(1)</script>');
   });
 
+  it('serves allowlisted media inline with ranges and preserves downloads and access control', async () => {
+    const env = createEnv();
+    for (const [name, contentType] of [
+      ['图片.PNG', 'image/png'],
+      ['clip.mp4', 'video/mp4'],
+    ]) {
+      const file = await upload(env, name, '0123456789');
+      const preview = `/api/files/${file.id}?preview=1`;
+      const response = await call(env, preview);
+      expect(response.headers.get('content-type')).toBe(contentType);
+      expect(response.headers.get('content-disposition')).toMatch(/^inline;/);
+      expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+      expect(await response.text()).toBe('0123456789');
+      const range = await call(env, preview, { headers: { Range: 'bytes=3-6' } });
+      expect(range.status).toBe(206);
+      expect(range.headers.get('content-range')).toBe('bytes 3-6/10');
+      expect(await range.text()).toBe('3456');
+      const head = await call(env, preview, { method: 'HEAD' });
+      expect(head.headers.get('content-length')).toBe('10');
+      expect(await head.text()).toBe('');
+      expect((await call(env, `/api/files/${file.id}`)).headers.get('content-disposition')).toMatch(
+        /^attachment;/,
+      );
+      await saveSettings(env, { ...defaultRepositorySettings(), publicEnabled: false });
+      expect((await call(env, preview)).status).toBe(403);
+      expect((await call(env, preview, {}, true)).status).toBe(200);
+      await saveSettings(env, defaultRepositorySettings());
+    }
+    for (const name of ['unsafe.svg', 'unsafe.html', 'data.txt', 'unsafe.__proto__']) {
+      const file = await upload(env, name);
+      expect((await call(env, `/api/files/${file.id}?preview=1`)).status).toBe(415);
+    }
+  });
+
   it('handles empty files and duplicate names without overwriting', async () => {
     const env = createEnv();
     const first = await upload(env, 'empty.txt', '');

@@ -239,17 +239,13 @@ export function RepositoryShell({
     <main className="repo-page categories-page">
       <SiteHeader navClassName="categories-nav" resources />
       <div className="repo-body shell">
-        <div className="repo-breadcrumb">
-          <Link href="/#interactive-cards">Cards</Link>
-          <span>/</span>
-          <Link href="/repo/">Repo</Link>
-          {manage && (
-            <>
-              <span>/</span>
-              <span>Manage</span>
-            </>
-          )}
-        </div>
+        {manage && (
+          <div className="repo-breadcrumb">
+            <Link href="/repo/">Repo</Link>
+            <span>/</span>
+            <span>Manage</span>
+          </div>
+        )}
         {children}
       </div>
       <SiteFooter

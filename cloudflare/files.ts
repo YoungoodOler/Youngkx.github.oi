@@ -1,6 +1,7 @@
 import {
   defaultRepositorySettings,
   directUploadLimitMiB,
+  filePreviewType,
   maximumFileDescriptionLength,
   validateRepositorySettings,
   type RepositoryFile,
@@ -185,6 +186,10 @@ async function uploadFile(
 }
 
 async function downloadFile(request: Request, bucket: R2Bucket, key: string, file: RepositoryFile) {
+  const preview = new URL(request.url).searchParams.get('preview') === '1';
+  const contentType = preview ? filePreviewType(file.name) : 'application/octet-stream';
+  if (!contentType)
+    return jsonResponse({ error: 'Preview is not available for this file type.' }, 415);
   let range: R2Range | undefined;
   let size: number | undefined;
   const requestedRange = request.headers.get('range');
@@ -223,8 +228,8 @@ async function downloadFile(request: Request, bucket: R2Bucket, key: string, fil
     (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
   );
   const headers = new Headers({
-    'Content-Type': 'application/octet-stream',
-    'Content-Disposition': `attachment; filename="${fallback}"; filename*=UTF-8''${encodedName}`,
+    'Content-Type': contentType,
+    'Content-Disposition': `${preview ? 'inline' : 'attachment'}; filename="${fallback}"; filename*=UTF-8''${encodedName}`,
     'Content-Length': String(range && 'length' in range ? range.length : object.size),
     'Accept-Ranges': 'bytes',
     'Cache-Control': 'no-store',

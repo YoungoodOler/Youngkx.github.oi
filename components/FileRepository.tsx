@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   defaultRepositorySettings,
   fileDownloadPath,
+  filePreviewType,
   formatFileSize,
+  type RepositoryFile,
   type RepositoryListing,
 } from '@/lib/file-repository';
 import {
@@ -19,6 +21,7 @@ import {
   RepositoryShell,
   repositoryRequest,
 } from './RepositoryShared';
+import RepositoryPreview from './RepositoryPreview';
 
 export default function FileRepository() {
   const [listing, setListing] = useState<RepositoryListing>({
@@ -34,6 +37,9 @@ export default function FileRepository() {
   const [query, setQuery] = useState('');
   const [folderId, setFolderId] = useState<string | null>(null);
   const [sort, setSort] = useState('newest');
+  const [preview, setPreview] = useState<RepositoryFile | null>(null);
+  const searchActive = query.trim().length > 0;
+  const searching = searchActive && Boolean(listing.cursor) && !error;
   const currentFolder =
     listing.folders.find((folder) => folder.id === folderId) ?? listing.folders[0];
   const activeFolderId = currentFolder?.id;
@@ -56,12 +62,42 @@ export default function FileRepository() {
     return () => controller.abort();
   }, [attempt]);
 
+  // A search covers every metadata page, without downloading file bodies.
+  useEffect(() => {
+    if (!searchActive || !listing.cursor || loading || loadingMore || error) return;
+    const controller = new AbortController();
+    const cursor = listing.cursor;
+    const timer = window.setTimeout(() => {
+      repositoryRequest(`/api/files?cursor=${encodeURIComponent(cursor)}`, {
+        signal: controller.signal,
+      })
+        .then((value) => {
+          if (controller.signal.aborted) return;
+          const next = readRepositoryListing(value);
+          if (next.cursor === cursor) throw new Error('Unable to finish searching. Please retry.');
+          setListing((current) => ({
+            ...next,
+            files: next.settings.publicEnabled
+              ? mergeRepositoryFiles(current.files, next.files)
+              : [],
+          }));
+        })
+        .catch((reason: unknown) => {
+          if (!controller.signal.aborted)
+            setError(reason instanceof Error ? reason.message : 'Unable to finish searching.');
+        });
+    }, 200);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchActive, listing.cursor, loading, loadingMore, error]);
+
   const files = useMemo(() => {
     const search = query.trim().toLocaleLowerCase();
     const filtered = listing.files.filter(
       (file) =>
-        activeFolderId !== undefined &&
-        file.folderId === activeFolderId &&
+        (searchActive || (activeFolderId !== undefined && file.folderId === activeFolderId)) &&
         `${file.name} ${file.description}`.toLocaleLowerCase().includes(search),
     );
     return filtered.sort((a, b) =>
@@ -71,7 +107,7 @@ export default function FileRepository() {
           ? b.size - a.size
           : Date.parse(b.uploadedAt) - Date.parse(a.uploadedAt),
     );
-  }, [listing.files, query, activeFolderId, sort]);
+  }, [listing.files, query, activeFolderId, sort, searchActive]);
   const totalSize = listing.files.reduce((sum, file) => sum + file.size, 0);
   const latest = listing.files.reduce<string | null>(
     (date, file) => (!date || file.uploadedAt > date ? file.uploadedAt : date),
@@ -101,7 +137,6 @@ export default function FileRepository() {
     <RepositoryShell>
       <section className="repo-hero" aria-labelledby="repo-title">
         <div>
-          <span className="repo-eyebrow">YOUNGKX / FILE REPOSITORY</span>
           <h1 id="repo-title">{listing.settings.title}</h1>
         </div>
         <RepoArtwork />
@@ -148,42 +183,43 @@ export default function FileRepository() {
             </h2>
           </div>
         </div>
-        {listing.settings.publicEnabled && listing.folders.length > 0 && (
-          <>
-            <div className="repo-controls">
-              <label className="repo-search">
-                <RepoIcon kind="search" />
-                <input
-                  type="search"
-                  aria-label="Search files"
-                  placeholder="Search names or descriptions…"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </label>
-              <label className="repo-sort">
-                Sort by
-                <select
-                  aria-label="Sort files"
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value)}
-                >
-                  <option value="newest">Newest first</option>
-                  <option value="name">Name A–Z</option>
-                  <option value="size">Largest first</option>
-                </select>
-              </label>
-            </div>
-            <FolderBrowser
-              folders={listing.folders}
-              selectedId={activeFolderId ?? null}
-              onSelect={(id) => {
-                setFolderId(id);
-                setQuery('');
-              }}
-            />
-          </>
-        )}
+        {listing.settings.publicEnabled &&
+          (listing.folders.length > 0 || listing.files.length > 0) && (
+            <>
+              <div className="repo-controls">
+                <label className="repo-search">
+                  <RepoIcon kind="search" />
+                  <input
+                    type="search"
+                    aria-label="Search files"
+                    placeholder="Search all folders…"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                </label>
+                <label className="repo-sort">
+                  Sort by
+                  <select
+                    aria-label="Sort files"
+                    value={sort}
+                    onChange={(event) => setSort(event.target.value)}
+                  >
+                    <option value="newest">Newest first</option>
+                    <option value="name">Name A–Z</option>
+                    <option value="size">Largest first</option>
+                  </select>
+                </label>
+              </div>
+              <FolderBrowser
+                folders={listing.folders}
+                selectedId={searchActive ? null : (activeFolderId ?? null)}
+                onSelect={(id) => {
+                  setFolderId(id);
+                  setQuery('');
+                }}
+              />
+            </>
+          )}
         {error && (
           <div className="repo-notice repo-notice--error" role="alert">
             <span>{error}</span>
@@ -200,6 +236,15 @@ export default function FileRepository() {
               Try again
             </button>
           </div>
+        )}
+        {searchActive && (
+          <p className="repo-search-status" role="status">
+            {searching
+              ? 'Searching all folders…'
+              : error
+                ? 'Search incomplete. Please retry.'
+                : `${files.length} results across all folders`}
+          </p>
         )}
         {loading ? (
           <div className="repo-empty" role="status">
@@ -230,8 +275,28 @@ export default function FileRepository() {
                       <small>{fileExtension(file.name).slice(0, 5) || 'FILE'}</small>
                     </span>
                     <div>
-                      <h3>{file.name}</h3>
+                      <h3>
+                        {filePreviewType(file.name) ? (
+                          <button
+                            className="repo-preview-trigger"
+                            type="button"
+                            aria-label={`Preview ${file.name}`}
+                            onClick={() => setPreview(file)}
+                          >
+                            {file.name}
+                            <span>Preview ↗</span>
+                          </button>
+                        ) : (
+                          file.name
+                        )}
+                      </h3>
                       {file.description && <p>{file.description}</p>}
+                      {searchActive && (
+                        <span className="repo-file-folder">
+                          {listing.folders.find((folder) => folder.id === file.folderId)?.name ??
+                            'Unfiled'}
+                        </span>
+                      )}
                       <span className="repo-file-mobile-meta">
                         {formatFileSize(file.size)} · {fileDate(file.uploadedAt)}
                       </span>
@@ -253,11 +318,16 @@ export default function FileRepository() {
             </ul>
           </>
         ) : (
-          !error && (
+          !error &&
+          !searching && (
             <div className="repo-empty">
               <RepoIcon />
               <h3>
-                {query ? 'No matching files.' : currentFolder ? 'No files yet.' : 'No folders yet.'}
+                {searchActive
+                  ? 'No matching files.'
+                  : currentFolder
+                    ? 'No files yet.'
+                    : 'No folders yet.'}
               </h3>
               {query ? (
                 <button
@@ -277,9 +347,9 @@ export default function FileRepository() {
             </div>
           )
         )}
-        {!loading && listing.cursor && (
+        {!loading && listing.cursor && !searchActive && (
           <div className="repo-load-more">
-            <p>Search and filters cover loaded files. Load more to explore the rest.</p>
+            <p>Load more files, or search across the entire repository.</p>
             <button
               className="repo-button"
               type="button"
@@ -292,7 +362,7 @@ export default function FileRepository() {
           </div>
         )}
         <div className="repo-library-foot">
-          <span>{currentFolder?.name ?? 'Folders'}</span>
+          <span>{searchActive ? 'All folders' : (currentFolder?.name ?? 'Folders')}</span>
           <span>
             {loading
               ? 'Loading…'
@@ -300,6 +370,9 @@ export default function FileRepository() {
           </span>
         </div>
       </section>
+      {preview && (
+        <RepositoryPreview key={preview.id} file={preview} onClose={() => setPreview(null)} />
+      )}
     </RepositoryShell>
   );
 }

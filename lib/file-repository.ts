@@ -73,3 +73,30 @@ export function formatFileSize(bytes: number): string {
 export function fileDownloadPath(id: string): string {
   return `/api/files/${encodeURIComponent(id)}`;
 }
+
+export function filePreviewPath(id: string): string {
+  return `${fileDownloadPath(id)}?preview=1`;
+}
+
+// Only inert image and video formats may be served inline on the site's origin.
+export function filePreviewType(name: string): string | null {
+  const extension = name.split('.').pop()?.toLowerCase();
+  const types: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    avif: 'image/avif',
+    bmp: 'image/bmp',
+    ico: 'image/x-icon',
+    mp4: 'video/mp4',
+    m4v: 'video/mp4',
+    webm: 'video/webm',
+    ogv: 'video/ogg',
+    mov: 'video/quicktime',
+  };
+  return extension && name.includes('.') && Object.hasOwn(types, extension)
+    ? types[extension]
+    : null;
+}

@@ -70,6 +70,8 @@ test('公开仓库按说明搜索、筛选、排序并下载，深浅主题均�
   );
   await page.goto('/repo/');
   await expect(page.getByRole('heading', { name: settings.title, exact: true })).toBeVisible();
+  await expect(page.getByText('YOUNGKX / FILE REPOSITORY', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.repo-breadcrumb')).toHaveCount(0);
   await expect(page.locator('.repo-file-row')).toHaveCount(2);
   await expect(page.locator('.repo-file-list')).not.toContainText('notes.md');
   await expect(page.getByRole('button', { name: 'Open folder 课程资料' })).toBeVisible();
@@ -84,6 +86,14 @@ test('公开仓库按说明搜索、筛选、排序并下载，深浅主题均�
   ).toHaveCount(0);
   await expect(page.getByText('Pick a file. Take it with you.', { exact: false })).toHaveCount(0);
   await expect(page.locator('.repo-filters')).toHaveCount(0);
+  await page.getByRole('searchbox').fill('shortest');
+  await expect(page.locator('.repo-file-row')).toHaveCount(1);
+  await expect(page.locator('.repo-file-row')).toContainText('graph.cpp');
+  await expect(page.locator('.repo-file-folder')).toContainText('代码模板');
+  await expect(page.locator('.repo-folder-tabs [aria-pressed="true"]')).toHaveCount(0);
+  await page.getByRole('searchbox').fill('Release notes');
+  await expect(page.locator('.repo-file-row')).toContainText('notes.md');
+  await expect(page.locator('.repo-file-folder')).toContainText('Unfiled');
   await page.getByRole('button', { name: 'Open folder 课程资料' }).click();
   await page.getByRole('searchbox', { name: 'Search files' }).fill('电阻');
   await expect(page.locator('.repo-file-row')).toHaveCount(1);
@@ -143,7 +153,7 @@ test('分页合并去重，空仓库、暂停与故障各自提示', async ({ pa
   await page.goto('/repo/');
   await expect(page.locator('.repo-file-row')).toHaveCount(2);
   await expect(
-    page.getByText('Search and filters cover loaded files.', { exact: false }),
+    page.getByText('Load more files, or search across the entire repository.', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: /Load more files/ }).click();
   await expect(page.locator('.repo-file-row')).toHaveCount(4);
@@ -164,6 +174,131 @@ test('分页合并去重，空仓库、暂停与故障各自提示', async ({ pa
   mode = 'empty';
   await page.getByRole('button', { name: 'Try again' }).click();
   await expect(page.getByRole('heading', { name: 'No folders yet.' })).toBeVisible();
+});
+
+test('全局搜索自动遍历全部分页，去重并在分页失败后重试', async ({ page }) => {
+  let fail = false;
+  await page.route('**/api/files*', async (route) => {
+    const cursor = new URL(route.request().url()).searchParams.get('cursor');
+    if (cursor === 'last' && fail)
+      return route.fulfill({ status: 503, json: { error: 'Search page unavailable.' } });
+    return route.fulfill({
+      json: {
+        ...fixture,
+        files:
+          cursor === 'last'
+            ? fixture.files.slice(2)
+            : cursor
+              ? fixture.files.slice(0, 2)
+              : fixture.files.slice(0, 1),
+        cursor: cursor === 'last' ? null : cursor ? 'last' : 'next',
+      },
+    });
+  });
+  await page.goto('/repo/');
+  await page.getByRole('searchbox').fill('notes');
+  await expect(page.locator('.repo-file-row')).toHaveCount(1);
+  await expect(page.locator('.repo-file-row')).toContainText('notes.md');
+  await expect(page.getByRole('status')).toContainText('1 results across all folders');
+  await page.getByRole('searchbox').fill('   ');
+  await expect(page.locator('.repo-file-row')).toHaveCount(2);
+  fail = true;
+  await page.reload();
+  await page.getByRole('searchbox').fill('notes');
+  await expect(page.locator('.repo-notice[role="alert"]')).toContainText(
+    'Search page unavailable.',
+  );
+  await expect(page.getByRole('heading', { name: 'No matching files.' })).toHaveCount(0);
+  fail = false;
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.locator('.repo-file-row')).toContainText('notes.md');
+  await expect(page.getByRole('status')).toContainText('1 results across all folders');
+});
+
+test('真实 R2 图片和视频可点击预览、关闭、播放和下载', async ({ page, request }, testInfo) => {
+  const original = (await (await request.get('/api/files/admin')).json()) as RepositoryListing;
+  const ids: string[] = [];
+  let folderId: string | undefined;
+  try {
+    await request.put('/api/files/settings', {
+      data: { ...original.settings, publicEnabled: true },
+    });
+    const folder = await request.post('/api/files/folders', {
+      data: { name: `media-${testInfo.project.name}-${Date.now()}` },
+    });
+    folderId = (await folder.json()).folder.id;
+    await page.goto('/repo/');
+    const media = [
+      {
+        name: 'preview-image.png',
+        bytes: await readFile(path.resolve('tests/fixtures/repository-preview.png')),
+      },
+      {
+        name: 'preview-video.webm',
+        bytes: await readFile(path.resolve('tests/fixtures/repository-preview.webm')),
+      },
+    ];
+    for (const file of media) {
+      const response = await request.post(`/api/files?name=${file.name}&folderId=${folderId}`, {
+        data: file.bytes,
+        headers: { 'Content-Type': 'application/octet-stream' },
+      });
+      expect(response.status()).toBe(201);
+      ids.push((await response.json()).file.id);
+    }
+    await page.reload();
+    await page.getByRole('searchbox').fill('preview-');
+    const imageTrigger = page.getByRole('button', {
+      name: 'Preview preview-image.png',
+      exact: true,
+    });
+    await imageTrigger.click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect
+      .poll(() => dialog.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth))
+      .toBe(160);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+    ).toBeLessThan(2);
+    await page.screenshot({ path: testInfo.outputPath('repo-image-preview.png') });
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(imageTrigger).toBeFocused();
+    await page.getByRole('button', { name: 'Preview preview-video.webm', exact: true }).click();
+    const video = dialog.locator('video');
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState))
+      .toBeGreaterThanOrEqual(2);
+    await video.evaluate((element: HTMLVideoElement) => element.play());
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
+      .toBeGreaterThan(0);
+    await page.screenshot({ path: testInfo.outputPath('repo-video-preview.png') });
+    await dialog.getByRole('button', { name: 'Close preview' }).click();
+    await expect(dialog).toHaveCount(0);
+    for (let index = 0; index < ids.length; index++) {
+      const preview = await request.get(`/api/files/${ids[index]}?preview=1`, {
+        headers: { Range: 'bytes=0-9' },
+      });
+      expect(preview.status()).toBe(206);
+      expect((await preview.body()).equals(media[index].bytes.subarray(0, 10))).toBeTruthy();
+      const download = await request.get(`/api/files/${ids[index]}`);
+      expect(download.headers()['content-disposition']).toContain('attachment;');
+      expect((await download.body()).equals(media[index].bytes)).toBeTruthy();
+    }
+    await page.route(`**/api/files/${ids[0]}?preview=1`, (route) =>
+      route.fulfill({ status: 403, body: 'Paused' }),
+    );
+    await imageTrigger.click();
+    await expect(dialog.getByRole('alert')).toContainText('could not be previewed');
+    await expect(dialog.getByRole('link', { name: 'Download preview-image.png' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Close preview' }).click();
+  } finally {
+    for (const id of ids) await request.delete(`/api/files/${id}`);
+    if (folderId) await request.delete(`/api/files/folders/${folderId}`);
+    await request.put('/api/files/settings', { data: original.settings });
+  }
 });
 
 test('管理 token 校验、会话失效和锁定', async ({ page }) => {
