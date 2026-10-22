@@ -485,6 +485,9 @@ export default function FileRepositoryManager() {
           headers: authorizationHeaders(token.trim()),
         }),
       );
+      if (more && next.cursor && next.cursor === listing.cursor)
+        throw new Error('Unable to load more files. Please retry.');
+      const files = more ? mergeRepositoryFiles(listing.files, next.files) : next.files;
       setListing((current) => ({
         ...next,
         files: more ? mergeRepositoryFiles(current.files, next.files) : next.files,
@@ -492,7 +495,7 @@ export default function FileRepositoryManager() {
       const selectedFolder =
         next.folders.find((folder) => folder.id === folderId) ??
         (folderId === null &&
-        next.files.some((file) => !next.folders.some((folder) => folder.id === file.folderId))
+        files.some((file) => !next.folders.some((folder) => folder.id === file.folderId))
           ? undefined
           : next.folders[0]);
       setFolderId(selectedFolder?.id ?? null);
@@ -929,7 +932,8 @@ export default function FileRepositoryManager() {
               ) : (
                 <div className="repo-empty">
                   <RepoIcon />
-                  <h3>No files in this folder.</h3>
+                  <h3>{listing.cursor ? 'More files to check.' : 'No files in this folder.'}</h3>
+                  {listing.cursor && <p>Load more files to finish checking this folder.</p>}
                 </div>
               )}
               {listing.cursor && (

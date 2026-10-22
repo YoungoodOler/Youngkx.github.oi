@@ -215,6 +215,71 @@ test('全局搜索自动遍历全部分页，去重并在分页失败后重试',
   await expect(page.getByRole('status')).toContainText('1 results across all folders');
 });
 
+test('分页未读完时不误报空文件夹，后续页可显示目标文件', async ({ page }) => {
+  await page.route('**/api/files*', (route) =>
+    route.fulfill({
+      json: {
+        ...fixture,
+        files: route.request().url().includes('cursor=')
+          ? fixture.files.slice(0, 1)
+          : fixture.files.slice(1, 2),
+        cursor: route.request().url().includes('cursor=') ? null : 'next',
+      },
+    }),
+  );
+  await page.goto('/repo/');
+  await expect(page.getByRole('heading', { name: 'More files to check.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'No files yet.' })).toHaveCount(0);
+  await page.getByRole('button', { name: /Load more files/ }).click();
+  await expect(page.locator('.repo-file-row')).toContainText('电学练习.pdf');
+});
+
+test('管理分页保留 Unfiled 选择，游标停滞时保留列表并提示重试', async ({ page }) => {
+  let stuck = false;
+  await page.route('**/api/files/admin*', (route) => {
+    const more = route.request().url().includes('cursor=');
+    return route.fulfill({
+      json: {
+        ...fixture,
+        files: more ? fixture.files.slice(0, 1) : fixture.files.slice(3),
+        cursor: !more || stuck ? 'next' : null,
+      },
+    });
+  });
+  await page.goto('/repo/manage/');
+  await page.getByRole('button', { name: 'Unfiled', exact: true }).click();
+  await expect(page.locator('.repo-managed-list')).toContainText('notes.md');
+  await page.getByRole('button', { name: /Load more files/ }).click();
+  await expect(page.getByRole('button', { name: 'Unfiled', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.locator('.repo-managed-list')).toContainText('notes.md');
+  stuck = true;
+  await page.reload();
+  await page.getByRole('button', { name: /Load more files/ }).click();
+  await expect(page.locator('.repo-notice[role="alert"]')).toContainText('Please retry.');
+  await expect(page.getByRole('button', { name: /Load more files/ })).toBeEnabled();
+  stuck = false;
+  await page.getByRole('button', { name: /Load more files/ }).click();
+  await expect(page.getByRole('button', { name: /Load more files/ })).toHaveCount(0);
+});
+
+test('公开手动分页游标停滞时停止合并并允许重试', async ({ page }) => {
+  let stuck = true;
+  await page.route('**/api/files*', (route) =>
+    route.fulfill({ json: { ...fixture, cursor: stuck ? 'next' : null } }),
+  );
+  await page.goto('/repo/');
+  await page.getByRole('button', { name: /Load more files/ }).click();
+  await expect(page.locator('.repo-notice[role="alert"]')).toContainText('Please retry.');
+  await expect(page.locator('.repo-file-row')).toHaveCount(2);
+  stuck = false;
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.locator('.repo-notice[role="alert"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Load more files/ })).toHaveCount(0);
+});
+
 test('真实 R2 图片和视频可点击预览、关闭、播放和下载', async ({ page, request }, testInfo) => {
   const original = (await (await request.get('/api/files/admin')).json()) as RepositoryListing;
   const ids: string[] = [];

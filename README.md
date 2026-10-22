@@ -17,6 +17,8 @@ Youngkx 的个人博客，使用 Next.js、React、Framer Motion 与 Three.js �
 
 根目录只保留 Next.js、npm、TypeScript、ESLint 和 Wrangler 必须自动发现的配置，以及 `README.md`、`CHANGELOG.md` 与 `操作维护指南.md`。构建缓存和测试产物可以用 `npm run clean` 统一清理。
 
+清理前可用 `npm run clean -- --dry-run` 查看范围。清理会保留 `.wrangler/state/` 中人工预览上传的 R2 文件和 KV 设置，不会删除源码、文章和依赖。
+
 ## 本地开发
 
 ```bash

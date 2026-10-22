@@ -122,6 +122,8 @@ export default function FileRepository() {
       const next = readRepositoryListing(
         await repositoryRequest(`/api/files?cursor=${encodeURIComponent(listing.cursor)}`),
       );
+      if (next.cursor === listing.cursor)
+        throw new Error('Unable to load more files. Please retry.');
       setListing((current) => ({
         ...next,
         files: next.settings.publicEnabled ? mergeRepositoryFiles(current.files, next.files) : [],
@@ -326,9 +328,14 @@ export default function FileRepository() {
                 {searchActive
                   ? 'No matching files.'
                   : currentFolder
-                    ? 'No files yet.'
+                    ? listing.cursor
+                      ? 'More files to check.'
+                      : 'No files yet.'
                     : 'No folders yet.'}
               </h3>
+              {!searchActive && currentFolder && listing.cursor && (
+                <p>Load more files to finish checking this folder.</p>
+              )}
               {query ? (
                 <button
                   className="repo-button"
@@ -339,11 +346,11 @@ export default function FileRepository() {
                 >
                   Clear filters
                 </button>
-              ) : (
+              ) : !listing.cursor ? (
                 <Link className="repo-text-link" href="/repo/manage/">
                   {currentFolder ? 'Upload file' : 'Create folder'} <RepoIcon kind="arrow" />
                 </Link>
-              )}
+              ) : null}
             </div>
           )
         )}
