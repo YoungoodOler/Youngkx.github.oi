@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { MotionValue } from 'framer-motion';
 import * as THREE from 'three';
 import { heroPhase, heroTimeline } from '@/lib/hero-timeline';
+import { createPlanetMorphTargets } from '@/lib/planet-shapes';
 
 const smoothstep = (value: number) => {
   const t = THREE.MathUtils.clamp(value, 0, 1);
@@ -309,47 +310,21 @@ export default function Scene({
     pointerTrail.visible = !mobileAtMount;
     scene.add(pointerTrail);
 
-    const geometry = new THREE.IcosahedronGeometry(1.58, mobileAtMount ? 2 : 3);
+    // Align the mesh edges with the final crystal faces so the diamond stays convex.
+    const geometry = new THREE.OctahedronGeometry(1.58, mobileAtMount ? 4 : 6);
     const position = geometry.getAttribute('position') as THREE.BufferAttribute;
-    const sphere = new Float32Array(position.array);
-    const ribbon = new Float32Array(sphere.length);
-    const diamond = new Float32Array(sphere.length);
-
-    for (let index = 0; index < sphere.length; index += 3) {
-      const x = sphere[index];
-      const y = sphere[index + 1];
-      const z = sphere[index + 2];
-      const twist = y * 0.72;
-      ribbon[index] = (x * Math.cos(twist) - z * Math.sin(twist)) * 1.18;
-      ribbon[index + 1] = y * 0.62;
-      ribbon[index + 2] = (x * Math.sin(twist) + z * Math.cos(twist)) * 0.82;
-
-      const length = Math.hypot(x, y, z) || 1;
-      const nx = x / length;
-      const ny = y / length;
-      const nz = z / length;
-      const octahedronRadius = 1.82 / (Math.abs(nx) + Math.abs(ny) + Math.abs(nz));
-      diamond[index] = nx * octahedronRadius * 1.08;
-      diamond[index + 1] = ny * octahedronRadius * 1.2;
-      diamond[index + 2] = nz * octahedronRadius;
-    }
-
     const normal = geometry.getAttribute('normal') as THREE.BufferAttribute;
+    const sphere = new Float32Array(position.array);
     const sphereNormals = new Float32Array(normal.array);
-    const createShapeNormals = (shape: Float32Array) => {
-      const shapeGeometry = geometry.clone();
-      const shapePosition = shapeGeometry.getAttribute('position') as THREE.BufferAttribute;
-      shapePosition.copyArray(shape);
-      shapePosition.needsUpdate = true;
-      shapeGeometry.computeVertexNormals();
-      const result = new Float32Array(
-        (shapeGeometry.getAttribute('normal') as THREE.BufferAttribute).array,
-      );
-      shapeGeometry.dispose();
-      return result;
-    };
-    const ribbonNormals = createShapeNormals(ribbon);
-    const diamondNormals = createShapeNormals(diamond);
+    const { crystal, crystalNormals, diamond } = createPlanetMorphTargets(sphere);
+    const diamondGeometry = geometry.clone();
+    const diamondPosition = diamondGeometry.getAttribute('position') as THREE.BufferAttribute;
+    diamondPosition.copyArray(diamond);
+    diamondGeometry.computeVertexNormals();
+    const diamondNormals = new Float32Array(
+      (diamondGeometry.getAttribute('normal') as THREE.BufferAttribute).array,
+    );
+    diamondGeometry.dispose();
 
     const darkColors = ['#1c2b43', '#263750', '#192a3d'].map((color) => new THREE.Color(color));
     const lightColors = ['#687b98', '#778397', '#5e7388'].map((color) => new THREE.Color(color));
@@ -364,7 +339,7 @@ export default function Scene({
       opacity: THREE.MathUtils.lerp(0.54, 0.28, currentThemeMix),
       emissive: darkEmissives[0].clone().lerp(lightEmissives[0], currentThemeMix),
       emissiveIntensity: THREE.MathUtils.lerp(0.72, 0.18, currentThemeMix),
-      flatShading: true,
+      flatShading: false,
       side: lowPower ? THREE.FrontSide : THREE.DoubleSide,
     });
     const subject = new THREE.Mesh(geometry, material);
@@ -473,8 +448,8 @@ export default function Scene({
     let pulseStarted = -10;
     let trailCursor = 0;
     let lastTrailEmission = 0;
-    let previousSubjectArticleMix = -1;
-    let previousCategoryMix = -1;
+    let previousCrystalMix = -1;
+    let previousDiamondMix = -1;
     let previousFrameTime = performance.now();
 
     const updateScroll = () => {
@@ -487,8 +462,6 @@ export default function Scene({
       updateScroll();
       if (!snapSubject) return;
       currentScroll = targetScroll;
-      previousSubjectArticleMix = -1;
-      previousCategoryMix = -1;
       mount.dataset.subjectLayout = 'synced';
     };
 
@@ -645,6 +618,7 @@ export default function Scene({
       const subjectArticleMix = showSubjectRef.current
         ? heroPhase(heroProgress.get(), heroTimeline.exit)
         : articleMix;
+      const crystalMix = heroPhase(heroProgress.get(), heroTimeline.planetMorph);
       const sphereEntry = showSubjectRef.current
         ? heroPhase(heroProgress.get(), heroTimeline.entrance)
         : 0;
@@ -653,32 +627,30 @@ export default function Scene({
       keyLight.visible = shouldShowSubject;
       rimLight.visible = shouldShowSubject;
       fillLight.visible = shouldShowSubject;
-      const shapeChanged =
-        Math.abs(subjectArticleMix - previousSubjectArticleMix) > 0.0005 ||
-        Math.abs(categoryMix - previousCategoryMix) > 0.0005;
-      if (shouldShowSubject && shapeChanged) {
+
+      if (
+        shouldShowSubject &&
+        (Math.abs(crystalMix - previousCrystalMix) > 0.0001 ||
+          Math.abs(categoryMix - previousDiamondMix) > 0.0001)
+      ) {
         for (let index = 0; index < sphere.length; index += 1) {
-          const articleShape = THREE.MathUtils.lerp(
-            sphere[index],
-            ribbon[index],
-            subjectArticleMix,
-          );
-          position.array[index] = THREE.MathUtils.lerp(articleShape, diamond[index], categoryMix);
-          const articleNormal = THREE.MathUtils.lerp(
+          const firstShape = THREE.MathUtils.lerp(sphere[index], crystal[index], crystalMix);
+          position.array[index] = THREE.MathUtils.lerp(firstShape, diamond[index], categoryMix);
+          const firstNormal = THREE.MathUtils.lerp(
             sphereNormals[index],
-            ribbonNormals[index],
-            subjectArticleMix,
+            crystalNormals[index],
+            crystalMix,
           );
           normal.array[index] = THREE.MathUtils.lerp(
-            articleNormal,
+            firstNormal,
             diamondNormals[index],
             categoryMix,
           );
         }
         position.needsUpdate = true;
         normal.needsUpdate = true;
-        previousSubjectArticleMix = subjectArticleMix;
-        previousCategoryMix = categoryMix;
+        previousCrystalMix = crystalMix;
+        previousDiamondMix = categoryMix;
       }
 
       const mobile = mobileLayout;

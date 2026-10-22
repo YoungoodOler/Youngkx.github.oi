@@ -3,6 +3,7 @@ export const heroTimeline = {
   entrance: [0, 0.36],
   details: [0.08, 0.36],
   exit: [0.5, 0.76],
+  planetMorph: [0.52, 0.88],
   cards: [0.64, 1],
 } as const;
 
