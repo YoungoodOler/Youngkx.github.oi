@@ -327,28 +327,30 @@ export default function Scene({
     diamondGeometry.dispose();
 
     const darkColors = ['#1c2b43', '#263750', '#192a3d'].map((color) => new THREE.Color(color));
-    const lightColors = ['#687b98', '#778397', '#5e7388'].map((color) => new THREE.Color(color));
+    const lightColors = ['#acd5ee', '#b8d8f0', '#a8d8e8'].map((color) => new THREE.Color(color));
     const darkEmissives = ['#071426', '#0c1b30', '#08131f'].map((color) => new THREE.Color(color));
-    const lightEmissives = ['#2d4261', '#394a61', '#294258'].map((color) => new THREE.Color(color));
+    const lightEmissives = ['#b9def5', '#c5dff5', '#b6dfea'].map((color) => new THREE.Color(color));
     const material = new THREE.MeshPhysicalMaterial({
       color: darkColors[0].clone().lerp(lightColors[0], currentThemeMix),
-      roughness: 0.3,
-      metalness: 0.42,
-      transmission: lowPower ? 0 : 0.05,
+      roughness: THREE.MathUtils.lerp(0.3, 0.18, currentThemeMix),
+      metalness: THREE.MathUtils.lerp(0.42, 0.04, currentThemeMix),
+      // Refraction samples the transparent canvas as black, muddying a light backdrop.
+      transmission: lowPower ? 0 : 0.05 * (1 - currentThemeMix),
       transparent: true,
-      opacity: THREE.MathUtils.lerp(0.54, 0.28, currentThemeMix),
+      opacity: THREE.MathUtils.lerp(0.54, 0.22, currentThemeMix),
       emissive: darkEmissives[0].clone().lerp(lightEmissives[0], currentThemeMix),
-      emissiveIntensity: THREE.MathUtils.lerp(0.72, 0.18, currentThemeMix),
+      emissiveIntensity: THREE.MathUtils.lerp(0.72, 0.48, currentThemeMix),
       flatShading: false,
-      side: lowPower ? THREE.FrontSide : THREE.DoubleSide,
+      side: lowPower || currentThemeMix >= 0.5 ? THREE.FrontSide : THREE.DoubleSide,
+      depthWrite: currentThemeMix < 0.5,
     });
     const subject = new THREE.Mesh(geometry, material);
     group.add(subject);
 
     const wireMaterial = new THREE.MeshBasicMaterial({
-      color: new THREE.Color('#a9bdd9').lerp(new THREE.Color('#405a7d'), currentThemeMix),
+      color: new THREE.Color('#a9bdd9').lerp(new THREE.Color('#799ec0'), currentThemeMix),
       transparent: true,
-      opacity: THREE.MathUtils.lerp(0.17, 0.12, currentThemeMix),
+      opacity: THREE.MathUtils.lerp(0.17, 0.09, currentThemeMix),
       wireframe: true,
     });
     const wire = new THREE.Mesh(geometry, wireMaterial);
@@ -356,7 +358,7 @@ export default function Scene({
     group.add(wire);
 
     const haloMaterial = new THREE.MeshBasicMaterial({
-      color: new THREE.Color('#9db4d2').lerp(new THREE.Color('#536b8a'), currentThemeMix),
+      color: new THREE.Color('#9db4d2').lerp(new THREE.Color('#91b5d0'), currentThemeMix),
       transparent: true,
       opacity: THREE.MathUtils.lerp(0.13, 0.08, currentThemeMix),
       side: THREE.DoubleSide,
@@ -574,9 +576,9 @@ export default function Scene({
     const darkShapeEmissive = new THREE.Color();
     const lightShapeEmissive = new THREE.Color();
     const darkWireColor = new THREE.Color('#a9bdd9');
-    const lightWireColor = new THREE.Color('#405a7d');
+    const lightWireColor = new THREE.Color('#799ec0');
     const darkHaloColor = new THREE.Color('#9db4d2');
-    const lightHaloColor = new THREE.Color('#536b8a');
+    const lightHaloColor = new THREE.Color('#91b5d0');
     const darkRingColor = new THREE.Color('#b3c7e2');
     const lightRingColor = new THREE.Color('#425d80');
     let frame = 0;
@@ -769,10 +771,20 @@ export default function Scene({
       mixedEmissive.copy(darkShapeEmissive).lerp(lightShapeEmissive, currentThemeMix);
       material.color.copy(mixedColor);
       material.emissive.copy(mixedEmissive);
-      material.opacity = THREE.MathUtils.lerp(0.54, 0.28, currentThemeMix) * sphereEntry;
-      material.emissiveIntensity = THREE.MathUtils.lerp(0.72, 0.18, currentThemeMix);
+      material.opacity = THREE.MathUtils.lerp(0.54, 0.22, currentThemeMix) * sphereEntry;
+      material.emissiveIntensity = THREE.MathUtils.lerp(0.72, 0.48, currentThemeMix);
+      material.roughness = THREE.MathUtils.lerp(0.3, 0.18, currentThemeMix);
+      material.metalness = THREE.MathUtils.lerp(0.42, 0.04, currentThemeMix);
+      material.transmission = lowPower ? 0 : 0.05 * (1 - currentThemeMix);
+      // A single shell avoids stacking two shaded surfaces over the white page.
+      const subjectSide = lowPower || currentThemeMix >= 0.5 ? THREE.FrontSide : THREE.DoubleSide;
+      if (material.side !== subjectSide) {
+        material.side = subjectSide;
+        material.needsUpdate = true;
+      }
+      material.depthWrite = currentThemeMix < 0.5;
       wireMaterial.color.copy(darkWireColor).lerp(lightWireColor, currentThemeMix);
-      wireMaterial.opacity = THREE.MathUtils.lerp(0.17, 0.12, currentThemeMix) * sphereEntry;
+      wireMaterial.opacity = THREE.MathUtils.lerp(0.17, 0.09, currentThemeMix) * sphereEntry;
       haloMaterial.color.copy(darkHaloColor).lerp(lightHaloColor, currentThemeMix);
       haloMaterial.opacity = THREE.MathUtils.lerp(0.13, 0.08, currentThemeMix) * sphereEntry;
       keyLight.intensity = THREE.MathUtils.lerp(38, 18, currentThemeMix);
