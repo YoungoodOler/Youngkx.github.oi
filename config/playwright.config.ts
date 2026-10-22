@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
-const port = 8787;
+const port = 8788;
 const projectRoot = path.resolve(__dirname, '..');
 
 export default defineConfig({
@@ -41,7 +41,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run preview:test',
+    command:
+      'node node_modules/wrangler/bin/wrangler.js dev --local --ip 127.0.0.1 --port 8788 --local-upstream www.youngkx.cn --persist-to .wrangler/e2e-state --var LINKS_LOCAL_PREVIEW:true --log-level error',
     cwd: projectRoot,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,

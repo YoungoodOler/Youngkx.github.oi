@@ -26,6 +26,13 @@
   "kv_namespaces": [
     {
       "binding": "LINKS",
+      "id": "9be5bcf408694c938a53af6a61d42b85",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "FILES",
+      "bucket_name": "youngkx-files",
     },
   ],
   "secrets": {

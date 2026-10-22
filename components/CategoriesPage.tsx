@@ -15,7 +15,7 @@ export default function CategoriesPage({
 }) {
   return (
     <main className="categories-page">
-      <SiteHeader navClassName="categories-nav" />
+      <SiteHeader navClassName="categories-nav" resources />
 
       <section className="categories-hero shell">
         <m.div

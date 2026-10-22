@@ -4,15 +4,16 @@ Youngkx 的个人博客，使用 Next.js、React、Framer Motion 与 Three.js �
 
 ## 从这里开始
 
-| 想做的事情             | 入口位置          |
-| ---------------------- | ----------------- |
-| 修改页面与路由         | `app/`            |
-| 修改首页、文章页或动画 | `components/`     |
-| 发布 Markdown 文章     | `content/posts/`  |
-| 调整文章读取与分类逻辑 | `lib/`            |
-| 修改 Cloudflare Worker | `cloudflare/`     |
-| 查看测试配置           | `config/`         |
-| 运行维护与发布流程     | `操作维护指南.md` |
+| 想做的事情             | 入口位置                      |
+| ---------------------- | ----------------------------- |
+| 修改页面与路由         | `app/`                        |
+| 修改首页、文章页或动画 | `components/`                 |
+| 发布 Markdown 文章     | `content/posts/`              |
+| 调整文章读取与分类逻辑 | `lib/`                        |
+| 修改 Cloudflare Worker | `cloudflare/`                 |
+| 文件仓库后端与前端接入 | `docs/file-repository-api.md` |
+| 查看测试配置           | `config/`                     |
+| 运行维护与发布流程     | `操作维护指南.md`             |
 
 根目录只保留 Next.js、npm、TypeScript、ESLint 和 Wrangler 必须自动发现的配置，以及 `README.md`、`CHANGELOG.md` 与 `操作维护指南.md`。构建缓存和测试产物可以用 `npm run clean` 统一清理。
 

@@ -222,7 +222,7 @@ export default function LinksManager() {
 
   return (
     <main className="categories-page links-manager-page">
-      <SiteHeader navClassName="categories-nav" />
+      <SiteHeader navClassName="categories-nav" resources />
 
       <section className="categories-hero shell links-manager-hero">
         <div>

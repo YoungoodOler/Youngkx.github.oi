@@ -11,7 +11,7 @@ const MotionLink = m.create(Link);
 export default function ArticlesPage({ posts }: { posts: ArticleSummary[] }) {
   return (
     <main className="articles-page">
-      <SiteHeader navClassName="articles-nav" articleHref="/#posts" />
+      <SiteHeader navClassName="articles-nav" articleHref="/#posts" resources />
 
       <section className="articles-hero shell">
         <m.div

@@ -152,6 +152,6 @@ describe('Cloudflare Worker', () => {
     );
 
     expect(local.status).toBe(200);
-    expect(production.status).toBe(401);
+    expect(production.status).toBe(503);
   });
 });

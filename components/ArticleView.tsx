@@ -287,7 +287,7 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
   return (
     <main className="modern-article-page">
       <m.div className="progress" style={{ scaleX: progress }} />
-      <SiteHeader navClassName="article-nav-links" />
+      <SiteHeader navClassName="article-nav-links" resources />
 
       <header className="modern-article-hero">
         <m.div

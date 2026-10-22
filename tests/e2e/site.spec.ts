@@ -289,7 +289,7 @@ test('主页动态索引卡片支持鼠标景深并保持移动端布局', async
   });
   await page.waitForTimeout(900);
 
-  await expect(cards).toHaveCount(4);
+  await expect(cards).toHaveCount(5);
   await expect(cards.first()).toBeVisible();
   await expect(deck.getByRole('heading', { name: 'Cards', exact: true })).toBeVisible();
   const sectionHeadingSizes = await page.evaluate(() => {
@@ -521,6 +521,8 @@ test('跨页面切换显示粒子幕并到达目标页面', async ({ page }) => 
   await useStoredTheme(page);
   await openPage(page, '/articles/');
 
+  const menu = page.getByRole('button', { name: '切换菜单', exact: true });
+  if (await menu.isVisible()) await menu.click();
   await page.getByRole('link', { name: 'Topics' }).click();
   await expect(page.locator('.site-transition--page-out')).toBeVisible();
   await expect(page).toHaveURL(/\/categories\/$/, { timeout: 5_000 });

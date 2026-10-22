@@ -46,7 +46,7 @@ export default function LinksPage({ groups }: { groups: UsefulLinkGroup[] }) {
 
   return (
     <main className="categories-page links-page">
-      <SiteHeader navClassName="categories-nav" />
+      <SiteHeader navClassName="categories-nav" resources />
 
       <section className="categories-hero shell">
         <m.div

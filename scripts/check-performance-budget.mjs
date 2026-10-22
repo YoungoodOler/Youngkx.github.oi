@@ -31,14 +31,23 @@ function assetPath(url) {
   return path.join(outputDirectory, ...pathname.replace(/^\/+/, '').split('/'));
 }
 
-function routeJavaScriptSize(relativeHtmlPath) {
+function routeAssetSize(relativeHtmlPath, kind = 'script') {
   const htmlPath = path.join(outputDirectory, relativeHtmlPath);
   const html = readFileSync(htmlPath, 'utf8');
-  const sources = new Set(
-    [...html.matchAll(/<script[^>]+src=["']([^"']+\.js(?:\?[^"']*)?)["']/g)].map(
-      (match) => match[1],
-    ),
-  );
+  const sources =
+    kind === 'script'
+      ? new Set(
+          [...html.matchAll(/<script[^>]+src=["']([^"']+\.js(?:\?[^"']*)?)["']/g)].map(
+            (match) => match[1],
+          ),
+        )
+      : new Set(
+          [...html.matchAll(/<link\b[^>]*>/g)]
+            .map((match) => match[0])
+            .filter((tag) => /rel=["']stylesheet["']/.test(tag))
+            .map((tag) => /href=["']([^"']+)["']/.exec(tag)?.[1])
+            .filter(Boolean),
+        );
   if (!sources.size) throw new Error(`${relativeHtmlPath} 没有找到客户端脚本`);
   return [...sources].reduce(
     (total, source) => {
@@ -69,11 +78,13 @@ const routes = [
   ['文章列表', path.join('articles', 'index.html')],
   ['分类列表', path.join('categories', 'index.html')],
   ['文章详情', path.join('2026', '07', '26', 'how-to-use-codex', 'index.html')],
+  ['文件仓库', path.join('repo', 'index.html')],
+  ['仓库管理', path.join('repo', 'manage', 'index.html')],
 ];
 const failures = [];
 
 for (const [label, relativePath] of routes) {
-  const bytes = routeJavaScriptSize(relativePath);
+  const bytes = routeAssetSize(relativePath);
   console.log(
     `${label}初始脚本：${formatBytes(bytes.raw)} raw，${formatBytes(bytes.brotli)} Brotli`,
   );
@@ -81,13 +92,21 @@ for (const [label, relativePath] of routes) {
   if (bytes.brotli > limits.routeJavaScriptBrotli) {
     failures.push(`${label}初始脚本 Brotli 体积超过预算`);
   }
+  const css = routeAssetSize(relativePath, 'style');
+  console.log(`${label} CSS：${formatBytes(css.raw)} raw，${formatBytes(css.brotli)} Brotli`);
 }
 
-console.log(`CSS：${formatBytes(cssRaw)} raw，${formatBytes(cssBrotli)} Brotli`);
+console.log(`全部路由 CSS 资源：${formatBytes(cssRaw)} raw，${formatBytes(cssBrotli)} Brotli`);
 console.log(`字体：${fontFiles.length} 个，${formatBytes(fonts)}`);
 
-if (cssRaw > limits.cssRaw) failures.push('CSS 原始体积超过预算');
-if (cssBrotli > limits.cssBrotli) failures.push('CSS Brotli 体积超过预算');
+// Route-specific styles are independent downloads. Enforce the original CSS
+// limits on every exported page, including pages outside the script sample.
+for (const file of files.filter((file) => file.endsWith('.html'))) {
+  const relativePath = path.relative(outputDirectory, file);
+  const css = routeAssetSize(relativePath, 'style');
+  if (css.raw > limits.cssRaw) failures.push(`${relativePath} CSS 原始体积超过预算`);
+  if (css.brotli > limits.cssBrotli) failures.push(`${relativePath} CSS Brotli 体积超过预算`);
+}
 if (fonts > limits.fonts) failures.push('字体总体积超过预算');
 
 const remoteFontReference = textFiles.find((file) => {

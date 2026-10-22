@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import HomePage from '@/components/HomePage';
 import { articleSummaries, categorySummaries } from '@/lib/articles';
 import { usefulLinkCount } from '@/lib/useful-links';
+import './home.css';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/' },

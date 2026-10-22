@@ -28,6 +28,7 @@ import { validateUsefulLinksPayload } from '@/lib/useful-links';
 import { heroPhase, heroTimeline } from '@/lib/hero-timeline';
 import { useSiteExperience } from './SiteExperience';
 import SiteFooter from './SiteFooter';
+import ResourceNav from './ResourceNav';
 
 const heroStageStyle = {
   '--cards-travel': `calc(var(--hero-travel) * ${1 - heroTimeline.cards[0]})`,
@@ -289,7 +290,7 @@ function InteractiveSignalCard({
   const rotateY = useSpring(rawRotateY, { stiffness: 190, damping: 24, mass: 0.42 });
   const visualX = useTransform(smoothPointerX, [0, 100], [-18, 18]);
   const visualY = useTransform(smoothPointerY, [0, 100], [-14, 14]);
-  const glare = useMotionTemplate`radial-gradient(430px circle at ${smoothPointerX}% ${smoothPointerY}%, var(--signal-glow), transparent 68%)`;
+  const glare = useMotionTemplate`radial-gradient(430px circle at ${smoothPointerX}% ${smoothPointerY}%, var(--glow), transparent 68%)`;
 
   const move = (event: ReactPointerEvent<HTMLElement>) => {
     if (reduceMotion || event.pointerType !== 'mouse') return;
@@ -608,6 +609,7 @@ export default function HomePage({
             Topics
           </a>
         </nav>
+        <ResourceNav />
         <button
           className="theme-toggle"
           onClick={toggleTheme}
@@ -852,6 +854,32 @@ export default function HomePage({
               <div className="signal-card__footer">
                 <span>Open Directory</span>
                 <b>↗</b>
+              </div>
+            </InteractiveSignalCard>
+
+            <InteractiveSignalCard
+              href="/repo/"
+              label="打开文件仓库 Repo"
+              className="signal-card--repo"
+              visual={
+                <svg className="signal-portal-mark" viewBox="0 0 220 200" fill="none">
+                  <path d="m48 60 91-21 42 31-91 21zM48 60v78l42 31V91m0 78 91-21V70" />
+                  <path d="m68 42 91-21 42 31-91 21zM68 42v78l42 31V73m0 78 91-21V52" />
+                  <path d="M142 79v38m-12-12 12 12 12-12" />
+                </svg>
+              }
+            >
+              <div className="signal-card__topline">
+                <span>File Repository</span>
+                <i>Open</i>
+              </div>
+              <div className="signal-card__portal-copy">
+                <small>Files / Notes / Resources</small>
+                <h3>Repo.</h3>
+              </div>
+              <div className="signal-card__footer">
+                <span>Keep &amp; Share</span>
+                <b>Download ↗</b>
               </div>
             </InteractiveSignalCard>
           </div>
