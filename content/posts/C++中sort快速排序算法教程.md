@@ -1,7 +1,7 @@
 ---
 title: "C++ 数组排序：sort()入门教程"
 date: "2026-11-02"
-slug: "c++-sort-tutorial"
+slug: "cpp-sort-tutorial"
 tags:
   - C/C++
   - OI
