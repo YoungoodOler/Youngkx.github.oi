@@ -3,7 +3,7 @@ title: "C++ 数组排序：sort()入门教程"
 date: "2026-11-02"
 slug: "cpp-sort-tutorial"
 tags:
-  - C/C++
+  - C / C++
   - OI
 # 可选：code / cs / ai / vlog / talk / web / network / timeline
 card: code
