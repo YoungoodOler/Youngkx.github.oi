@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { load as parseYaml } from 'js-yaml';
-import { marked } from 'marked';
+import hljs from 'highlight.js';
+import { Marked } from 'marked';
 import { isCardPreset, type CardPreset } from './card-presets';
 
 export type MarkdownArticleRecord = {
@@ -20,6 +21,25 @@ type FrontMatterResult = {
 };
 
 const frontMatterPattern = /^---[^\S\r\n]*\r?\n([\s\S]*?)\r?\n---[^\S\r\n]*(?:\r?\n|$)/;
+
+const markdown = new Marked({
+  gfm: true,
+  renderer: {
+    code({ text, lang }) {
+      const language = lang?.trim().split(/\s+/, 1)[0].toLowerCase();
+      // Keep output samples and unknown languages as escaped plain text.
+      if (
+        !language ||
+        /^(?:text|txt|plaintext|plain)$/.test(language) ||
+        !hljs.getLanguage(language)
+      )
+        return false;
+
+      const highlighted = hljs.highlight(text, { language, ignoreIllegals: true }).value;
+      return `<pre><code class="hljs language-${language}">${highlighted}\n</code></pre>\n`;
+    },
+  },
+});
 
 export function parseFrontMatter(source: string, filename = 'Markdown source'): FrontMatterResult {
   const normalizedSource = source.replace(/^\uFEFF/, '');
@@ -97,6 +117,10 @@ function addHeadingIds(html: string) {
   });
 }
 
+export function renderMarkdown(source: string) {
+  return addHeadingIds(markdown.parse(source, { async: false }));
+}
+
 export function loadMarkdownArticles(): MarkdownArticleRecord[] {
   const directory = path.join(process.cwd(), 'content', 'posts');
   if (!existsSync(directory)) return [];
@@ -128,8 +152,7 @@ export function loadMarkdownArticles(): MarkdownArticleRecord[] {
         throw new Error(`${filename} 的 card 不受支持：${String(parsed.data.card)}`);
       }
 
-      const rendered = marked.parse(parsed.content, { gfm: true, async: false });
-      if (typeof rendered !== 'string') throw new Error(`${filename} 无法同步渲染`);
+      const rendered = renderMarkdown(parsed.content);
 
       return [
         {
@@ -138,7 +161,7 @@ export function loadMarkdownArticles(): MarkdownArticleRecord[] {
           date,
           tags: normalizeTags(parsed.data.tags, filename),
           excerpt,
-          content: addHeadingIds(rendered),
+          content: rendered,
           card: cardValue as CardPreset | undefined,
         },
       ];

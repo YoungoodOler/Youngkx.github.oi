@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ArticleView from '@/components/ArticleView';
 import { articles, getArticleByPath } from '@/lib/articles';
+import './code-highlighting.css';
 
 type RouteProps = { params: Promise<{ year: string; slug: string[] }> };
 

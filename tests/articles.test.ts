@@ -3,7 +3,7 @@ import robots from '@/app/robots';
 import sitemap from '@/app/sitemap';
 import { articles, articleSummaries, categorySummaries, getArticleByPath } from '@/lib/articles';
 import { selectLatestArticle } from '@/lib/article-selection';
-import { parseFrontMatter } from '@/lib/markdown-articles';
+import { parseFrontMatter, renderMarkdown } from '@/lib/markdown-articles';
 import { absoluteUrl } from '@/lib/site';
 
 describe('Markdown front matter', () => {
@@ -21,6 +21,49 @@ describe('Markdown front matter', () => {
     expect(() => parseFrontMatter('---\ntitle: Example\n', 'example.md')).toThrow(
       'example.md 的 YAML front matter 缺少结束分隔线',
     );
+  });
+});
+
+describe('Markdown code highlighting', () => {
+  it.each(['cpp', 'C++', 'c', 'python', 'js', 'ts'])(
+    'highlights fenced %s code during Markdown rendering',
+    (language) => {
+      const source = language === 'python' ? 'if True:\n    return 42' : 'if (true) return 42;';
+      const html = renderMarkdown(`\`\`\`${language}\n${source}\n\`\`\``);
+
+      expect(html).toContain('class="hljs language-');
+      expect(html).toContain('class="hljs-keyword"');
+      expect(html).toContain('class="hljs-number"');
+    },
+  );
+
+  it.each(['text', 'plaintext', 'unknown-language', ''])(
+    'keeps %s output samples escaped and unhighlighted',
+    (language) => {
+      const html = renderMarkdown(`\`\`\`${language}\n<script>alert("x")</script> & 42\n\`\`\``);
+
+      expect(html).not.toContain('<script>');
+      expect(html).toContain('&lt;script&gt;');
+      expect(html).toContain('&amp;');
+      expect(html).not.toContain('<span');
+    },
+  );
+
+  it('escapes HTML inside highlighted code without changing the source text', () => {
+    const html = renderMarkdown('```cpp title="example"\nstd::cout << "<script>&";\n```');
+
+    expect(html).toContain('class="hljs language-cpp"');
+    expect(html).toContain('&lt;script&gt;&amp;');
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('title="example"');
+  });
+
+  it('publishes highlighted code in both the greedy and sort Markdown articles', () => {
+    for (const slug of ['greedy-algorithm', 'cpp-sort-tutorial']) {
+      const article = articles.find((entry) => entry.path.at(-1) === slug);
+      expect(article?.content).toContain('class="hljs language-cpp"');
+      expect(article?.content).toContain('class="hljs-keyword"');
+    }
   });
 });
 
