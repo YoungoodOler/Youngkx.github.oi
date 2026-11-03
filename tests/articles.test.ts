@@ -5,6 +5,7 @@ import { articles, articleSummaries, categorySummaries, getArticleByPath } from 
 import { selectLatestArticle } from '@/lib/article-selection';
 import { parseFrontMatter, renderMarkdown } from '@/lib/markdown-articles';
 import { absoluteUrl } from '@/lib/site';
+import { getTagTitle, normalizeTag } from '@/lib/tag-titles';
 
 describe('Markdown front matter', () => {
   it('parses YAML metadata and preserves Markdown content', () => {
@@ -68,6 +69,27 @@ describe('Markdown code highlighting', () => {
 });
 
 describe('article index', () => {
+  it('groups C/C++ tag aliases under the existing category and display name', () => {
+    for (const tag of ['C', 'C++', 'C/C++', 'C / C++', ' c / c++ ']) {
+      expect(normalizeTag(tag)).toBe('C');
+      expect(getTagTitle(tag)).toBe('C / C++');
+    }
+    expect(normalizeTag('C#')).toBe('C#');
+    for (const tag of ['cs', 'talk', 'WEB', '闲谈']) {
+      expect(normalizeTag(tag)).toBe(tag);
+    }
+
+    const categories = categorySummaries.filter((category) => category.title === 'C / C++');
+    expect(categories).toHaveLength(1);
+    expect(categories[0].id).toBe('c');
+    expect(categories[0].posts.map((post) => post.href).sort()).toEqual([
+      '/2023/11/05/printf用法详解/',
+      '/2026/10/08/cpp-stl/',
+      '/2026/11/02/cpp-sort-tutorial/',
+      '/2026/11/03/greedy-algorithm/',
+    ]);
+  });
+
   it('keeps every route unique and resolvable', () => {
     const paths = articles.map((article) => article.path.join('/').normalize('NFC'));
 

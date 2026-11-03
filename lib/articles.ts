@@ -1,7 +1,7 @@
 import rawArticles from '@/content/articles.json';
 import { cardTone, inferCardPreset, isCardPreset, type CardPreset } from './card-presets';
 import { loadMarkdownArticles } from './markdown-articles';
-import { getTagTitle } from './tag-titles';
+import { getTagTitle, normalizeTag } from './tag-titles';
 
 export type ArticleRecord = {
   path: string[];
@@ -38,7 +38,10 @@ const legacyArticles = (rawArticles as ArticleRecord[]).map((article) => {
   const card = typeof article.card === 'string' ? article.card.toLowerCase() : article.card;
   return { ...article, card: isCardPreset(card) ? card : undefined };
 });
-const articles: ArticleRecord[] = [...legacyArticles, ...loadMarkdownArticles()];
+const articles: ArticleRecord[] = [...legacyArticles, ...loadMarkdownArticles()].map((article) => ({
+  ...article,
+  tags: [...new Set(article.tags.map(normalizeTag))],
+}));
 
 const categoryDetails: Record<string, { title: string; description: string; order: number }> = {
   OI: { title: 'OI', description: '信息学竞赛、算法学习与参赛记录', order: 0 },
