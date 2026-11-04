@@ -711,6 +711,28 @@ describe('file repository API', () => {
     expect(env.FILES.objects.size).toBe(5);
   });
 
+  it.each([
+    [{ Range: 'bytes=3-6' }, 206, '4', 'bytes 3-6/10'],
+    [{ Range: 'bytes=-3' }, 206, '3', 'bytes 7-9/10'],
+    [{ Range: 'bytes=3-6', 'If-Range': '"different"' }, 200, '10', null],
+    [{ Range: 'bytes=20-' }, 416, null, 'bytes */10'],
+  ])(
+    'serves range HEAD headers with a single object metadata read: %j',
+    async (headers, status, length, contentRange) => {
+      const env = createEnv();
+      const file = await upload(env, 'range.bin', '0123456789');
+      env.FILES.head.mockClear();
+      const response = await call(env, `/api/files/${file.id}`, { method: 'HEAD', headers });
+      expect(response.status).toBe(status);
+      expect(response.headers.get('content-length')).toBe(length);
+      expect(response.headers.get('content-range')).toBe(contentRange);
+      expect(await response.text()).toBe('');
+      expect(env.FILES.head.mock.calls.filter(([key]) => key === `files/${file.id}`)).toHaveLength(
+        1,
+      );
+    },
+  );
+
   it('creates, lists, renames, and deletes user folders without presets', async () => {
     const env = createEnv();
     expect((await (await call(env)).json()).folders).toEqual([]);

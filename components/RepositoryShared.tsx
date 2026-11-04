@@ -10,8 +10,9 @@ import {
 } from '@/lib/file-repository';
 import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
+import { managementTokenKey } from '@/lib/browser-storage';
 
-export const repositoryTokenKey = 'youngkx-links-token';
+export const repositoryTokenKey = managementTokenKey;
 
 export function fileExtension(name: string) {
   const dot = name.lastIndexOf('.');

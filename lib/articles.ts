@@ -1,17 +1,9 @@
 import rawArticles from '@/content/articles.json';
 import { cardTone, inferCardPreset, isCardPreset, type CardPreset } from './card-presets';
-import { loadMarkdownArticles } from './markdown-articles';
+import { loadMarkdownArticles, type MarkdownArticleRecord } from './markdown-articles';
 import { getTagTitle, normalizeTag } from './tag-titles';
 
-export type ArticleRecord = {
-  path: string[];
-  title: string;
-  date: string;
-  tags: string[];
-  excerpt: string;
-  content: string;
-  card?: CardPreset;
-};
+export type ArticleRecord = MarkdownArticleRecord;
 
 export type ArticleSummary = {
   number: string;

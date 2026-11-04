@@ -11,4 +11,6 @@ content/posts
 CHANGELOG.md
 app/globals.css
 cloudflare/worker-configuration.d.ts
+# Preserve generated benchmark JSON.
+docs/benchmarks/**/*.json
 *.code-workspace

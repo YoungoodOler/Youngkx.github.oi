@@ -8,6 +8,13 @@ import { absoluteUrl } from '@/lib/site';
 import { getTagTitle, normalizeTag } from '@/lib/tag-titles';
 
 describe('Markdown front matter', () => {
+  it('keeps heading anchors unique when repeated titles collide with numbered titles', () => {
+    const html = renderMarkdown('## Example\n## Example\n## Example-2\n## Example\n## Example-2');
+    const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((match) => match[1]);
+    expect(ids).toEqual(['example', 'example-2', 'example-2-2', 'example-3', 'example-2-3']);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('parses YAML metadata and preserves Markdown content', () => {
     const parsed = parseFrontMatter(
       '\uFEFF---\r\ntitle: "Example"\r\ndate: "2026-08-11"\r\ntags:\r\n  - Web\r\n---\r\n\r\n## Body\r\n',

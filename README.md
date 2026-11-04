@@ -62,6 +62,8 @@ Cloudflare Worker 负责提供静态资源、将 `youngkx.cn` 永久重定向到
 
 ## 性能约束
 
+本轮架构审查、优化前后指标、测量方法及原始数据归档见 [`docs/benchmarks/2026-11-04/README.md`](docs/benchmarks/2026-11-04/README.md)。一次性测量脚本随原始数据归档保存。
+
 - Three.js 场景按需加载，不应重新并入所有页面的首屏公共包。
 - Framer Motion 通过 `LazyMotion` 加载 DOM 动画功能；新增动画优先使用 `m` 组件。
 - 字体由 Next.js 在构建时自托管，避免恢复浏览器端的 Google Fonts 外链。

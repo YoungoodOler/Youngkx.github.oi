@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { uploadRepositoryFile } from './repository-upload';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { readStoredValue, writeStoredValue } from '@/lib/browser-storage';
 import {
   defaultRepositorySettings,
   formatFileSize,
@@ -222,12 +223,7 @@ export default function FileRepositoryManager() {
   useEffect(() => {
     mounted.current = true;
     const controller = new AbortController();
-    let storedToken = '';
-    try {
-      storedToken = sessionStorage.getItem(repositoryTokenKey) ?? '';
-    } catch {
-      /* Token entry still works without session storage. */
-    }
+    const storedToken = readStoredValue('sessionStorage', repositoryTokenKey) ?? '';
     setToken(storedToken);
     repositoryRequest('/api/files/admin', {
       headers: authorizationHeaders(storedToken),
@@ -268,12 +264,7 @@ export default function FileRepositoryManager() {
   }, []);
 
   function rememberToken(value: string) {
-    try {
-      if (value) sessionStorage.setItem(repositoryTokenKey, value);
-      else sessionStorage.removeItem(repositoryTokenKey);
-    } catch {
-      /* Storage is optional. */
-    }
+    writeStoredValue('sessionStorage', repositoryTokenKey, value || null);
   }
 
   function fail(reason: unknown) {

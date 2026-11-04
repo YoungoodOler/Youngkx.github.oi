@@ -11,6 +11,7 @@ import {
 } from '@/lib/useful-links';
 import SiteFooter from './SiteFooter';
 import SiteHeader from './SiteHeader';
+import { managementTokenKey, readStoredValue, writeStoredValue } from '@/lib/browser-storage';
 
 type Notice = { tone: 'neutral' | 'success' | 'error'; text: string };
 
@@ -44,7 +45,7 @@ export default function LinksManager() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const storedToken = sessionStorage.getItem('youngkx-links-token') ?? '';
+    const storedToken = readStoredValue('sessionStorage', managementTokenKey) ?? '';
     setToken(storedToken);
 
     const load = async () => {
@@ -91,7 +92,7 @@ export default function LinksManager() {
         setNotice({ tone: 'error', text: 'The admin token is not valid.' });
         return;
       }
-      sessionStorage.setItem('youngkx-links-token', token.trim());
+      writeStoredValue('sessionStorage', managementTokenKey, token.trim());
       setAuthorized(true);
       setNotice({ tone: 'success', text: 'Manager unlocked for this browser tab.' });
     } catch {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import type { ArticleComment, DeletedComment } from '@/lib/article-interactions';
+import { readStoredValue } from '@/lib/browser-storage';
 import {
   commentManagementTokenKey,
   InteractionError,
@@ -24,12 +25,7 @@ export default function CommentModeration({
 
   useEffect(() => {
     const controller = new AbortController();
-    let stored = '';
-    try {
-      stored = sessionStorage.getItem(commentManagementTokenKey) ?? '';
-    } catch {
-      /* Optional browser storage. */
-    }
+    const stored = readStoredValue('sessionStorage', commentManagementTokenKey) ?? '';
     if (stored) {
       setInput(stored);
       setChecking(true);

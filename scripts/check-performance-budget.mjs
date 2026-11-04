@@ -31,6 +31,19 @@ function assetPath(url) {
   return path.join(outputDirectory, ...pathname.replace(/^\/+/, '').split('/'));
 }
 
+// Shared chunks and styles are referenced by many routes. Compress each file once.
+// This cache lives only for this CLI invocation, so each build is checked afresh.
+const assetSizes = new Map();
+function assetSize(filePath) {
+  let bytes = assetSizes.get(filePath);
+  if (!bytes) {
+    const buffer = readFileSync(filePath);
+    bytes = { raw: buffer.byteLength, brotli: brotliCompressSync(buffer).byteLength };
+    assetSizes.set(filePath, bytes);
+  }
+  return bytes;
+}
+
 function routeAssetSize(relativeHtmlPath, kind = 'script') {
   const htmlPath = path.join(outputDirectory, relativeHtmlPath);
   const html = readFileSync(htmlPath, 'utf8');
@@ -54,9 +67,9 @@ function routeAssetSize(relativeHtmlPath, kind = 'script') {
       const filePath = assetPath(source);
       if (!existsSync(filePath))
         throw new Error(`${relativeHtmlPath} 引用了不存在的脚本：${source}`);
-      const sourceBuffer = readFileSync(filePath);
-      total.raw += sourceBuffer.byteLength;
-      total.brotli += brotliCompressSync(sourceBuffer).byteLength;
+      const bytes = assetSize(filePath);
+      total.raw += bytes.raw;
+      total.brotli += bytes.brotli;
       return total;
     },
     { raw: 0, brotli: 0 },
@@ -68,10 +81,7 @@ const cssFiles = files.filter((file) => file.endsWith('.css'));
 const fontFiles = files.filter((file) => /\.(?:woff2?|ttf|otf)$/i.test(file));
 const textFiles = files.filter((file) => /\.(?:css|html|js|txt|xml)$/i.test(file));
 const cssRaw = cssFiles.reduce((total, file) => total + statSync(file).size, 0);
-const cssBrotli = cssFiles.reduce(
-  (total, file) => total + brotliCompressSync(readFileSync(file)).byteLength,
-  0,
-);
+const cssBrotli = cssFiles.reduce((total, file) => total + assetSize(file).brotli, 0);
 const fonts = fontFiles.reduce((total, file) => total + statSync(file).size, 0);
 const routes = [
   ['首页', 'index.html'],

@@ -1,0 +1,492 @@
+{
+  "beforeCommit": "b47338cb7535521565a8baf2b78d94064405ee94",
+  "sameDependencyLock": "2b594a7bc49b2f212b9f1cd0f29b4399b0e2c9864237e56b62186f33b16142a8",
+  "metrics": [
+    {
+      "name": "clean-build-time",
+      "unit": "ms",
+      "beforeSamples": [
+        72154.8944,
+        29075.99160000001,
+        28066.882300000027
+      ],
+      "afterSamples": [
+        84370.8161,
+        29891.15049999999,
+        30494.589800000016
+      ],
+      "before": 29075.99160000001,
+      "after": 30494.589800000016,
+      "reductionPercent": -4.878933174543933
+    },
+    {
+      "name": "clean-build-max-individual-node-rss",
+      "unit": "KiB",
+      "beforeSamples": [
+        404388,
+        387688,
+        453256
+      ],
+      "afterSamples": [
+        387684,
+        439664,
+        412660
+      ],
+      "before": 404388,
+      "after": 412660,
+      "reductionPercent": -2.0455602045560206
+    },
+    {
+      "name": "performance-budget-time",
+      "unit": "ms",
+      "beforeSamples": [
+        15226.462700000004,
+        14736.080699999991,
+        14629.136800000037
+      ],
+      "afterSamples": [
+        10314.078899999993,
+        9745.092800000013,
+        9485.0907
+      ],
+      "before": 14736.080699999991,
+      "after": 9745.092800000013,
+      "reductionPercent": 33.86916780389226
+    },
+    {
+      "name": "performance-budget-max-individual-node-rss",
+      "unit": "KiB",
+      "beforeSamples": [
+        62180,
+        59648,
+        62420
+      ],
+      "afterSamples": [
+        49904,
+        48052,
+        50132
+      ],
+      "before": 62180,
+      "after": 49904,
+      "reductionPercent": 19.742682534577035
+    },
+    {
+      "name": "synthetic-file-list",
+      "unit": "ms",
+      "beforeSamples": [
+        93.38659999999999,
+        93.86569999999995,
+        89.37670000000003,
+        87.83870000000002,
+        93.46630000000005,
+        94.72709999999995,
+        95.1047000000001,
+        93.82240000000002,
+        93.30330000000004,
+        94.74530000000004
+      ],
+      "afterSamples": [
+        62.2466,
+        64.34039999999999,
+        61.55280000000005,
+        62.205499999999915,
+        64.26250000000005,
+        60.72119999999995,
+        61.65359999999998,
+        63.1708000000001,
+        62.04930000000002,
+        60.497999999999934
+      ],
+      "before": 93.64435000000003,
+      "after": 62.127399999999966,
+      "reductionPercent": 33.65600807736938
+    },
+    {
+      "name": "synthetic-file-list-binding-operations",
+      "unit": "count",
+      "beforeSamples": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "afterSamples": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "before": 3,
+      "after": 3,
+      "reductionPercent": 0
+    },
+    {
+      "name": "synthetic-range-head",
+      "unit": "ms",
+      "beforeSamples": [
+        121.49330000000009,
+        125.22529999999983,
+        124.64789999999994,
+        123.15329999999994,
+        122.42360000000008,
+        119.35580000000027,
+        124.99389999999994,
+        125.54199999999992,
+        124.18200000000024,
+        125.8770999999997
+      ],
+      "afterSamples": [
+        92.1857,
+        93.70800000000008,
+        93.16350000000011,
+        94.06690000000003,
+        91.2451000000001,
+        95.84799999999996,
+        93.89910000000009,
+        92.99660000000017,
+        92.2772,
+        92.70790000000011
+      ],
+      "before": 124.41495000000009,
+      "after": 93.08005000000014,
+      "reductionPercent": 25.185799616525124
+    },
+    {
+      "name": "synthetic-range-head-binding-operations",
+      "unit": "count",
+      "beforeSamples": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "afterSamples": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "before": 4,
+      "after": 3,
+      "reductionPercent": 25
+    },
+    {
+      "name": "browser-desktop-domContentLoadedMs",
+      "unit": "ms",
+      "beforeSamples": [
+        33.5,
+        16.199999928474426,
+        20.699999928474426,
+        305,
+        17.100000023841858
+      ],
+      "afterSamples": [
+        68.19999992847443,
+        20.200000047683716,
+        19.200000047683716,
+        72.70000004768372,
+        17.799999952316284
+      ],
+      "before": 20.699999928474426,
+      "after": 20.200000047683716,
+      "reductionPercent": 2.415458369654014
+    },
+    {
+      "name": "browser-desktop-loadMs",
+      "unit": "ms",
+      "beforeSamples": [
+        161.40000009536743,
+        109.60000002384186,
+        125.89999997615814,
+        578.2999999523163,
+        108.80000007152557
+      ],
+      "afterSamples": [
+        187.79999995231628,
+        111.80000007152557,
+        108.29999995231628,
+        104.80000007152557,
+        108
+      ],
+      "before": 125.89999997615814,
+      "after": 108.29999995231628,
+      "reductionPercent": 13.979348711020487
+    },
+    {
+      "name": "browser-desktop-fcpMs",
+      "unit": "ms",
+      "beforeSamples": [
+        288,
+        92,
+        120,
+        396,
+        112
+      ],
+      "afterSamples": [
+        324,
+        104,
+        104,
+        84,
+        88
+      ],
+      "before": 120,
+      "after": 104,
+      "reductionPercent": 13.333333333333334
+    },
+    {
+      "name": "browser-desktop-lcpMs",
+      "unit": "ms",
+      "beforeSamples": [
+        1472,
+        1356,
+        1420,
+        696,
+        1360
+      ],
+      "afterSamples": [
+        1556,
+        1352,
+        204,
+        184,
+        188
+      ],
+      "before": 1360,
+      "after": 204,
+      "reductionPercent": 85
+    },
+    {
+      "name": "browser-desktop-jsHeapUsedBytes",
+      "unit": "bytes",
+      "beforeSamples": [
+        7889096,
+        7834792,
+        7738048,
+        7860072,
+        7838088
+      ],
+      "afterSamples": [
+        7918504,
+        7705356,
+        7823756,
+        7735000,
+        7841576
+      ],
+      "before": 7838088,
+      "after": 7823756,
+      "reductionPercent": 0.18285071563371066
+    },
+    {
+      "name": "browser-mobile-domContentLoadedMs",
+      "unit": "ms",
+      "beforeSamples": [
+        19.100000023841858,
+        16.90000009536743,
+        21.5,
+        15.600000023841858,
+        71.69999992847443
+      ],
+      "afterSamples": [
+        16.800000071525574,
+        17.5,
+        72,
+        16.09999990463257,
+        15.899999976158142
+      ],
+      "before": 19.100000023841858,
+      "after": 16.800000071525574,
+      "reductionPercent": 12.041884552069504
+    },
+    {
+      "name": "browser-mobile-loadMs",
+      "unit": "ms",
+      "beforeSamples": [
+        111.10000002384186,
+        104,
+        111.20000004768372,
+        100.60000002384186,
+        103.10000002384186
+      ],
+      "afterSamples": [
+        104.10000002384186,
+        107.40000009536743,
+        102.80000007152557,
+        106.59999990463257,
+        102.69999992847443
+      ],
+      "before": 104,
+      "after": 104.10000002384186,
+      "reductionPercent": -0.09615386907870953
+    },
+    {
+      "name": "browser-mobile-fcpMs",
+      "unit": "ms",
+      "beforeSamples": [
+        104,
+        92,
+        104,
+        92,
+        96
+      ],
+      "afterSamples": [
+        88,
+        88,
+        96,
+        80,
+        88
+      ],
+      "before": 96,
+      "after": 88,
+      "reductionPercent": 8.333333333333332
+    },
+    {
+      "name": "browser-mobile-lcpMs",
+      "unit": "ms",
+      "beforeSamples": [
+        104,
+        192,
+        204,
+        176,
+        180
+      ],
+      "afterSamples": [
+        192,
+        188,
+        96,
+        184,
+        188
+      ],
+      "before": 180,
+      "after": 188,
+      "reductionPercent": -4.444444444444445
+    },
+    {
+      "name": "browser-mobile-jsHeapUsedBytes",
+      "unit": "bytes",
+      "beforeSamples": [
+        7406768,
+        7330244,
+        7353896,
+        7397280,
+        7385852
+      ],
+      "afterSamples": [
+        7378680,
+        7386116,
+        7359408,
+        7386844,
+        7333116
+      ],
+      "before": 7385852,
+      "after": 7378680,
+      "reductionPercent": 0.0971045723634863
+    }
+  ],
+  "preservation": {
+    "stylesAndFontsUnchanged": true,
+    "desktopScreenshot": {
+      "format": "raw",
+      "width": 1440,
+      "height": 2269,
+      "channels": 4,
+      "depth": "uchar",
+      "premultiplied": false,
+      "hasAlpha": true,
+      "size": 13069440,
+      "differentPixels": 1735,
+      "differentPixelsAboveFooter": 0,
+      "footerStart": 2200,
+      "comparedPixels": 3267360
+    },
+    "mobileScreenshot": {
+      "format": "raw",
+      "width": 390,
+      "height": 2252,
+      "channels": 4,
+      "depth": "uchar",
+      "premultiplied": false,
+      "hasAlpha": true,
+      "size": 3513120,
+      "differentPixels": 322,
+      "differentPixelsAboveFooter": 0,
+      "footerStart": 2160,
+      "comparedPixels": 878280
+    },
+    "markdown": [
+      {
+        "path": [
+          "2026",
+          "10",
+          "08",
+          "cpp-stl"
+        ],
+        "title": "C++ STL",
+        "contentSha256": "b829bee333d1389eac5652721d13bad2dbe43a4a98ecbd686ac0f88e1fb7c34f"
+      },
+      {
+        "path": [
+          "2026",
+          "11",
+          "02",
+          "cpp-sort-tutorial"
+        ],
+        "title": "C++ 数组排序：sort()入门教程",
+        "contentSha256": "0dd99ab9bc8fbd670e475dbd9089ed8c47cf2aa4ec11f8f4162708bd9a2e4dd5"
+      },
+      {
+        "path": [
+          "2026",
+          "07",
+          "26",
+          "how-to-use-codex"
+        ],
+        "title": "CodeX使用教程",
+        "contentSha256": "a0f557acd6debb71fa088d77837f2a5d3c55c3eb8356b3e8995db24fa865e8d0"
+      },
+      {
+        "path": [
+          "2026",
+          "09",
+          "04",
+          "Cpp+fan+learns+Python"
+        ],
+        "title": "学过C++的同学在学习Python",
+        "contentSha256": "7c4f8421ee24230232fd5357ebb8417ede58ad874202a64bfc15d22f84096753"
+      },
+      {
+        "path": [
+          "2026",
+          "11",
+          "03",
+          "greedy-algorithm"
+        ],
+        "title": "贪心算法入门",
+        "contentSha256": "638d9af43eb2757d2a603db01961fa86f63a8c8b693213705cfa3f0af5c1e58a"
+      }
+    ],
+    "legacyContentUnchanged": true
+  }
+}

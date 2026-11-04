@@ -12,6 +12,7 @@ import {
 import { LazyMotion, type MotionValue, useMotionValue } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
+import { readStoredValue, writeStoredValue } from '@/lib/browser-storage';
 
 const Scene = dynamic(() => import('./Scene'), { ssr: false });
 const loadMotionFeatures = () => import('./motion-features').then((module) => module.default);
@@ -303,14 +304,14 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
     setTheme(initial);
     setTransitionTheme(initial);
 
-    if (sessionStorage.getItem('youngkx-page-transition') === '1') {
-      const savedOrigin = sessionStorage.getItem('youngkx-transition-origin');
+    if (readStoredValue('sessionStorage', 'youngkx-page-transition') === '1') {
+      const savedOrigin = readStoredValue('sessionStorage', 'youngkx-transition-origin');
       if (savedOrigin) {
         const [x, y] = savedOrigin.split(',').map(Number);
         if (Number.isFinite(x) && Number.isFinite(y)) setTransitionOrigin({ x, y });
       }
-      sessionStorage.removeItem('youngkx-page-transition');
-      sessionStorage.removeItem('youngkx-transition-origin');
+      writeStoredValue('sessionStorage', 'youngkx-page-transition', null);
+      writeStoredValue('sessionStorage', 'youngkx-transition-origin', null);
       setMode('page-in');
       const pageInDuration = getTransitionDuration('page-in');
       timers.current.push(
@@ -366,7 +367,7 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
       setTheme(next);
       setTransitionTheme(next);
       document.documentElement.dataset.theme = next;
-      localStorage.setItem('youngkx-theme', next);
+      writeStoredValue('localStorage', 'youngkx-theme', next);
       return;
     }
 
@@ -381,7 +382,7 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
         () => {
           setTheme(next);
           document.documentElement.dataset.theme = next;
-          localStorage.setItem('youngkx-theme', next);
+          writeStoredValue('localStorage', 'youngkx-theme', next);
         },
         themeDuration / 2 - 20,
       ),

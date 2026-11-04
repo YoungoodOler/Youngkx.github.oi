@@ -101,7 +101,8 @@ function headingText(html: string) {
 }
 
 function addHeadingIds(html: string) {
-  const used = new Map<string, number>();
+  const used = new Set<string>();
+  const counts = new Map<string, number>();
   return html.replace(/<h([1-6])>([\s\S]*?)<\/h\1>/g, (_match, level: string, inner: string) => {
     const base =
       headingText(inner)
@@ -110,9 +111,11 @@ function addHeadingIds(html: string) {
         .replace(/[^\p{L}\p{N}\s-]/gu, '')
         .trim()
         .replace(/\s+/g, '-') || 'section';
-    const count = used.get(base) ?? 0;
-    used.set(base, count + 1);
-    const id = count ? `${base}-${count + 1}` : base;
+    let count = counts.get(base) ?? 1;
+    let id = count === 1 ? base : `${base}-${count}`;
+    while (used.has(id)) id = `${base}-${++count}`;
+    counts.set(base, count);
+    used.add(id);
     return `<h${level} id="${id}">${inner}</h${level}>`;
   });
 }

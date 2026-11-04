@@ -192,9 +192,10 @@ async function downloadFile(request: Request, bucket: R2Bucket, key: string, fil
     return jsonResponse({ error: 'Preview is not available for this file type.' }, 415);
   let range: R2Range | undefined;
   let size: number | undefined;
+  let metadata: R2Object | null | undefined;
   const requestedRange = request.headers.get('range');
   if (requestedRange) {
-    const metadata = await bucket.head(key);
+    metadata = await bucket.head(key);
     if (!metadata) return jsonResponse({ error: 'File not found.' }, 404);
     size = metadata.size;
     const ifRange = request.headers.get('if-range');
@@ -219,7 +220,9 @@ async function downloadFile(request: Request, bucket: R2Bucket, key: string, fil
   }
 
   const object =
-    request.method === 'HEAD' ? await bucket.head(key) : await bucket.get(key, { range });
+    request.method === 'HEAD'
+      ? (metadata ?? (await bucket.head(key)))
+      : await bucket.get(key, { range });
   if (!object) return jsonResponse({ error: 'File not found.' }, 404);
   const name = file.name;
   const fallback = name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -345,14 +348,16 @@ export async function handleFilesApi(
       return jsonResponse({ settings, folders: [], files: [], cursor: null });
     const cursor = url.searchParams.get('cursor') ?? undefined;
     if (cursor && cursor.length > 2048) return jsonResponse({ error: 'Invalid page cursor.' }, 400);
-    const folders = await readFolders(env.FILES);
+    const [folders, listed] = await Promise.all([
+      readFolders(env.FILES),
+      env.FILES.list({
+        prefix: recordPrefix,
+        limit: 100,
+        cursor,
+        include: ['customMetadata'],
+      }),
+    ]);
     const folderIds = new Set(folders.map((folder) => folder.id));
-    const listed = await env.FILES.list({
-      prefix: recordPrefix,
-      limit: 100,
-      cursor,
-      include: ['customMetadata'],
-    });
     return jsonResponse({
       settings,
       folders,

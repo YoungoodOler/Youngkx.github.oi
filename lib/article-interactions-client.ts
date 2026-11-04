@@ -1,4 +1,6 @@
-export const commentManagementTokenKey = 'youngkx-links-token';
+import { managementTokenKey, writeStoredValue } from './browser-storage';
+
+export const commentManagementTokenKey = managementTokenKey;
 
 export class InteractionError extends Error {
   constructor(
@@ -28,10 +30,5 @@ export function interactionErrorMessage(error: unknown) {
 }
 
 export function rememberCommentManagementToken(value: string | null) {
-  try {
-    if (value) sessionStorage.setItem(commentManagementTokenKey, value);
-    else sessionStorage.removeItem(commentManagementTokenKey);
-  } catch {
-    // Management also works when browser storage is unavailable.
-  }
+  writeStoredValue('sessionStorage', commentManagementTokenKey, value || null);
 }

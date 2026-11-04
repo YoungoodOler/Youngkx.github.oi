@@ -55,23 +55,28 @@ export async function readLimitedJson(
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
-  while (true) {
-    const chunk = await reader.read();
-    if (chunk.done) break;
-    totalBytes += chunk.value.byteLength;
-    if (totalBytes > maximumBytes) {
-      await reader.cancel();
-      throw new Error('BODY_TOO_LARGE');
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      totalBytes += chunk.value.byteLength;
+      if (totalBytes > maximumBytes) {
+        // Cancellation failures must not turn an oversized request into a 500.
+        await reader.cancel().catch(() => {});
+        throw new Error('BODY_TOO_LARGE');
+      }
+      chunks.push(chunk.value);
     }
-    chunks.push(chunk.value);
+    const body = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      body.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return JSON.parse(new TextDecoder().decode(body)) as unknown;
+  } finally {
+    reader.releaseLock();
   }
-  const body = new Uint8Array(totalBytes);
-  let offset = 0;
-  for (const chunk of chunks) {
-    body.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return JSON.parse(new TextDecoder().decode(body)) as unknown;
 }
 
 export async function authorizeManagement(
