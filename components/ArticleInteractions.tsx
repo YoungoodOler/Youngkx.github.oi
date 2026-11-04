@@ -4,32 +4,19 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   maximumCommentLength,
   maximumNicknameLength,
+  mergeCommentsInOrder,
   type ArticleComment,
   type ArticleInteractions as Interactions,
   type ArticleReplies,
   type PublishedComment,
+  type DeletedComment,
 } from '@/lib/article-interactions';
-
-class InteractionError extends Error {}
-
-async function interactionRequest<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    credentials: 'same-origin',
-    cache: 'no-store',
-    signal: AbortSignal.timeout(15_000),
-    ...init,
-  });
-  const payload = await response.json();
-  if (!response.ok) throw new InteractionError(payload.error || '操作失败，请稍后再试。');
-  return payload as T;
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof InteractionError) {
-    return error.message;
-  }
-  return '暂时无法连接，请稍后重试。你的评论内容会保留在输入框中。';
-}
+import {
+  interactionRequest,
+  interactionErrorMessage as errorMessage,
+  rememberCommentManagementToken,
+} from '@/lib/article-interactions-client';
+import CommentModeration, { CommentDeleteButton } from './CommentModeration';
 
 function commentDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', {
@@ -69,10 +56,16 @@ function CommentThread({
   comment,
   query,
   onPublished,
+  adminToken,
+  onDeleted,
+  onUnauthorized,
 }: {
   comment: ArticleComment;
   query: string;
   onPublished: (result: PublishedComment) => void;
+  adminToken: string | null;
+  onDeleted: (comment: ArticleComment, result: DeletedComment) => void;
+  onUnauthorized: () => void;
 }) {
   const [replies, setReplies] = useState<ArticleComment[]>([]);
   const [expanded, setExpanded] = useState(false);
@@ -97,23 +90,16 @@ function CommentThread({
     }
   }, []);
 
-  const loadReplies = async (before?: number) => {
+  const loadReplies = async (after?: number) => {
     if (loading) return;
     setLoading(true);
     setError('');
     try {
       const result = await interactionRequest<ArticleReplies>(
-        `/api/articles/replies?${query}&parent=${comment.id}${before ? `&before=${before}` : ''}`,
+        `/api/articles/replies?${query}&parent=${comment.id}${after ? `&after=${after}` : ''}`,
       );
       setReplies((current) =>
-        before
-          ? [
-              ...current,
-              ...result.replies.filter(
-                (reply) => !current.some((existing) => existing.id === reply.id),
-              ),
-            ]
-          : result.replies,
+        after ? mergeCommentsInOrder(current, result.replies) : result.replies,
       );
       setNextCursor(result.nextCursor);
       setExpanded(true);
@@ -151,10 +137,7 @@ function CommentThread({
           replyToId: target.id,
         }),
       });
-      setReplies((current) => [
-        result.comment,
-        ...current.filter((reply) => reply.id !== result.comment.id),
-      ]);
+      setReplies((current) => mergeCommentsInOrder(current, [result.comment]));
       setExpanded(true);
       onPublished(result);
       setContent('');
@@ -174,8 +157,20 @@ function CommentThread({
   };
 
   const formId = `reply-${comment.id}`;
+  const handleDeletedReply = (removed: ArticleComment, result: DeletedComment) => {
+    setReplies((current) =>
+      current
+        .filter((reply) => reply.id !== removed.id)
+        .map((reply) =>
+          reply.replyToId === removed.id ? { ...reply, replyTo: null, replyToId: null } : reply,
+        ),
+    );
+    if (target?.id === removed.id) setTarget(null);
+    onDeleted(removed, result);
+    setNotice('回复已删除。');
+  };
   return (
-    <li className="article-comment-thread">
+    <li className="article-comment-thread" data-comment-id={comment.id}>
       <div className="article-comment">
         <CommentDetails comment={comment} />
       </div>
@@ -198,11 +193,19 @@ function CommentThread({
             {loading ? '正在加载…' : expanded ? '收起回复' : `查看 ${comment.replyCount} 条回复`}
           </button>
         )}
+        <CommentDeleteButton
+          comment={comment}
+          query={query}
+          token={adminToken}
+          disabled={posting}
+          onDeleted={onDeleted}
+          onUnauthorized={onUnauthorized}
+        />
       </div>
       {expanded && replies.length > 0 && (
         <ol className="article-reply-list" aria-label={`${comment.nickname} 的评论回复`}>
           {replies.map((reply) => (
-            <li key={reply.id}>
+            <li key={reply.id} data-comment-id={reply.id}>
               <div className="article-comment">
                 <CommentDetails comment={reply} reply />
               </div>
@@ -215,6 +218,14 @@ function CommentThread({
                 >
                   回复
                 </button>
+                <CommentDeleteButton
+                  comment={reply}
+                  query={query}
+                  token={adminToken}
+                  disabled={posting || loading}
+                  onDeleted={handleDeletedReply}
+                  onUnauthorized={onUnauthorized}
+                />
               </div>
             </li>
           ))}
@@ -328,6 +339,11 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
   const [website, setWebsite] = useState('');
   const [notice, setNotice] = useState('');
   const [actionError, setActionError] = useState('');
+  const [adminToken, setAdminToken] = useState<string | null>(null);
+  const changeManagementToken = useCallback((token: string | null) => {
+    setAdminToken(token);
+    setActionError('');
+  }, []);
   const requestId = useRef<string | null>(null);
 
   const load = useCallback(
@@ -406,10 +422,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
         current
           ? {
               ...current,
-              comments: [
-                result.comment,
-                ...current.comments.filter((comment) => comment.id !== result.comment.id),
-              ],
+              comments: mergeCommentsInOrder(current.comments, [result.comment]),
               commentCount: result.commentCount,
             }
           : current,
@@ -435,18 +448,13 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
     setActionError('');
     try {
       const result = await interactionRequest<Interactions>(
-        `/api/articles/interactions?${query}&before=${data.nextCursor}`,
+        `/api/articles/interactions?${query}&after=${data.nextCursor}`,
       );
       setData((current) =>
         current
           ? {
               ...current,
-              comments: [
-                ...current.comments,
-                ...result.comments.filter(
-                  (comment) => !current.comments.some((existing) => existing.id === comment.id),
-                ),
-              ],
+              comments: mergeCommentsInOrder(current.comments, result.comments),
               nextCursor: result.nextCursor,
               commentCount: result.commentCount,
             }
@@ -457,6 +465,32 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
     } finally {
       setLoadingMore(false);
     }
+  };
+
+  const handleDeleted = (removed: ArticleComment, result: DeletedComment) => {
+    setData((current) =>
+      current
+        ? {
+            ...current,
+            commentCount: result.commentCount,
+            comments:
+              result.parentId === null
+                ? current.comments.filter((comment) => comment.id !== removed.id)
+                : current.comments.map((comment) =>
+                    comment.id === result.parentId
+                      ? { ...comment, replyCount: result.parentReplyCount ?? comment.replyCount }
+                      : comment,
+                  ),
+          }
+        : current,
+    );
+    setNotice(result.parentId === null ? '评论及其回复已删除。' : '回复已删除。');
+  };
+
+  const lockExpiredManagement = () => {
+    setAdminToken(null);
+    rememberCommentManagementToken(null);
+    setActionError('管理凭证已失效，请点击“管理评论”重新解锁。');
   };
 
   return (
@@ -501,6 +535,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
         </div>
         <p>无需登录，写下你的想法就好。</p>
       </div>
+      <CommentModeration token={adminToken} onChange={changeManagementToken} />
 
       {loadError && (
         <div className="interaction-error" role="alert">
@@ -602,6 +637,9 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
               key={comment.id}
               comment={comment}
               query={query}
+              adminToken={adminToken}
+              onDeleted={handleDeleted}
+              onUnauthorized={lockExpiredManagement}
               onPublished={(result) =>
                 setData((current) =>
                   current

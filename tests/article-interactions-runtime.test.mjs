@@ -131,7 +131,7 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
     const named = await post(other, commentInput('新的留言', { nickname: '自定义用户名' }));
     const data = await snapshot(await visitor());
     expect(data.commentCount).toBe(2);
-    expect(data.comments.map((item) => item.nickname)).toEqual(['自定义用户名', '匿名访客']);
+    expect(data.comments.map((item) => item.nickname)).toEqual(['匿名访客', '自定义用户名']);
     expect(named.comment.nickname).toBe('自定义用户名');
     expect((await snapshot(cookie, otherArticle)).comments).toEqual([]);
   });
@@ -161,8 +161,8 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
     );
     expect(replies.status).toBe(200);
     expect((await replies.json()).replies.map((item) => item.nickname)).toEqual([
-      '读者丙',
       '读者乙',
+      '读者丙',
     ]);
     const invalid = await send(
       'comments',
@@ -221,7 +221,7 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
   it('rejects nonexistent articles, invalid pagination and unknown reply targets', async () => {
     expect((await server.fetch(endpoint('interactions', '/2026/11/04/missing/'))).status).toBe(404);
     expect((await server.fetch(endpoint('interactions', '/2026/../bad/'))).status).toBe(400);
-    expect((await server.fetch(endpoint('interactions', article, { before: '-1' }))).status).toBe(
+    expect((await server.fetch(endpoint('interactions', article, { after: '-1' }))).status).toBe(
       400,
     );
     expect((await server.fetch(endpoint('replies', article, { parent: '99999' }))).status).toBe(
@@ -301,10 +301,13 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
     expect(first.comments).toHaveLength(20);
     expect(first.commentCount).toBe(50);
     await post(await visitor(), commentInput('arrived while paginating'));
-    const second = await snapshot(cookie, article, { before: String(first.nextCursor) });
-    expect(second.comments).toHaveLength(5);
+    const second = await snapshot(cookie, article, { after: String(first.nextCursor) });
+    expect(second.comments).toHaveLength(6);
     expect(second.nextCursor).toBeNull();
-    expect(new Set([...first.comments, ...second.comments].map((item) => item.id)).size).toBe(25);
+    const ids = [...first.comments, ...second.comments].map((item) => item.id);
+    expect(new Set(ids).size).toBe(26);
+    expect(ids).toEqual([...ids].sort((left, right) => left - right));
+    expect(second.comments.at(-1).content).toBe('arrived while paginating');
     const replies = await (
       await server.fetch(endpoint('replies', article, { parent: String(root.comment.id) }))
     ).json();
@@ -313,15 +316,32 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
       await server.fetch(
         endpoint('replies', article, {
           parent: String(root.comment.id),
-          before: String(replies.nextCursor),
+          after: String(replies.nextCursor),
         }),
       )
     ).json();
     expect(more.replies).toHaveLength(5);
     expect(more.nextCursor).toBeNull();
+    const replyIds = [...replies.replies, ...more.replies].map((item) => item.id);
+    expect(replyIds).toEqual([...replyIds].sort((left, right) => left - right));
   });
 
   it('requires the existing admin token for moderation and preserves reply chains after deleting one reply', async () => {
+    expect((await server.fetch(`${origin}/api/articles/admin`)).status).toBe(401);
+    expect(
+      (
+        await server.fetch(`${origin}/api/articles/admin`, {
+          headers: { Authorization: 'Bearer wrong-token' },
+        })
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await server.fetch(`${origin}/api/articles/admin`, {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        })
+      ).status,
+    ).toBe(200);
     const root = await post(await visitor(), commentInput('root'));
     const reply = await post(
       await visitor(),
@@ -335,11 +355,15 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     expect(removed.status).toBe(200);
-    expect((await removed.json()).commentCount).toBe(2);
+    expect(await removed.json()).toMatchObject({
+      commentCount: 2,
+      parentId: root.comment.id,
+      parentReplyCount: 1,
+    });
     const replies = await (
       await server.fetch(endpoint('replies', article, { parent: String(root.comment.id) }))
     ).json();
-    expect(replies.replies[0]).toMatchObject({ content: 'nested', replyTo: null });
+    expect(replies.replies[0]).toMatchObject({ content: 'nested', replyTo: null, replyToId: null });
     expect(
       (
         await server.fetch(endpoint(`comments/${root.comment.id}`), {

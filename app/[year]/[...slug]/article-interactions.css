@@ -351,6 +351,101 @@ html[data-theme='light'] .interaction-error {
   margin: 6px 0 0 54px;
 }
 
+.comment-moderation {
+  margin: -8px 0 22px;
+  text-align: right;
+}
+.comment-moderation button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+.comment-moderation button:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+.comment-moderation-status {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  color: var(--accent);
+  font-size: 12px;
+}
+.comment-moderation-form {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 520px);
+  margin: 14px 0 0 auto;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  text-align: left;
+  background: var(--bg);
+}
+.comment-moderation-form p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.comment-moderation-form label {
+  font-size: 13px;
+}
+.comment-moderation-form > div {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+.comment-moderation-form input {
+  min-width: 0;
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink);
+  background: transparent;
+  font: 400 16px/1.5 var(--sans);
+}
+.comment-moderation-form input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.comment-moderation-form button {
+  flex-shrink: 0;
+}
+.comment-moderation-form .interaction-error {
+  color: #e798a4;
+}
+.article-comment-actions .comment-delete-button {
+  color: #e798a4;
+}
+html[data-theme='light'] .comment-moderation-form .interaction-error,
+html[data-theme='light'] .article-comment-actions .comment-delete-button {
+  color: #a32d49;
+}
+.comment-delete-control,
+.comment-delete-confirmation {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+.comment-delete-confirmation {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
 @media (max-width: 600px) {
   .article-interactions {
     margin-top: 32px;
