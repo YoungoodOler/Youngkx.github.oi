@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ArticleRecord } from '@/lib/articles';
 import { getTagTitle } from '@/lib/tag-titles';
+import ArticleInteractions from './ArticleInteractions';
 import SiteFooter from './SiteFooter';
 import SiteHeader from './SiteHeader';
 
@@ -318,6 +319,10 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
           <span>说明</span>
           <code>原创内容，转载请注明出处</code>
         </div>
+        <ArticleInteractions
+          key={article.path.join('/')}
+          articlePath={`/${article.path.join('/')}/`}
+        />
       </div>
 
       <aside className={tocOpen ? 'modern-toc open' : 'modern-toc'}>
