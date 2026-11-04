@@ -8,6 +8,7 @@ export type ArticleComment = {
   createdAt: string;
   parentId: number | null;
   replyTo: string | null;
+  replyToId: number | null;
   replyCount: number;
 };
 
@@ -21,6 +22,19 @@ export type PublishedComment = {
   commentCount: number;
   parentReplyCount: number | null;
 };
+
+export type DeletedComment = {
+  deleted: true;
+  commentCount: number;
+  parentId: number | null;
+  parentReplyCount: number | null;
+};
+
+export function mergeCommentsInOrder(current: ArticleComment[], incoming: ArticleComment[]) {
+  return [
+    ...new Map([...current, ...incoming].map((comment) => [comment.id, comment])).values(),
+  ].sort((left, right) => left.id - right.id);
+}
 
 export type ArticleInteractions = {
   likes: number;

@@ -8,7 +8,7 @@ import { authorizeManagement, jsonResponse, readLimitedJson, type WorkerEnv } fr
 const cookieName = 'youngkx_visitor';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const commentPageSize = 20;
-const commentColumns = `c.id, c.nickname, c.content, c.created_at AS createdAt, c.parent_id AS parentId,
+const commentColumns = `c.id, c.nickname, c.content, c.created_at AS createdAt, c.parent_id AS parentId, c.reply_to_id AS replyToId,
   (SELECT nickname FROM article_comments WHERE id = c.reply_to_id) AS replyTo,
   (SELECT COUNT(*) FROM article_comments WHERE parent_id = c.id) AS replyCount`;
 
@@ -103,6 +103,20 @@ async function commentCount(db: D1Database, path: string) {
 }
 
 async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitorId: string) {
+  if (url.pathname === '/api/articles/admin') {
+    if (request.method !== 'GET') return jsonResponse({ error: '不支持的请求方式。' }, 405);
+    const denied = await authorizeManagement(request, env);
+    if (!denied) return jsonResponse({ authorized: true });
+    return jsonResponse(
+      {
+        error:
+          denied.status === 401
+            ? '管理口令不正确，请重新输入。'
+            : '暂时无法验证管理口令，请稍后重试。',
+      },
+      denied.status,
+    );
+  }
   const path = articlePath(url.searchParams.get('article'));
   if (!path) return jsonResponse({ error: '文章地址无效。' }, 400);
   const route = url.pathname;
@@ -125,11 +139,24 @@ async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitor
     const denied = await authorizeManagement(request, env);
     if (denied) return denied;
     const removed = await db
-      .prepare('DELETE FROM article_comments WHERE article_path = ? AND id = ? RETURNING id')
+      .prepare(
+        'DELETE FROM article_comments WHERE article_path = ? AND id = ? RETURNING parent_id AS parentId',
+      )
       .bind(path, Number(deletion[1]))
-      .first();
+      .first<{ parentId: number | null }>();
     return removed
-      ? jsonResponse({ deleted: true, commentCount: await commentCount(db, path) })
+      ? jsonResponse({
+          deleted: true,
+          commentCount: await commentCount(db, path),
+          parentId: removed.parentId,
+          parentReplyCount:
+            removed.parentId === null
+              ? null
+              : await db
+                  .prepare('SELECT COUNT(*) AS count FROM article_comments WHERE parent_id = ?')
+                  .bind(removed.parentId)
+                  .first<number>('count'),
+        })
       : jsonResponse({ error: '这条评论不存在。' }, 404);
   }
 
@@ -143,9 +170,9 @@ async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitor
   }
 
   if (request.method === 'GET') {
-    const rawCursor = url.searchParams.get('before');
-    const cursor = rawCursor === null ? Number.MAX_SAFE_INTEGER : Number(rawCursor);
-    if (!Number.isSafeInteger(cursor) || cursor < 1) {
+    const rawCursor = url.searchParams.get('after');
+    const cursor = rawCursor === null ? 0 : Number(rawCursor);
+    if (!Number.isSafeInteger(cursor) || cursor < 0) {
       return jsonResponse({ error: '评论分页参数无效。' }, 400);
     }
     if (route === '/api/articles/replies') {
@@ -161,7 +188,7 @@ async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitor
       if (!root) return jsonResponse({ error: '这条评论不存在。' }, 404);
       const { results: replies } = await db
         .prepare(
-          `SELECT ${commentColumns} FROM article_comments c WHERE c.article_path = ? AND c.parent_id = ? AND c.id < ? ORDER BY c.id DESC LIMIT ?`,
+          `SELECT ${commentColumns} FROM article_comments c WHERE c.article_path = ? AND c.parent_id = ? AND c.id > ? ORDER BY c.id ASC LIMIT ?`,
         )
         .bind(path, parent, cursor, commentPageSize + 1)
         .all<ArticleComment>();
@@ -182,7 +209,7 @@ async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitor
         .bind(path),
       db
         .prepare(
-          `SELECT ${commentColumns} FROM article_comments c WHERE c.article_path = ? AND c.parent_id IS NULL AND c.id < ? ORDER BY c.id DESC LIMIT ?`,
+          `SELECT ${commentColumns} FROM article_comments c WHERE c.article_path = ? AND c.parent_id IS NULL AND c.id > ? ORDER BY c.id ASC LIMIT ?`,
         )
         .bind(path, cursor, commentPageSize + 1),
     ]);
@@ -315,7 +342,7 @@ async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitor
   ]);
   return jsonResponse(
     {
-      comment: { ...results[0].results[0], replyTo, replyCount: 0 },
+      comment: { ...results[0].results[0], replyTo, replyToId, replyCount: 0 },
       commentCount: results[1].results[0].count,
       parentReplyCount: await parentCount(parentId),
     },
