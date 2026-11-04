@@ -29,6 +29,14 @@
       "id": "9be5bcf408694c938a53af6a61d42b85",
     },
   ],
+  "d1_databases": [
+    {
+      "binding": "ARTICLE_INTERACTIONS",
+      "database_name": "youngkx-article-interactions",
+      "database_id": "d361a700-9895-4adb-9db1-60b4232c32b7",
+      "migrations_dir": "cloudflare/migrations",
+    },
+  ],
   "r2_buckets": [
     {
       "binding": "FILES",
