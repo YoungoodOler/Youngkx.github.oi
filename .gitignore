@@ -12,3 +12,4 @@ test-results
 .env*
 !.env.example
 .claude/
+content/posts/_template.md
