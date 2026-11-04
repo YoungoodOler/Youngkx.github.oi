@@ -495,6 +495,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
 
   return (
     <section
+      id="article-interactions"
       className="article-interactions"
       aria-labelledby="article-comments-title"
       aria-busy={loading}

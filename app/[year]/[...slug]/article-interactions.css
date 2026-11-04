@@ -1,5 +1,5 @@
-#article-comments-title {
-  scroll-margin-top: 110px;
+#article-interactions {
+  scroll-margin-top: 86px;
 }
 
 .article-interactions {
@@ -9,6 +9,19 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--bg) 94%, var(--ink));
   color: var(--ink);
+}
+
+html[data-theme='light'] .article-interactions {
+  background: #fffefa;
+  border-color: #e0e3e9;
+  box-shadow: 0 8px 28px #26375405;
+}
+
+html[data-theme='light'] .article-comment-form > input,
+html[data-theme='light'] .article-comment-form > textarea,
+html[data-theme='light'] .comment-moderation-form {
+  background: #fff;
+  border-color: #dbe2ec;
 }
 
 .article-appreciation {
@@ -448,6 +461,12 @@ html[data-theme='light'] .article-comment-actions .comment-delete-button {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.8;
+}
+
+@media (max-width: 900px) {
+  #article-interactions {
+    scroll-margin-top: 80px;
+  }
 }
 
 @media (max-width: 600px) {

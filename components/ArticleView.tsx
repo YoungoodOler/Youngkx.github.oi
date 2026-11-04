@@ -365,7 +365,7 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
           ↑
         </button>
         <a
-          href="#article-comments-title"
+          href="#article-interactions"
           title="直达评论"
           aria-label="直达评论"
           onClick={() => setTocOpen(false)}
