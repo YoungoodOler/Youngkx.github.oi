@@ -209,7 +209,7 @@ html[data-theme='light'] .manager-button--primary { color:#f7f5ef; background:#1
 html[data-theme='light'] .modern-article-hero { background:linear-gradient(125deg,#e8eaf1d6,#f3f1ebc2 52%,#ebe5efd6); }
 html[data-theme='light'] .modern-article-content { color:#505663; background:linear-gradient(145deg,#fffefafa,#f6f4eefa); box-shadow:0 35px 90px #2b30421a; }
 html[data-theme='light'] .modern-article-content h1,html[data-theme='light'] .modern-article-content h2,html[data-theme='light'] .modern-article-content h3 { color:#242732; }
-html[data-theme='light'] .modern-copyright { color:#59606e; background:#ecebe6; }
+html[data-theme='light'] .modern-copyright { color:#59606e; background:#fffefa; border-color:#e0e3e9; box-shadow:0 8px 28px #26375405; }
 html[data-theme='light'] .modern-copyright strong { color:#252934; }
 html[data-theme='light'] .modern-copyright code { color:#405aa8; }
 html[data-theme='light'] .site-status { color:#5b6070; }
