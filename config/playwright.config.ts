@@ -42,7 +42,7 @@ export default defineConfig({
   ],
   webServer: {
     command:
-      'node node_modules/wrangler/bin/wrangler.js dev --local --ip 127.0.0.1 --port 8788 --local-upstream www.youngkx.cn --persist-to .wrangler/e2e-state --var LINKS_LOCAL_PREVIEW:true --log-level error',
+      'node node_modules/wrangler/bin/wrangler.js d1 migrations apply ARTICLE_INTERACTIONS --local --persist-to .wrangler/e2e-state && node node_modules/wrangler/bin/wrangler.js dev --local --ip 127.0.0.1 --port 8788 --local-upstream www.youngkx.cn --persist-to .wrangler/e2e-state --var LINKS_LOCAL_PREVIEW:true --log-level error',
     cwd: projectRoot,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,

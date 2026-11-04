@@ -5,6 +5,7 @@ import {
 } from '../lib/useful-links';
 
 import { handleFilesApi } from './files';
+import { handleArticleInteractionsApi } from './article-interactions';
 import { authorizeManagement, jsonResponse, readLimitedJson, type WorkerEnv } from './http';
 
 const linksKey = 'directory:v1';
@@ -66,6 +67,10 @@ const worker = {
     if (url.hostname === 'youngkx.cn') {
       url.hostname = 'www.youngkx.cn';
       return Response.redirect(url.toString(), 308);
+    }
+
+    if (url.pathname.startsWith('/api/articles/')) {
+      return handleArticleInteractionsApi(request, env, url);
     }
 
     if (url.pathname === '/api/files' || url.pathname.startsWith('/api/files/')) {
