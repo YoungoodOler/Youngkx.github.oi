@@ -106,7 +106,6 @@ export default function CommentModeration({
           </button>
           {open && (
             <form className="comment-moderation-form" onSubmit={unlock}>
-              <p>使用 Links / Repo 的管理口令，解锁后可删除评论和回复。</p>
               <label htmlFor="comments-admin-token">管理口令</label>
               <div>
                 <input
