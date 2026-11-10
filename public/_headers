@@ -15,3 +15,8 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/demos/simple-computer/
+  ! X-Frame-Options
+  Content-Security-Policy: frame-ancestors 'self'
+  X-Robots-Tag: noindex

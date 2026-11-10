@@ -10,6 +10,7 @@ content/articles.json
 content/posts
 CHANGELOG.md
 app/globals.css
+public/demos/simple-computer/index.html
 cloudflare/worker-configuration.d.ts
 # Preserve generated benchmark JSON.
 docs/benchmarks/**/*.json

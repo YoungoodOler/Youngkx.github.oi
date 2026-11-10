@@ -3,6 +3,7 @@ import path from 'node:path';
 import { brotliCompressSync } from 'node:zlib';
 
 const outputDirectory = path.resolve('out');
+const simpleComputerDemo = path.join('demos', 'simple-computer', 'index.html');
 const limits = {
   routeJavaScriptRaw: 640 * 1024,
   routeJavaScriptBrotli: 180 * 1024,
@@ -61,7 +62,14 @@ function routeAssetSize(relativeHtmlPath, kind = 'script') {
             .map((tag) => /href=["']([^"']+)["']/.exec(tag)?.[1])
             .filter(Boolean),
         );
-  if (!sources.size) throw new Error(`${relativeHtmlPath} 没有找到客户端脚本`);
+  const inlineStyles =
+    kind === 'style' && relativeHtmlPath === simpleComputerDemo
+      ? [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)].map((match) => match[1]).join('\n')
+      : '';
+  if (!sources.size && !inlineStyles) {
+    throw new Error(`${relativeHtmlPath} 没有找到${kind === 'style' ? '样式表' : '客户端脚本'}`);
+  }
+  const inlineBytes = Buffer.from(inlineStyles);
   return [...sources].reduce(
     (total, source) => {
       const filePath = assetPath(source);
@@ -72,7 +80,10 @@ function routeAssetSize(relativeHtmlPath, kind = 'script') {
       total.brotli += bytes.brotli;
       return total;
     },
-    { raw: 0, brotli: 0 },
+    {
+      raw: inlineBytes.length,
+      brotli: inlineBytes.length ? brotliCompressSync(inlineBytes).length : 0,
+    },
   );
 }
 

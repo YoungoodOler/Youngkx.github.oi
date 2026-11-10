@@ -266,6 +266,29 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
     };
   }, [article.content]);
 
+  useEffect(() => {
+    const demo = contentRef.current?.querySelector<HTMLDetailsElement>(
+      'details[data-simple-computer]',
+    );
+    if (!demo) return;
+
+    let frame: HTMLIFrameElement | undefined;
+    const openDemo = () => {
+      if (!demo.open || frame) return;
+      frame = document.createElement('iframe');
+      frame.title = '简单计算机三维实验台';
+      frame.src = '/demos/simple-computer/';
+      demo.append(frame);
+    };
+
+    demo.addEventListener('toggle', openDemo);
+    openDemo();
+    return () => {
+      demo.removeEventListener('toggle', openDemo);
+      frame?.remove();
+    };
+  }, [article.content]);
+
   const copyLink = async () => {
     const link = window.location.href;
     try {
