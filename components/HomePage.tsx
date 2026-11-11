@@ -1,509 +1,110 @@
 'use client';
 
-import {
-  m,
-  useMotionTemplate,
-  useMotionValue,
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-  useTransform,
-} from 'framer-motion';
-import Image from 'next/image';
+import { m, useScroll, useSpring } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import {
-  type CSSProperties,
-  type MouseEvent as ReactMouseEvent,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import type { ArticleSummary, CategorySummary } from '@/lib/articles';
-import { selectLatestArticle } from '@/lib/article-selection';
-import type { CardPreset } from '@/lib/card-presets';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ArticleSummary } from '@/lib/articles';
 import { validateUsefulLinksPayload } from '@/lib/useful-links';
-import { heroPhase, heroTimeline } from '@/lib/hero-timeline';
-import { useSiteExperience } from './SiteExperience';
+import ArchivePass from './ArchivePass';
+import FeaturedArticleCard from './FeaturedArticleCard';
 import SiteFooter from './SiteFooter';
 import ResourceNav from './ResourceNav';
+import SiteBrand from './SiteBrand';
+import ElectricLogo from './ElectricLogo';
+import TopicCard, { type TopicCardCategory } from './TopicCard';
+import DotGrid from './react-bits/DotGrid';
+import TechText from './react-bits/TechText';
+import ScrollStack from './react-bits/ScrollStack';
+import FlexCarousel, { type FlexCarouselItem } from './react-bits/FlexCarousel';
+import CurvedLoop from './react-bits/CurvedLoop';
+import Magnet from './react-bits/Magnet';
+import StrokeText from './react-bits/StrokeText';
+import WarpText from './react-bits/WarpText';
+import latestCover from './react-bits/flex-carousel/covers/latest.webp';
+import topicsCover from './react-bits/flex-carousel/covers/topics.webp';
+import articlesCover from './react-bits/flex-carousel/covers/articles.webp';
+import linksCover from './react-bits/flex-carousel/covers/links.webp';
+import repositoryCover from './react-bits/flex-carousel/covers/repository.webp';
 
-const heroStageStyle = {
-  '--cards-travel': `calc(var(--hero-travel) * ${1 - heroTimeline.cards[0]})`,
-} as CSSProperties;
-const signalDeckGridSurfaceStyle: CSSProperties = {
-  overflow: 'visible',
-  border: 0,
-  background: 'transparent',
-  boxShadow: 'none',
-};
-
-export function CardArtwork({ kind }: { kind: CardPreset }) {
-  if (kind === 'ai') {
-    return (
-      <div className="artwork ai-art" aria-hidden="true">
-        <svg viewBox="0 0 320 220">
-          <g className="ai-links">
-            <path d="M48 52 135 36M48 52 135 108M48 110 135 36M48 110 135 108M48 168 135 108M48 168 135 180M135 36 238 70M135 36 238 150M135 108 238 70M135 108 238 150M135 180 238 150M238 70 284 110M238 150 284 110" />
-          </g>
-          <g className="ai-nodes">
-            {[
-              [48, 52],
-              [48, 110],
-              [48, 168],
-              [135, 36],
-              [135, 108],
-              [135, 180],
-              [238, 70],
-              [238, 150],
-              [284, 110],
-            ].map(([cx, cy], index) => (
-              <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={index === 8 ? 10 : 6} />
-            ))}
-          </g>
-        </svg>
-        <span className="ai-label">Neural Flow</span>
-        <i className="ai-pulse pulse-one" />
-        <i className="ai-pulse pulse-two" />
-        <i className="ai-pulse pulse-three" />
-      </div>
-    );
-  }
-  if (kind === 'cs') {
-    return (
-      <div className="artwork cs-art" aria-hidden="true">
-        <div className="cs-chip">
-          <span>CS</span>
-          <small>1010</small>
-        </div>
-        <i className="cs-trace trace-one" />
-        <i className="cs-trace trace-two" />
-        <i className="cs-trace trace-three" />
-        <i className="cs-trace trace-four" />
-        <b className="cs-signal signal-one" />
-        <b className="cs-signal signal-two" />
-        <b className="cs-signal signal-three" />
-        <span className="cs-label">Process / Memory / Logic</span>
-      </div>
-    );
-  }
-  if (kind === 'vlog') {
-    return (
-      <div className="artwork vlog-art" aria-hidden="true">
-        <div className="vlog-screen">
-          <div className="vlog-sun" />
-          <div className="vlog-land land-back" />
-          <div className="vlog-land land-front" />
-          <span>REC</span>
-        </div>
-        <div className="vlog-timeline">
-          <i />
-          <b />
-        </div>
-        <span className="vlog-time">00:00:24</span>
-      </div>
-    );
-  }
-  if (kind === 'talk') {
-    return (
-      <div className="artwork talk-art" aria-hidden="true">
-        <div className="talk-bubble bubble-one">
-          <span>Thoughts</span>
-          <i />
-          <i />
-          <i />
-        </div>
-        <div className="talk-bubble bubble-two">
-          <b>…</b>
-        </div>
-        <div className="talk-orbit" />
-      </div>
-    );
-  }
-  if (kind === 'code') {
-    return (
-      <div className="artwork terminal-art" aria-hidden="true">
-        <div className="terminal-top">
-          <i />
-          <i />
-          <i />
-          <span>main.cpp</span>
-        </div>
-        <div className="terminal-code">
-          <span>
-            <b>int</b> value = <em>42</em>;
-          </span>
-          <span>
-            <b>printf</b>(<i>&quot;%d&quot;</i>, value);
-          </span>
-          <span className="terminal-output">› 42_</span>
-        </div>
-        <div className="scan-line" />
-      </div>
-    );
-  }
-  if (kind === 'network') {
-    return (
-      <div className="artwork network-wrap" aria-hidden="true">
-        <svg className="network-art" viewBox="0 0 320 220">
-          <path d="M45 155 L105 78 L165 137 L226 48 L278 125" />
-          <path d="M105 78 L226 48 M165 137 L278 125 M45 155 L165 137" />
-          {[
-            ['45', '155'],
-            ['105', '78'],
-            ['165', '137'],
-            ['226', '48'],
-            ['278', '125'],
-          ].map(([cx, cy], index) => (
-            <circle key={cx} cx={cx} cy={cy} r={index === 3 ? 9 : 6} />
-          ))}
-        </svg>
-        <span className="network-label label-a">Graph</span>
-        <span className="network-label label-b">DP</span>
-        <span className="network-label label-c">CSP-S</span>
-      </div>
-    );
-  }
-  if (kind === 'timeline') {
-    return (
-      <div className="artwork timeline-art" aria-hidden="true">
-        <div className="timeline-track">
-          <i />
-          <i />
-          <i />
-          <i />
-        </div>
-        <div className="timeline-labels">
-          <span>
-            起步<small>学习</small>
-          </span>
-          <span>
-            通过<small>练习</small>
-          </span>
-          <span>
-            竞赛<small>CSP</small>
-          </span>
-          <span>
-            记录<small>OI</small>
-          </span>
-        </div>
-        <div className="timeline-signal" />
-      </div>
-    );
-  }
-  return (
-    <div className="artwork protocol-art" aria-hidden="true">
-      <span>Client</span>
-      <i>GET / HTTP/1.1 →</i>
-      <span>Server</span>
-    </div>
-  );
+function GradientASCIIFallback({ onReady }: { onReady: () => void }) {
+  useEffect(onReady, [onReady]);
+  return null;
 }
 
-function ReactivePointer() {
-  const pointerX = useMotionValue(-120);
-  const pointerY = useMotionValue(-120);
-  const dotX = useSpring(pointerX, { stiffness: 520, damping: 32, mass: 0.18 });
-  const dotY = useSpring(pointerY, { stiffness: 520, damping: 32, mass: 0.18 });
-  const glowX = useSpring(pointerX, { stiffness: 95, damping: 24, mass: 0.6 });
-  const glowY = useSpring(pointerY, { stiffness: 95, damping: 24, mass: 0.6 });
-  const glow = useMotionTemplate`radial-gradient(520px circle at ${glowX}px ${glowY}px, rgba(112, 137, 255, .085), transparent 68%)`;
-
-  useEffect(() => {
-    if (window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 900) return;
-    const move = (event: PointerEvent) => {
-      pointerX.set(event.clientX);
-      pointerY.set(event.clientY);
-    };
-    window.addEventListener('pointermove', move, { passive: true });
-    return () => window.removeEventListener('pointermove', move);
-  }, [pointerX, pointerY]);
-
-  return (
-    <>
-      <m.div className="pointer-glow" style={{ background: glow }} />
-      <m.div className="pointer-dot" style={{ x: dotX, y: dotY }} />
-    </>
-  );
-}
-
-function MagneticLink({
-  href,
-  className,
-  children,
-}: {
-  href: string;
-  className: string;
-  children: ReactNode;
-}) {
-  const rawX = useMotionValue(0);
-  const rawY = useMotionValue(0);
-  const x = useSpring(rawX, { stiffness: 320, damping: 22, mass: 0.35 });
-  const y = useSpring(rawY, { stiffness: 320, damping: 22, mass: 0.35 });
-
-  const move = (event: ReactPointerEvent<HTMLAnchorElement>) => {
-    if (event.pointerType !== 'mouse') return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    rawX.set((event.clientX - rect.left - rect.width / 2) * 0.16);
-    rawY.set((event.clientY - rect.top - rect.height / 2) * 0.16);
-  };
-
-  return (
-    <m.a
-      href={href}
-      className={className}
-      style={{ x, y }}
-      onPointerMove={move}
-      onPointerLeave={() => {
-        rawX.set(0);
-        rawY.set(0);
-      }}
-    >
-      {children}
-    </m.a>
-  );
-}
-
-function InteractiveSignalCard({
-  href,
-  label,
-  className,
-  visual,
-  children,
-}: {
-  href: string;
-  label: string;
-  className: string;
-  visual: ReactNode;
-  children: ReactNode;
-}) {
-  const reduceMotion = useReducedMotion();
-  const pointerX = useMotionValue(50);
-  const pointerY = useMotionValue(50);
-  const rawRotateX = useMotionValue(0);
-  const rawRotateY = useMotionValue(0);
-  const smoothPointerX = useSpring(pointerX, { stiffness: 180, damping: 26, mass: 0.35 });
-  const smoothPointerY = useSpring(pointerY, { stiffness: 180, damping: 26, mass: 0.35 });
-  const rotateX = useSpring(rawRotateX, { stiffness: 190, damping: 24, mass: 0.42 });
-  const rotateY = useSpring(rawRotateY, { stiffness: 190, damping: 24, mass: 0.42 });
-  const visualX = useTransform(smoothPointerX, [0, 100], [-18, 18]);
-  const visualY = useTransform(smoothPointerY, [0, 100], [-14, 14]);
-  const glare = useMotionTemplate`radial-gradient(430px circle at ${smoothPointerX}% ${smoothPointerY}%, var(--glow), transparent 68%)`;
-
-  const move = (event: ReactPointerEvent<HTMLElement>) => {
-    if (reduceMotion || event.pointerType !== 'mouse') return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-    pointerX.set(x * 100);
-    pointerY.set(y * 100);
-    rawRotateX.set((0.5 - y) * 7.5);
-    rawRotateY.set((x - 0.5) * 7.5);
-  };
-
-  const reset = () => {
-    pointerX.set(50);
-    pointerY.set(50);
-    rawRotateX.set(0);
-    rawRotateY.set(0);
-  };
-
-  return (
-    <m.article
-      className={`signal-card ${className}`}
-      style={{ rotateX, rotateY, transformPerspective: 1300 }}
-      onPointerMove={move}
-      onPointerLeave={reset}
-    >
-      <Link href={href} className="signal-card__link" aria-label={label}>
-        <m.span className="signal-card__glare" style={{ background: glare }} aria-hidden="true" />
-        <span className="signal-card__grid" aria-hidden="true" />
-        <m.div
-          className="signal-card__visual"
-          style={{ x: visualX, y: visualY }}
-          aria-hidden="true"
-        >
-          {visual}
-        </m.div>
-        <div className="signal-card__content">{children}</div>
-      </Link>
-    </m.article>
-  );
-}
-
-function FeaturedPost({ post, index }: { post: ArticleSummary; index: number }) {
-  const rawRotateX = useMotionValue(0);
-  const rawRotateY = useMotionValue(0);
-  const rotateX = useSpring(rawRotateX, { stiffness: 180, damping: 24, mass: 0.5 });
-  const rotateY = useSpring(rawRotateY, { stiffness: 180, damping: 24, mass: 0.5 });
-
-  const move = (event: ReactPointerEvent<HTMLElement>) => {
-    if (event.pointerType !== 'mouse') return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const px = (event.clientX - rect.left) / rect.width - 0.5;
-    const py = (event.clientY - rect.top) / rect.height - 0.5;
-    rawRotateX.set(py * -3.2);
-    rawRotateY.set(px * 3.2);
-  };
-
-  const reset = () => {
-    rawRotateX.set(0);
-    rawRotateY.set(0);
-  };
-
-  return (
-    <m.article
-      className={`article-card ${post.tone}`}
-      initial={{ opacity: 0, y: 72, filter: 'blur(15px)' }}
-      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.82, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
-      style={{ rotateX, rotateY, transformPerspective: 1200 }}
-      onPointerMove={move}
-      onPointerLeave={reset}
-    >
-      <div className="card-visual">
-        <div className="card-number">{post.number}</div>
-        <CardArtwork kind={post.card} />
-        <span className="category">{post.tagLabel}</span>
-      </div>
-      <div className="card-body">
-        <div className="card-meta">
-          <span>发布于 {post.dateLabel}</span>
-        </div>
-        <h3>{post.title}</h3>
-        <p>{post.excerpt}</p>
-        <Link href={post.href} aria-label={`阅读：${post.title}`}>
-          <span>阅读全文</span>
-          <b>↗</b>
-        </Link>
-      </div>
-    </m.article>
-  );
-}
+const GradientASCII = dynamic(
+  () =>
+    import('./react-bits/gradient-ascii/GradientASCII').catch(() => ({
+      default: GradientASCIIFallback,
+    })),
+  { ssr: false },
+);
 
 export default function HomePage({
-  posts,
+  featuredPosts,
+  latestPost,
+  articleCount,
   categories,
   usefulLinkCount,
 }: {
-  posts: ArticleSummary[];
-  categories: CategorySummary[];
+  featuredPosts: ArticleSummary[];
+  latestPost?: Pick<ArticleSummary, 'href' | 'title'>;
+  articleCount: number;
+  categories: TopicCardCategory[];
   usefulLinkCount: number;
 }) {
-  const { theme, toggleTheme, heroProgress } = useSiteExperience();
-  const [compactLayout, setCompactLayout] = useState(false);
-  const [titleDestinationX, setTitleDestinationX] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [signalDeckHashSettled, setSignalDeckHashSettled] = useState(false);
+  const [backgroundReady, setBackgroundReady] = useState(false);
+  const [logoReady, setLogoReady] = useState(false);
+  const onBackgroundReady = useCallback(() => setBackgroundReady(true), []);
+  const onLogoReady = useCallback(() => setLogoReady(true), []);
   const { scrollYProgress } = useScroll();
-  const heroRef = useRef<HTMLElement>(null);
-  const signalDeckRef = useRef<HTMLElement>(null);
-  const titleHeadingRef = useRef<HTMLHeadingElement>(null);
-  const detailLayerRef = useRef<HTMLDivElement>(null);
+  const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.001 });
   const menuRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const settledDeckRef = useRef(false);
-  const reduceMotion = useReducedMotion();
-  const { scrollYProgress: rawHeroProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end end'],
-  });
-  const smoothHeroProgress = useSpring(rawHeroProgress, {
-    stiffness: 80,
-    damping: 18,
-    mass: 1,
-    restDelta: 0.0001,
-  });
-  const timelineProgress = reduceMotion ? rawHeroProgress : smoothHeroProgress;
-  useMotionValueEvent(timelineProgress, 'change', (value) => heroProgress.set(value));
-  useMotionValueEvent(rawHeroProgress, 'change', (value) => {
-    if (settledDeckRef.current && value < 0.995) {
-      settledDeckRef.current = false;
-      setSignalDeckHashSettled(false);
-    }
-  });
-  useEffect(() => {
-    heroProgress.set(rawHeroProgress.get());
-    return () => heroProgress.set(0);
-  }, [heroProgress, rawHeroProgress]);
-
-  const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.001 });
-  const entrance = useTransform(heroProgress, (value) => heroPhase(value, heroTimeline.entrance));
-  const details = useTransform(heroProgress, (value) => heroPhase(value, heroTimeline.details));
-  const exit = useTransform(heroProgress, (value) => heroPhase(value, heroTimeline.exit));
-  const cards = useTransform(heroProgress, (value) => heroPhase(value, heroTimeline.cards));
-  const titleRestScale = compactLayout ? 0.88 : 0.69;
-  const titleX = useTransform(entrance, [0, 1], [0, titleDestinationX]);
-  const titleY = useTransform(
-    () => `${entrance.get() * (compactLayout ? -23 : -13) - exit.get() * 12}vh`,
-  );
-  const titleScale = useTransform(
-    () => 1 + entrance.get() * (titleRestScale - 1) - exit.get() * 0.06,
-  );
-  const titleOpacity = useTransform(exit, [0, 1], [1, 0]);
-  const titleBlogY = useTransform(exit, [0, 1], ['0%', '-32%']);
-  const titleEyebrowOpacity = useTransform(entrance, [0, 1], [1, 0]);
-  const detailOpacity = useTransform(() => details.get() * (1 - exit.get()));
-  const detailY = useTransform(() => (1 - details.get()) * 64 - exit.get() * 80);
-  const deckY = useTransform(cards, [0, 1], ['16svh', '0svh']);
-  const deckPointerEvents = useTransform(cards, (value) => (value > 0.15 ? 'auto' : 'none'));
+  const cardsRef = useRef<HTMLElement>(null);
   const [displayedLinkCount, setDisplayedLinkCount] = useState(usefulLinkCount);
-  const latestPost = selectLatestArticle(posts);
-  const primaryCategories = categories.slice(0, 4);
-  const archiveStart = posts.at(-1)?.date.slice(0, 4) ?? '2023';
-  const archiveLatest = latestPost?.date.slice(0, 4) ?? archiveStart;
-
-  const navigateToSignalDeck = (event: ReactMouseEvent<HTMLAnchorElement>) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-      return;
-
-    const stage = heroRef.current;
-    if (!stage) return;
-
-    event.preventDefault();
-    setMenuOpen(false);
-    if (window.location.hash !== '#interactive-cards') {
-      window.history.pushState(window.history.state, '', '#interactive-cards');
-    }
-    const deckStop = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
-    window.scrollTo({ top: deckStop, behavior: reduceMotion ? 'auto' : 'smooth' });
-  };
-
-  useEffect(() => {
-    let alignmentFrame = 0;
-    const alignSignalDeckHash = () => {
-      window.cancelAnimationFrame(alignmentFrame);
-      settledDeckRef.current = false;
-      const isSignalDeckHash = window.location.hash === '#interactive-cards';
-      setSignalDeckHashSettled(isSignalDeckHash);
-      if (!isSignalDeckHash) return;
-
-      alignmentFrame = window.requestAnimationFrame(() => {
-        const stage = heroRef.current;
-        if (!stage) return;
-        const deckStop = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
-        // `auto` inherits CSS smooth scrolling and can clear the settled state mid-alignment.
-        window.scrollTo({ top: deckStop, behavior: 'instant' });
-        rawHeroProgress.set(1);
-        smoothHeroProgress.jump(1);
-        heroProgress.set(1);
-        settledDeckRef.current = true;
-        window.dispatchEvent(new Event('scroll'));
-      });
-    };
-
-    alignSignalDeckHash();
-    window.addEventListener('hashchange', alignSignalDeckHash);
-    window.addEventListener('popstate', alignSignalDeckHash);
-    return () => {
-      window.cancelAnimationFrame(alignmentFrame);
-      window.removeEventListener('hashchange', alignSignalDeckHash);
-      window.removeEventListener('popstate', alignSignalDeckHash);
-    };
-  }, [rawHeroProgress, smoothHeroProgress, heroProgress]);
+  const cards: FlexCarouselItem[] = [
+    ...(latestPost
+      ? [
+          {
+            cover: latestCover,
+            href: latestPost.href,
+            title: '最新文章',
+            subtitle: latestPost.title,
+            label: `打开最新文章：${latestPost.title}`,
+          },
+        ]
+      : []),
+    {
+      cover: topicsCover,
+      href: '/categories/',
+      title: 'Topics',
+      subtitle: `${categories.length} 个主题`,
+      label: '浏览文章主题',
+    },
+    {
+      cover: articlesCover,
+      href: '/articles/',
+      title: 'Article Archive',
+      subtitle: `${articleCount} 篇文章`,
+      label: '查看全部文章',
+    },
+    {
+      cover: linksCover,
+      href: '/links/',
+      title: 'Useful Links',
+      subtitle: `${displayedLinkCount} 个常用链接`,
+      label: '打开常用链接',
+    },
+    {
+      cover: repositoryCover,
+      href: '/repo/',
+      title: 'File Repository',
+      subtitle: '文件与学习资料',
+      label: '打开文件仓库 Repo',
+    },
+  ];
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -530,66 +131,47 @@ export default function HomePage({
   }, [menuOpen]);
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 560px)');
-    const updateLayout = () => {
-      const compact = media.matches;
-      const restingScale = compact ? 0.88 : 0.69;
-      const headingWidth = titleHeadingRef.current?.offsetWidth ?? 0;
-      const detailLeft =
-        detailLayerRef.current?.getBoundingClientRect().left ?? (compact ? 15 : 48);
-      setCompactLayout(compact);
-      setTitleDestinationX(detailLeft - (window.innerWidth - headingWidth * restingScale) / 2);
-    };
-    updateLayout();
-    media.addEventListener('change', updateLayout);
-    window.addEventListener('resize', updateLayout, { passive: true });
-    document.fonts?.ready.then(updateLayout);
-    return () => {
-      media.removeEventListener('change', updateLayout);
-      window.removeEventListener('resize', updateLayout);
-    };
-  }, []);
-
-  useEffect(() => {
     const controller = new AbortController();
-    fetch('/api/links', { cache: 'no-store', signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`Links API returned ${response.status}`);
-        return response.json() as Promise<unknown>;
-      })
-      .then((value) => {
-        const validation = validateUsefulLinksPayload(value);
-        if (!validation.ok) return;
-        setDisplayedLinkCount(
-          validation.data.groups.reduce((total, group) => total + group.links.length, 0),
-        );
-      })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-        console.error('Unable to load useful link count.', error);
-      });
-    return () => controller.abort();
+    const loadCount = () =>
+      fetch('/api/links', { cache: 'no-store', signal: controller.signal })
+        .then(async (response) => {
+          if (!response.ok) throw new Error(`Links API returned ${response.status}`);
+          return response.json() as Promise<unknown>;
+        })
+        .then((value) => {
+          const validation = validateUsefulLinksPayload(value);
+          if (!validation.ok) return;
+          setDisplayedLinkCount(
+            validation.data.groups.reduce((total, group) => total + group.links.length, 0),
+          );
+        })
+        .catch((error: unknown) => {
+          if (error instanceof DOMException && error.name === 'AbortError') return;
+          console.error('Unable to load useful link count.', error);
+        });
+    const cards = cardsRef.current;
+    if (!cards || typeof IntersectionObserver === 'undefined') {
+      void loadCount();
+      return () => controller.abort();
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+      void loadCount();
+    });
+    observer.observe(cards);
+    return () => {
+      observer.disconnect();
+      controller.abort();
+    };
   }, []);
 
   return (
-    <main className="home-page" style={heroStageStyle}>
+    <main className="home-page" id="top">
       <m.div className="progress" style={{ scaleX: progress }} />
-      <ReactivePointer />
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
 
       <header className="nav shell">
-        <a className="brand" href="#top" aria-label="Youngkx Blog 首页">
-          <Image
-            className="brand-avatar"
-            src="/avatar.webp"
-            alt="Youngkx 头像"
-            width={36}
-            height={36}
-            priority
-          />
-          <span className="brand-name">Youngkx</span>
-        </a>
+        <SiteBrand href="#top" theme="dark" />
         <nav
           ref={menuRef}
           id="home-mobile-menu"
@@ -599,7 +181,7 @@ export default function HomePage({
           <a href="#top" onClick={() => setMenuOpen(false)}>
             Home
           </a>
-          <a href="#interactive-cards" onClick={navigateToSignalDeck}>
+          <a href="#interactive-cards" onClick={() => setMenuOpen(false)}>
             Cards
           </a>
           <a href="#posts" onClick={() => setMenuOpen(false)}>
@@ -610,15 +192,6 @@ export default function HomePage({
           </a>
         </nav>
         <ResourceNav />
-        <button
-          className="theme-toggle"
-          onClick={toggleTheme}
-          aria-label={`切换到${theme === 'dark' ? '亮色' : '暗色'}主题`}
-          title={`切换到${theme === 'dark' ? '亮色' : '暗色'}主题`}
-        >
-          <span className="theme-icon">{theme === 'dark' ? '☼' : '◐'}</span>
-          <span className="theme-label">{theme === 'dark' ? 'Light' : 'Dark'}</span>
-        </button>
         <button
           ref={menuButtonRef}
           className={menuOpen ? 'menu open' : 'menu'}
@@ -632,326 +205,209 @@ export default function HomePage({
         </button>
       </header>
 
-      <section className="hero-stage" id="top" ref={heroRef}>
-        <div className="hero-sticky">
-          <m.div
-            className="hero-title-layer"
-            style={{ x: titleX, y: titleY, scale: titleScale, opacity: titleOpacity }}
-          >
-            <m.span className="hero-title-eyebrow" style={{ opacity: titleEyebrowOpacity }}>
-              Personal Archive / Since 2023
-            </m.span>
-            <h1 ref={titleHeadingRef}>
-              <span className="hero-title-word">Youngkx</span>
-              <m.span className="hero-title-blog" style={{ y: titleBlogY }}>
-                Blog
-              </m.span>
-            </h1>
-          </m.div>
-
-          <m.div
-            ref={detailLayerRef}
-            className="hero-detail-layer shell"
-            style={{ opacity: detailOpacity, y: detailY }}
-          >
-            <div className="hero-detail-grid">
-              <div className="hero-detail-copy">
-                <div className="hero-copy-block hero-copy-intro">
-                  <span className="eyebrow">
-                    <i className="status-dot" />
-                    Recording, Learning &amp; Building
-                  </span>
-                  <div className="hero-quote">
-                    <p>Life is real, life is earnest.</p>
-                  </div>
-                </div>
-                <div className="hero-copy-block hero-copy-description">
-                  <p>Notes on OI, C / C++, the web, and everyday life.</p>
-                </div>
-                <div className="hero-copy-block hero-copy-actions">
-                  <div className="hero-actions">
-                    <MagneticLink className="button primary" href="#posts">
-                      Explore Posts <span>↓</span>
-                    </MagneticLink>
-                    <MagneticLink className="text-link" href="#topics">
-                      Browse Topics <span>→</span>
-                    </MagneticLink>
-                  </div>
-                </div>
-              </div>
-              <div className="hero-detail-spacer" aria-hidden="true" />
-            </div>
-          </m.div>
+      <section className="home-intro" aria-labelledby="home-title">
+        <div className="home-ascii-background" aria-hidden="true">
+          <GradientASCII theme="dark" onReady={onBackgroundReady} />
+        </div>
+        <div className="home-intro__identity">
+          <ElectricLogo theme="dark" onReady={onLogoReady} />
+          <TechText id="home-title" text="Youngkx Blog" theme="dark" />
         </div>
       </section>
+      <ArchivePass heroReady={backgroundReady && logoReady} />
 
-      <m.section
-        key={signalDeckHashSettled ? 'settled' : 'animated'}
-        ref={signalDeckRef}
+      <section
+        ref={cardsRef}
         id="interactive-cards"
-        className={
-          signalDeckHashSettled ? 'signal-deck signal-deck--settled shell' : 'signal-deck shell'
-        }
+        className="signal-deck shell"
         aria-labelledby="signal-deck-title"
-        style={
-          reduceMotion
-            ? undefined
-            : signalDeckHashSettled
-              ? { opacity: 1 }
-              : { opacity: cards, pointerEvents: deckPointerEvents }
-        }
       >
-        <m.div
-          className="signal-deck__content"
-          style={reduceMotion || signalDeckHashSettled ? undefined : { y: deckY }}
-        >
-          <div className="signal-deck__heading">
-            <div>
-              <span>00 / Interactive Index</span>
-            </div>
-            <h2 id="signal-deck-title">Cards</h2>
-          </div>
-
-          <div className="signal-deck__grid" style={signalDeckGridSurfaceStyle}>
-            {latestPost && (
-              <InteractiveSignalCard
-                href={latestPost.href}
-                label={`打开最新文章：${latestPost.title}`}
-                className="signal-card--lead"
-                visual={
-                  <div className="signal-constellation">
-                    <svg viewBox="0 0 640 520" preserveAspectRatio="xMidYMid slice">
-                      <g
-                        fill="none"
-                        stroke="var(--accent)"
-                        strokeWidth="1"
-                        strokeDasharray="7 13"
-                        opacity=".25"
-                      >
-                        <path d="M42 352 C118 112 270 92 332 260 S492 432 610 138" />
-                        <path d="M18 226 C148 390 260 394 374 184 S522 86 630 302" opacity=".72" />
-                        <path d="M96 478 C174 306 282 264 420 334 S550 372 620 250" opacity=".52" />
-                      </g>
-                      <g fill="var(--accent)" stroke="var(--ink)" strokeWidth="1">
-                        {[
-                          [70, 312, 5],
-                          [154, 172, 8],
-                          [252, 148, 4],
-                          [334, 264, 10],
-                          [420, 350, 5],
-                          [506, 318, 7],
-                          [584, 174, 4],
-                        ].map(([cx, cy, radius]) => (
-                          <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={radius} />
-                        ))}
-                      </g>
-                    </svg>
-                  </div>
-                }
-              >
-                <div className="signal-card__topline">
-                  <span>Latest Signal</span>
-                  <i>Live</i>
-                </div>
-                <div className="signal-card__lead-copy">
-                  <small>{latestPost.dateLabel}</small>
-                  <h3>{latestPost.title}</h3>
-                  <p>{latestPost.excerpt}</p>
-                </div>
-                <div className="signal-card__footer">
-                  <span>{latestPost.tagLabel}</span>
-                  <b>Open Entry ↗</b>
-                </div>
-              </InteractiveSignalCard>
-            )}
-
-            <InteractiveSignalCard
-              href="/categories/"
-              label="浏览文章主题"
-              className="signal-card--topics"
-              visual={
-                <svg className="signal-radar" viewBox="0 0 300 300">
-                  <circle cx="150" cy="150" r="148" />
-                  <circle cx="150" cy="150" r="96" />
-                  <circle cx="150" cy="150" r="48" />
-                  <path d="M150 150 L248 93" />
-                  <circle className="signal-radar__point" cx="248" cy="93" r="5" />
-                  <circle className="signal-radar__point" cx="88" cy="212" r="4" />
-                </svg>
-              }
-            >
-              <div className="signal-card__topline">
-                <span>Topic Field</span>
-                <i>{String(categories.length).padStart(2, '0')}</i>
-              </div>
-              <div className="signal-topic-list">
-                {primaryCategories.map((category) => (
-                  <div key={category.id}>
-                    <span>{category.number}</span>
-                    <strong>{category.title}</strong>
-                    <small>{category.posts.length}</small>
-                  </div>
-                ))}
-              </div>
-              <div className="signal-card__footer">
-                <span>Filter The Archive</span>
-                <b>Explore ↗</b>
-              </div>
-            </InteractiveSignalCard>
-
-            <InteractiveSignalCard
-              href="/articles/"
-              label="查看全部文章"
-              className="signal-card--pulse"
-              visual={
-                <div className="signal-pulse-field">
-                  {[32, 56, 38, 82, 48, 68, 42, 92, 61, 76, 36, 58].map((height, index) => (
-                    <i
-                      key={`${height}-${index}`}
-                      style={{ '--pulse-height': `${height}%` } as CSSProperties}
-                    />
-                  ))}
-                </div>
-              }
-            >
-              <div className="signal-card__topline">
-                <span>Archive Pulse</span>
-                <i>Synced</i>
-              </div>
-              <div className="signal-card__metric">
-                <strong>{String(posts.length).padStart(2, '0')}</strong>
-                <span>Published Notes</span>
-              </div>
-              <div className="signal-card__footer">
-                <span>
-                  {archiveStart}—{archiveLatest}
-                </span>
-                <b>All Posts ↗</b>
-              </div>
-            </InteractiveSignalCard>
-
-            <InteractiveSignalCard
-              href="/links/"
-              label="打开常用链接"
-              className="signal-card--portal"
-              visual={
-                <svg className="signal-portal-mark" viewBox="0 0 210 210">
-                  <circle cx="105" cy="105" r="103" />
-                  <circle cx="105" cy="105" r="64" />
-                  <circle cx="105" cy="105" r="28" />
-                  <path d="M89 121 L121 89 M99 89 H121 V111" />
-                </svg>
-              }
-            >
-              <div className="signal-card__topline">
-                <span>Useful Links</span>
-                <i>{String(displayedLinkCount).padStart(2, '0')}</i>
-              </div>
-              <div className="signal-card__portal-copy">
-                <small>Tools / References / Places</small>
-                <h3>Open Links.</h3>
-              </div>
-              <div className="signal-card__footer">
-                <span>Open Directory</span>
-                <b>↗</b>
-              </div>
-            </InteractiveSignalCard>
-
-            <InteractiveSignalCard
-              href="/repo/"
-              label="打开文件仓库 Repo"
-              className="signal-card--repo"
-              visual={
-                <svg className="signal-portal-mark" viewBox="0 0 220 200" fill="none">
-                  <path d="m48 60 91-21 42 31-91 21zM48 60v78l42 31V91m0 78 91-21V70" />
-                  <path d="m68 42 91-21 42 31-91 21zM68 42v78l42 31V73m0 78 91-21V52" />
-                  <path d="M142 79v38m-12-12 12 12 12-12" />
-                </svg>
-              }
-            >
-              <div className="signal-card__topline">
-                <span>File Repository</span>
-                <i>Open</i>
-              </div>
-              <div className="signal-card__portal-copy">
-                <small>Files / Notes / Resources</small>
-                <h3>Repo.</h3>
-              </div>
-              <div className="signal-card__footer">
-                <span>Keep &amp; Share</span>
-                <b>Download ↗</b>
-              </div>
-            </InteractiveSignalCard>
-          </div>
-        </m.div>
-      </m.section>
-
-      <section className="writing shell section" id="posts">
-        <m.div
-          className="section-heading"
-          initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }}
-          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          viewport={{ once: true, margin: '0px' }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div>
-            <span className="section-index">01 /</span>
-            <span className="kicker">Articles</span>
-          </div>
-          <h2>Articles</h2>
-        </m.div>
-
-        <div className="article-list">
-          {posts.slice(0, 3).map((post, index) => (
-            <FeaturedPost post={post} index={index} key={post.href} />
-          ))}
+        <div className="signal-deck__heading">
+          <h2 id="signal-deck-title">
+            <WarpText
+              text="Cards"
+              warpStrength={0.08}
+              warpScale={1.7}
+              speed={0.55}
+              lens="bulge"
+              pointerInfluence={0.42}
+              pointerStrength={0.38}
+              refraction={0.018}
+              chromatic={0.35}
+              idleDrift={0.2}
+              ripple
+              clickRipple
+              intro
+              fontSize={116}
+              fontWeight={800}
+              fontFamily="inherit"
+              letterSpacing="-0.06em"
+              lineHeight={0.9}
+            />
+          </h2>
         </div>
-        <m.div
-          className="more-posts"
-          initial={{ opacity: 0, y: 42, filter: 'blur(12px)' }}
-          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <Link href="/articles/">
-            <span>更多文章</span>
-            <b>查看全部 {posts.length} 篇</b>
-            <i>↗</i>
-          </Link>
-        </m.div>
+
+        <FlexCarousel items={cards} />
       </section>
 
-      <section className="topics shell section" id="topics">
-        <m.div
-          className="section-heading"
-          initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }}
-          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div>
-            <span className="section-index">02 /</span>
-            <span className="kicker">Topics</span>
+      <div className="writing-background">
+        <DotGrid />
+        <section className="writing shell section" id="posts">
+          <ScrollStack
+            heading={
+              <m.h2
+                className="section-heading writing-heading"
+                aria-label="Articles"
+                initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }}
+                whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                viewport={{ once: true, margin: '0px' }}
+                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <CurvedLoop
+                  aria-hidden
+                  marqueeText="Articles"
+                  shape="line"
+                  speed={2}
+                  curveAmount={400}
+                  direction="left"
+                  fontSize={96}
+                  fontWeight={700}
+                  letterSpacing={0}
+                  separator=""
+                  outline={false}
+                  scrollBoost={0}
+                  edgeFade={0}
+                  interactive
+                  pauseOnHover={false}
+                />
+              </m.h2>
+            }
+          >
+            {featuredPosts.map((post) => (
+              <FeaturedArticleCard post={post} key={post.href} />
+            ))}
+          </ScrollStack>
+          <div className="more-posts">
+            <Magnet padding={100} magnetStrength={3} wrapperClassName="more-posts__magnet">
+              <Link href="/articles/" className="more-posts__link">
+                更多文章
+              </Link>
+            </Magnet>
           </div>
-          <h2>Topics</h2>
-        </m.div>
-        <div className="category-grid">
-          {categories.map((category, index) => (
-            <m.a
-              href={`/categories/#${category.id}`}
-              className="category-block"
-              key={category.id}
-              initial={{ opacity: 0, y: 70, filter: 'blur(15px)' }}
-              whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              viewport={{ once: true, margin: '-70px' }}
-              transition={{ duration: 0.82, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <span>{category.number}</span>
-              <h3>{category.title}</h3>
-              <p>{category.description}</p>
-              <b>{category.posts.length} 篇相关文章</b>
-            </m.a>
-          ))}
+        </section>
+      </div>
+
+      <section className="topics section" id="topics" aria-labelledby="topics-title">
+        <div className="topics-inner shell">
+          <m.div
+            className="section-heading topics-heading"
+            initial={{ opacity: 0, y: 64, filter: 'blur(16px)' }}
+            whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <h2 id="topics-title">
+              <StrokeText
+                text="Topics"
+                strokeColor="#A78BFA"
+                strokeStyle="solid"
+                strokeWidth={1.4}
+                dashLength={10}
+                drawDuration={1.6}
+                fillDelay={0.2}
+                stagger={0.05}
+                ease="power2.out"
+                trigger="scroll"
+                repeatEvery={30}
+                fillMode="wipe"
+                wipeFrom="left"
+                fontSize={112}
+                fontWeight={800}
+                letterSpacing={-3}
+                marching={false}
+                hoverRedraw
+                shadow={false}
+                fontFamily="inherit"
+                reverse={false}
+              />
+            </h2>
+            <p className="topics-meta">
+              <span className="topics-meta__label">Topic Index · 主题索引</span>
+              <span className="topics-meta__count">
+                {String(categories.length).padStart(2, '0')}
+                <small>个主题</small>
+              </span>
+            </p>
+          </m.div>
+        </div>
+        <div className="topics-cut" aria-hidden="true">
+          <svg viewBox="0 0 1440 120" preserveAspectRatio="none" focusable="false">
+            <defs>
+              <linearGradient id="topics-cut-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#f9f7f2" />
+                <stop offset="0.45" stopColor="#f8f6f1" />
+                <stop offset="1" stopColor="#f7f5f0" />
+              </linearGradient>
+              <linearGradient
+                id="topics-cut-stroke"
+                x1="0"
+                y1="0"
+                x2="1440"
+                y2="0"
+                gradientUnits="userSpaceOnUse"
+              >
+                <stop offset="0" stopColor="#f7f5f0" stopOpacity="0" />
+                <stop offset="0.09" stopColor="#eef0f8" stopOpacity="0.6" />
+                <stop offset="0.45" stopColor="#d8dceb" stopOpacity="0.95" />
+                <stop offset="0.74" stopColor="#bdb5e4" />
+                <stop offset="0.92" stopColor="#A78BFA" />
+                <stop offset="1" stopColor="#A78BFA" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M 1006 50 C 1108 42 1226 33 1348 26"
+              fill="none"
+              stroke="#A78BFA"
+              strokeWidth="1"
+              strokeDasharray="2 7"
+              strokeLinecap="round"
+              opacity="0.55"
+              vectorEffect="non-scaling-stroke"
+            />
+            <circle cx="1348" cy="26" r="2.4" fill="#A78BFA" opacity="0.8" />
+            <path
+              d="M0 88 C 180 96 340 101 496 96 C 660 91 774 74 906 68 C 1058 61 1260 52 1440 44 L 1440 120 L 0 120 Z"
+              fill="url(#topics-cut-fill)"
+            />
+            <path
+              d="M0 88 C 180 96 340 101 496 96 C 660 91 774 74 906 68 C 1058 61 1260 52 1440 44"
+              fill="none"
+              stroke="url(#topics-cut-stroke)"
+              strokeWidth="1.75"
+              vectorEffect="non-scaling-stroke"
+              style={{ filter: 'drop-shadow(0 0 7px rgba(167, 139, 250, 0.28))' }}
+            />
+            <path
+              d="M 2 94 C 180 102 340 107 496 102 C 660 97 774 80 906 74 C 1058 67 1258 58 1428 50"
+              fill="none"
+              stroke="#1c1a16"
+              strokeOpacity="0.18"
+              strokeWidth="0.7"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+        </div>
+        <div className="topics-band">
+          <span className="topics-spine" aria-hidden="true">
+            Youngkx Journal — Topic Index
+          </span>
+          <div className="topics-inner shell">
+            <div className="category-grid">
+              {categories.map((category) => (
+                <TopicCard key={category.id} category={category} />
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 

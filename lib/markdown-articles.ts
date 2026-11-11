@@ -2,7 +2,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { load as parseYaml } from 'js-yaml';
 import hljs from 'highlight.js';
-import { Marked } from 'marked';
+import { Marked, Renderer } from 'marked';
+import markedKatex from 'marked-katex-extension';
 import { isCardPreset, type CardPreset } from './card-presets';
 
 export type MarkdownArticleRecord = {
@@ -38,8 +39,12 @@ const markdown = new Marked({
       const highlighted = hljs.highlight(text, { language, ignoreIllegals: true }).value;
       return `<pre><code class="hljs language-${language}">${highlighted}\n</code></pre>\n`;
     },
+    table(token) {
+      return `<div class="markdown-table">\n${Renderer.prototype.table.call(this, token)}</div>\n`;
+    },
   },
 });
+markdown.use(markedKatex({ nonStandard: true, output: 'mathml', throwOnError: false }));
 
 export function parseFrontMatter(source: string, filename = 'Markdown source'): FrontMatterResult {
   const normalizedSource = source.replace(/^\uFEFF/, '');
@@ -92,7 +97,7 @@ function normalizeSlug(value: unknown, fallback: string, filename: string) {
 
 function headingText(html: string) {
   return html
-    .replace(/<[^>]+>/g, '')
+    .replace(/<annotation\b[^>]*>[\s\S]*?<\/annotation>|<[^>]+>/g, '')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')

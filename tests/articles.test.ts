@@ -75,6 +75,42 @@ describe('Markdown code highlighting', () => {
   });
 });
 
+describe('Markdown math and tables', () => {
+  it('renders inline and display LaTeX as MathML', () => {
+    const html = renderMarkdown('## 求解 $x^2$\n\n若$x>0$，则\n\n$$\n\\frac{x}{2}\n$$\n');
+
+    expect(html).toContain('<h2 id="求解-x2">');
+    expect(html).toContain('若<span class="katex"><math');
+    expect(html).toContain('<mo>&gt;</mo>');
+    expect(html).toContain('display="block"');
+    expect(html).toContain('<mfrac><mi>x</mi><mn>2</mn></mfrac>');
+  });
+
+  it('keeps dollar delimiters literal in code and after a backslash', () => {
+    const html = renderMarkdown('`$x$` 和 \\$5、\\$10\n\n```text\n$$\nx^2\n$$\n```');
+
+    expect(html).toContain('<code>$x$</code> 和 $5、$10');
+    expect(html).toContain('<pre><code class="language-text">$$\nx^2\n$$');
+    expect(html).not.toContain('<math');
+  });
+
+  it('falls back to the source of invalid LaTeX', () => {
+    const html = renderMarkdown('公式 $\\frac{1$ 后面的内容');
+
+    expect(html).toContain('class="katex-error"');
+    expect(html).toContain('>\\frac{1</span> 后面的内容');
+  });
+
+  it('wraps a GFM table for scrolling and renders math in its cells', () => {
+    const html = renderMarkdown('| 公式 | 说明 |\n| ---: | :--- |\n| $x^2$ | 平方 |');
+
+    expect(html).toContain('<div class="markdown-table">\n<table>');
+    expect(html).toContain('>公式</th>');
+    expect(html).toMatch(/<td[^>]*><span class="katex"><math/);
+    expect(html).toContain('</table>\n</div>');
+  });
+});
+
 describe('article index', () => {
   it('groups C/C++ tag aliases under the existing category and display name', () => {
     for (const tag of ['C', 'C++', 'C/C++', 'C / C++', ' c / c++ ']) {

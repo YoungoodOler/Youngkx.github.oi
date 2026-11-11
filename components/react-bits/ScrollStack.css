@@ -1,0 +1,82 @@
+.scroll-stack {
+  display: flex;
+  flex-direction: column;
+  width: min(90%, 66rem);
+  margin-inline: auto;
+  gap: 16px;
+  isolation: isolate;
+}
+
+.scroll-stack__card {
+  position: relative;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) and (min-height: 34rem) {
+  .scroll-stack-section--active {
+    --stack-step: 14px;
+    --stack-top: clamp(
+      var(--stack-min-top, var(--home-nav-height, 0px) + 12px),
+      43svh,
+      100svh - var(--stack-height, 0px) - (var(--stack-count) - 1) * var(--stack-step) - 24px
+    );
+    --stack-bottom: calc(
+      var(--stack-top) + var(--stack-height, 0px) + (var(--stack-count) - 1) * var(--stack-step)
+    );
+    --stack-gap: clamp(8px, 1.4svh, 16px);
+  }
+
+  .scroll-stack-section--active > .scroll-stack {
+    gap: var(--stack-gap);
+  }
+
+  .scroll-stack-section--active > .scroll-stack::after {
+    content: '';
+    height: clamp(96px, 20svh, 200px);
+    margin-top: calc(-1 * var(--stack-gap));
+  }
+
+  .scroll-stack-section--active .scroll-stack__slot {
+    position: sticky;
+    top: calc(var(--stack-top) + var(--stack-index) * var(--stack-step));
+    z-index: var(--stack-index);
+    /* The extra room at the bottom keeps the top edges staggered as the stack leaves. */
+    margin-bottom: calc(var(--stack-remaining) * var(--stack-step) + var(--stack-tail, 0px));
+    margin-top: calc(-1 * var(--stack-preceding-tail, 0px));
+  }
+
+  .scroll-stack__card {
+    scale: var(--stack-scale, 1);
+    transform-origin: top center;
+  }
+
+  .scroll-stack__card::after {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    border-radius: inherit;
+    background: #000;
+    content: '';
+    opacity: var(--stack-dim, 0);
+    pointer-events: none;
+  }
+
+  .scroll-stack-section--active .scroll-stack__slot:has(:focus-visible) {
+    z-index: 10;
+  }
+
+  .scroll-stack__slot:has(:focus-visible) .scroll-stack__card {
+    scale: 1;
+    --stack-dim: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .scroll-stack {
+    width: 100%;
+  }
+
+  .scroll-stack-section--active {
+    --stack-step: 10px;
+  }
+}

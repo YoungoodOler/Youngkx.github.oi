@@ -1,0 +1,22 @@
+.warp-text {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  text-align: center;
+}
+
+.warp-text__label {
+  white-space: pre-line;
+}
+
+.warp-text[data-warp-text] > .warp-text__label {
+  opacity: 0;
+}
+
+.warp-text > canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}

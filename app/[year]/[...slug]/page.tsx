@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import ArticleView from '@/components/ArticleView';
 import { articles, getArticleByPath } from '@/lib/articles';
 import './code-highlighting.css';
+import './article-content.css';
 import './article-interactions.css';
 
 type RouteProps = { params: Promise<{ year: string; slug: string[] }> };

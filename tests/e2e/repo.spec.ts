@@ -714,9 +714,11 @@ test('浏览器分片上传超过95MiB、重试失败分片并下载校验SHA256
 });
 
 test('首页 Cards 的 Repo 入口抵达仓库', async ({ page }) => {
+  await page.route('**/api/files', (route) => route.fulfill({ json: fixture }));
   await page.goto('/#interactive-cards');
+  await page.getByRole('region', { name: '站点入口' }).press('End');
   const card = page.getByRole('link', { name: '打开文件仓库 Repo' });
-  await expect(card).toBeVisible();
+  await expect(card).toBeInViewport({ ratio: 0.9 });
   await card.click();
   await expect(page).toHaveURL(/\/repo\/$/);
   await expect(page.getByRole('heading', { name: settings.title, exact: true })).toBeVisible();

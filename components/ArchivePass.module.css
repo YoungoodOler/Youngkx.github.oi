@@ -1,0 +1,109 @@
+.stage {
+  --lanyard-tether: url('/archive-pass/strap.svg');
+  --pass-stage-height: calc(100svh - var(--home-nav-height));
+  --pass-rest-height: min(calc(var(--pass-stage-height) * 0.5333), 33vw);
+  --pass-frame-height: min(var(--pass-rest-height), var(--pass-stage-height));
+  --lanyard-rest-x: 0.88;
+  --lanyard-rest-card: 0.36;
+  --lanyard-rest-grip: 0.23;
+  --pass-top: calc(var(--pass-stage-height) * var(--lanyard-rest-card));
+  --pass-card-height: calc(var(--pass-frame-height) * 0.6);
+  --pass-width: min(72%, calc(var(--pass-card-height) * 640 / 900));
+  position: absolute;
+  z-index: 3;
+  inset-block-start: var(--home-nav-height);
+  inset-inline: 0;
+  height: var(--pass-stage-height);
+  pointer-events: none;
+}
+
+.stage .model {
+  position: absolute;
+  inset: 0;
+  padding-bottom: calc(var(--pass-stage-height) - var(--pass-frame-height));
+}
+
+.stage .model :global(.lanyard-viewport) {
+  position: fixed;
+  inset: var(--home-nav-height) 0 auto;
+  height: var(--pass-stage-height);
+}
+
+.stage:not([data-enter]),
+.model:not([data-ready]),
+.stage:has(.model[data-ready]) .still {
+  visibility: hidden;
+}
+
+.stage[data-enter]:not([data-settled]) :is(.printed, .model[data-ready] :global(.lanyard-content)) {
+  animation: pass-drop 820ms both;
+}
+
+@keyframes pass-drop {
+  0% {
+    translate: 0 calc(-1 * (var(--pass-top) + var(--pass-card-height) + 12px));
+    animation-timing-function: cubic-bezier(0.45, 0, 0.8, 0.5);
+  }
+  74% {
+    translate: 0 0;
+    animation-timing-function: ease-out;
+  }
+  87% {
+    translate: 0 -8px;
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+.still,
+.printed {
+  position: absolute;
+  inset: 0;
+}
+
+.still {
+  overflow: clip;
+}
+
+.printed::before {
+  position: absolute;
+  z-index: 91;
+  top: 0;
+  left: calc(var(--lanyard-rest-x) * 100%);
+  width: calc(var(--pass-width) * 0.12375);
+  height: calc(var(--pass-top) + 6px);
+  transform: translateX(-50%);
+  background: var(--lanyard-tether) center top / 100% auto repeat-y;
+  box-shadow: 2px 4px 12px #0005;
+  content: '';
+}
+
+.still img {
+  position: absolute;
+  z-index: 7;
+  top: var(--pass-top);
+  left: calc(var(--lanyard-rest-x) * 100%);
+  width: var(--pass-width);
+  height: auto;
+  transform: translateX(-50%);
+  border-radius: 4%;
+  box-shadow: 0 14px 38px #03050c5c;
+}
+
+@media (max-width: 820px) {
+  .stage {
+    --pass-rest-height: clamp(120px, calc(44svh - 141px), 236px);
+    --lanyard-rest-x: 0.79;
+    --lanyard-rest-card: 0;
+    --lanyard-rest-grip: 0;
+    --pass-top: max(calc(var(--pass-frame-height) * 0.285), 50px);
+  }
+}
+
+@media (scripting: none) {
+  .stage:not([data-enter]) {
+    visibility: visible;
+  }
+}

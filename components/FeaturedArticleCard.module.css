@@ -1,0 +1,275 @@
+.card {
+  --paper: #e5e1d9;
+  --ink-on-paper: #23201b;
+  --spot: #705449;
+  --photo-ink: #6a5a52;
+  --photo-position: 50% 50%;
+  --page-radius: 3px;
+  perspective: 1100px;
+  color: var(--ink-on-paper);
+}
+
+/* One flat paper stock and one photo tint per family, all near-neutral. */
+.card[data-family='code'] {
+  --paper: #e5e1d9;
+  --ink-on-paper: #23201b;
+  --spot: #705449;
+  --photo-ink: #6a5a52;
+}
+
+.card[data-family='cs'] {
+  --paper: #dfe2e5;
+  --ink-on-paper: #1d2024;
+  --spot: #48545e;
+  --photo-ink: #46525c;
+}
+
+.card[data-family='ai'] {
+  --paper: #e2dfe4;
+  --ink-on-paper: #221f23;
+  --spot: #615a66;
+  --photo-ink: #565060;
+}
+
+.card[data-family='vlog'] {
+  --paper: #e9e3dd;
+  --ink-on-paper: #2a241f;
+  --spot: #6e5b4f;
+  --photo-ink: #75635a;
+  --photo-position: 58% 53%;
+}
+
+.card[data-family='talk'] {
+  --paper: #e1e2dd;
+  --ink-on-paper: #23251f;
+  --spot: #5a6052;
+  --photo-ink: #525747;
+  --photo-position: 64% 55%;
+}
+
+.card[data-family='web'] {
+  --paper: #dde2e1;
+  --ink-on-paper: #1b201f;
+  --spot: #51625f;
+  --photo-ink: #46544f;
+}
+
+.spread {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr);
+  min-block-size: clamp(300px, 27vw, 372px);
+  overflow: clip;
+  border-radius: var(--page-radius);
+  background: var(--paper);
+  box-shadow:
+    0 1px 0 #ffffff1a inset,
+    0 26px 48px -32px #000e;
+  transform: var(--tilt, none);
+  transition:
+    transform 180ms ease-out,
+    box-shadow 300ms ease-out;
+  will-change: transform;
+}
+
+.spread:focus-visible {
+  outline: 2px solid var(--spot);
+  outline-offset: 4px;
+}
+
+/* Type half: a flat plate of coloured paper on the left page. */
+.copy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  grid-area: 1 / 1;
+  min-width: 0;
+  padding: clamp(22px, 2.6vw, 38px);
+  background: var(--paper);
+}
+
+/* Hard printed edge between the paper and the plate. */
+.copy::before {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--ink-on-paper) 28%, transparent);
+  content: '';
+}
+
+.kicker {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  padding-block-end: 13px;
+  border-block-end: 1px solid color-mix(in srgb, var(--ink-on-paper) 24%, transparent);
+  font: 400 10px/1.4 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.issue {
+  color: var(--spot);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.tag {
+  color: color-mix(in srgb, var(--ink-on-paper) 72%, transparent);
+}
+
+.date {
+  margin-inline-start: auto;
+  color: color-mix(in srgb, var(--ink-on-paper) 52%, transparent);
+  white-space: nowrap;
+}
+
+.title {
+  position: relative;
+  z-index: 1;
+  margin: clamp(16px, 1.9vw, 24px) 0 0;
+  font: 500 clamp(24px, 2.7vw, 39px)/1.14 var(--display);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.excerpt {
+  position: relative;
+  z-index: 1;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  max-inline-size: 46ch;
+  margin: clamp(10px, 1.2vw, 14px) 0 0;
+  color: color-mix(in srgb, var(--ink-on-paper) 74%, transparent);
+  font-size: clamp(12.5px, 1.05vw, 14px);
+  line-height: 1.75;
+}
+
+/* Oversized folio numeral printed into the paper. */
+.folio {
+  position: absolute;
+  z-index: 0;
+  inset-inline-end: clamp(10px, 1.4vw, 18px);
+  inset-block-end: -0.08em;
+  color: color-mix(in srgb, var(--ink-on-paper) 8%, transparent);
+  font: 700 clamp(88px, 10vw, 148px)/0.72 var(--sans);
+  letter-spacing: -0.06em;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Photo half: printed duotone, no glass, no bleed into the type. */
+.art {
+  position: relative;
+  grid-area: 1 / 2;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--photo-ink);
+}
+
+.photo {
+  object-fit: cover;
+  object-position: var(--photo-position);
+  filter: grayscale(1) contrast(1.08) brightness(1.04);
+  transform: scale(1.001);
+  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tint,
+.screen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Inks the grayscale plate with the family colour, like a two-plate print. */
+.tint {
+  background: var(--photo-ink);
+  mix-blend-mode: color;
+  opacity: 0.92;
+}
+
+/* Coarse halftone screen sitting on top of the tint. */
+.screen {
+  background-image: radial-gradient(#000 0.75px, transparent 1.05px);
+  background-size: 4px 4px;
+  mix-blend-mode: multiply;
+  opacity: 0.16;
+}
+
+.credit {
+  position: absolute;
+  inset-block-end: 14px;
+  inset-inline-start: 14px;
+  padding: 6px 9px;
+  background: var(--ink-on-paper);
+  color: var(--paper);
+  font: 400 9px/1 var(--mono);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  transition: background-color 300ms;
+}
+
+@media (any-hover: hover) {
+  .spread:hover {
+    box-shadow:
+      0 1px 0 #ffffff1a inset,
+      0 34px 58px -30px #000f;
+  }
+
+  .spread:hover .photo {
+    transform: scale(1.045);
+  }
+
+  .spread:hover .credit {
+    background: var(--spot);
+  }
+}
+
+@media (max-width: 680px) {
+  .spread {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: clamp(172px, 46vw, 214px) auto;
+    min-block-size: 0;
+  }
+
+  .art {
+    grid-area: 1 / 1;
+  }
+
+  .copy {
+    grid-area: 2 / 1;
+    padding: 20px 20px 24px;
+  }
+
+  .copy::before {
+    inset: 0 0 auto;
+    width: auto;
+    height: 1px;
+  }
+
+  .title {
+    font-size: clamp(23px, 6.4vw, 31px);
+  }
+
+  .folio {
+    font-size: 92px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spread {
+    transform: none;
+    transition: none;
+  }
+
+  .photo {
+    transition: none;
+  }
+}

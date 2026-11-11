@@ -16,6 +16,12 @@ draft: true
 
 从这里开始写正文。支持标准 Markdown、表格、引用、链接和代码块。
 
+用 `$...$` 写行内公式，例如 $x^2+y^2=z^2$。独立公式用两行 `$$` 包围，公式块前后各留一空行。
+
+$$
+\sum_{k=1}^n k = \frac{n(n+1)}{2}
+$$
+
 ```ts
 const message = 'Hello, Youngkx';
 console.log(message);

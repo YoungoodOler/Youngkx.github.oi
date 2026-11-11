@@ -151,17 +151,22 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
   const [copied, setCopied] = useState(false);
   const articleMarkup = useMemo(() => ({ __html: article.content }), [article.content]);
   const characters = useMemo(
-    () => article.content.replace(/<[^>]+>/g, '').replace(/\s+/g, '').length,
+    () =>
+      article.content
+        .replace(/<annotation\b[^>]*>[\s\S]*?<\/annotation>|<[^>]+>/g, '')
+        .replace(/\s+/g, '').length,
     [article.content],
   );
   const minutes = Math.max(1, Math.ceil(characters / 500));
 
   useEffect(() => {
-    const headings = [...(contentRef.current?.querySelectorAll('h2, h3') ?? [])];
+    const headings = [
+      ...(contentRef.current?.querySelectorAll<HTMLHeadingElement>('h2, h3') ?? []),
+    ];
     setToc(
       headings.map((heading) => ({
         id: heading.id,
-        text: heading.textContent ?? '',
+        text: heading.innerText,
         level: heading.tagName === 'H3' ? 3 : 2,
       })),
     );

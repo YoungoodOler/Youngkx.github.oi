@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="460" viewBox="0 0 96 460">
+  <defs>
+    <pattern id="thread" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M0 1h6M1 0v6" stroke="#aab4cf" stroke-opacity=".08"/>
+    </pattern>
+  </defs>
+  <path d="M0 0h96v460H0z" fill="#11131b"/>
+  <path d="M0 0h96v460H0z" fill="url(#thread)"/>
+  <path d="M9 0v460M87 0v460" stroke="#808aa6" stroke-opacity=".37" stroke-width="2"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="900" viewBox="0 0 640 900">
+  <title>Young Blog</title>
+  <rect width="640" height="900" fill="#000"/>
+  <path
+    fill="#f3f3f3"
+    transform="translate(135 283) scale(.46) translate(-221 -287)"
+    d="M226 287H438L620 490 808 287H879L617 568 398 326H340L587 599 330 868H388L942 287H1024L725 598 1006 906H918L681 640 424 906H221L510 600Z"
+  />
+  <text x="320" y="627" fill="#f3f3f3" font-family="DM Mono, Consolas, monospace" font-size="30" font-weight="500" letter-spacing="8" text-anchor="middle">BLOG</text>
+</svg>

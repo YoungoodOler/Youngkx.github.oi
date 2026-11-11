@@ -9,12 +9,10 @@ import {
   useRef,
   useState,
 } from 'react';
-import { LazyMotion, type MotionValue, useMotionValue } from 'framer-motion';
-import dynamic from 'next/dynamic';
+import { LazyMotion } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
 import { readStoredValue, writeStoredValue } from '@/lib/browser-storage';
 
-const Scene = dynamic(() => import('./Scene'), { ssr: false });
 const loadMotionFeatures = () => import('./motion-features').then((module) => module.default);
 
 type Theme = 'dark' | 'light';
@@ -35,7 +33,6 @@ const transitionWave = (() => {
 type SiteExperienceValue = {
   theme: Theme;
   toggleTheme: () => void;
-  heroProgress: MotionValue<number>;
 };
 
 const SiteExperienceContext = createContext<SiteExperienceValue | null>(null);
@@ -278,7 +275,6 @@ export function useSiteExperience() {
 export default function SiteExperience({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const heroProgress = useMotionValue(0);
   const [theme, setTheme] = useState<Theme>('dark');
   const [transitionMode, setTransitionMode] = useState<TransitionMode>(null);
   const [transitionTheme, setTransitionTheme] = useState<Theme>('dark');
@@ -359,7 +355,7 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    if (transitionModeRef.current) return;
+    if (pathname === '/' || transitionModeRef.current) return;
     const next = theme === 'dark' ? 'light' : 'dark';
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -394,11 +390,12 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
         setMode(null);
       }, themeDuration + 40),
     );
-  }, [setMode, theme]);
+  }, [pathname, setMode, theme]);
 
   useEffect(() => {
     const navigateWithTransition = (event: MouseEvent) => {
       if (
+        pathname === '/' ||
         event.defaultPrevented ||
         event.button !== 0 ||
         event.metaKey ||
@@ -421,7 +418,7 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
         return;
 
       const destination = new URL(anchor.href, window.location.href);
-      if (destination.origin !== window.location.origin) return;
+      if (destination.origin !== window.location.origin || destination.pathname === '/') return;
 
       const sameDocument =
         destination.pathname === window.location.pathname &&
@@ -458,14 +455,11 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
 
     document.addEventListener('click', navigateWithTransition, true);
     return () => document.removeEventListener('click', navigateWithTransition, true);
-  }, [clearTimers, router, setMode, theme]);
+  }, [clearTimers, pathname, router, setMode, theme]);
 
   return (
-    <SiteExperienceContext.Provider value={{ theme, toggleTheme, heroProgress }}>
+    <SiteExperienceContext.Provider value={{ theme, toggleTheme }}>
       <LazyMotion features={loadMotionFeatures} strict>
-        <div className="scroll-morph global-particle-scene">
-          <Scene theme={theme} showSubject={pathname === '/'} heroProgress={heroProgress} />
-        </div>
         {children}
         {transitionMode && (
           <div

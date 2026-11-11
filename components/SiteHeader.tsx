@@ -1,10 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useSiteExperience } from './SiteExperience';
 import ResourceNav from './ResourceNav';
+import SiteBrand from './SiteBrand';
 
 export default function SiteHeader({
   navClassName,
@@ -46,17 +46,7 @@ export default function SiteHeader({
 
   return (
     <header className={`nav shell${resources ? ' resource-header' : ''}`}>
-      <Link className="brand" href="/#top">
-        <Image
-          className="brand-avatar"
-          src="/avatar.webp"
-          alt="Youngkx 头像"
-          width={36}
-          height={36}
-          priority
-        />
-        <span className="brand-name">Youngkx</span>
-      </Link>
+      <SiteBrand href="/#top" theme={theme} />
       <nav
         ref={menuRef}
         id={resources ? 'resource-mobile-menu' : undefined}

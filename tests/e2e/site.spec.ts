@@ -8,203 +8,49 @@ async function useStoredTheme(page: Page, theme: 'dark' | 'light' = 'dark') {
 }
 
 async function openPage(page: Page, pathname: string) {
-  await page.goto(pathname, { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.scene canvas')).toBeVisible({ timeout: 12_000 });
+  await page.goto(pathname);
+  if (new URL(pathname, 'http://localhost').pathname === '/') {
+    await expect(page.getByRole('region', { name: '站点入口' })).toBeVisible();
+  }
 }
 
-test('主页首屏和第二阶段保持完整分层布局', async ({ page }, testInfo) => {
+test('首页首屏显示大 Logo 和 Tech Text，字符背景随首屏滚走', async ({ page }) => {
   await useStoredTheme(page);
-  await openPage(page, '/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-  // Perspective layers must not enlarge the mobile layout viewport while they enter.
+  const heading = page.getByRole('heading', { level: 1, name: 'Youngkx Blog' });
+  const background = page.locator('.home-ascii-background');
+  const largeLogo = page.locator('.electric-logo');
+  const cards = page.getByRole('region', { name: 'Cards', exact: true });
+  const brand = page.getByRole('link', { name: 'Youngkx Blog 首页' });
+  await expect(heading).toBeInViewport();
+  await expect(heading).toHaveAttribute('data-tech-text', '');
+  await expect(largeLogo).toHaveAttribute('data-electric-logo', '');
+  await expect(largeLogo).toBeInViewport();
+  await expect(background.locator('canvas')).toBeVisible();
+  await expect(page.locator('.writing-background .dot-grid')).toHaveCount(1);
+  await expect(brand).toHaveAttribute('href', '#top');
+  await expect(brand).toHaveAttribute('data-sticker-peel', '');
+  await expect(cards.getByRole('heading', { name: 'Cards', exact: true })).not.toBeInViewport();
+
+  const bgTop = await background.evaluate((element) => element.getBoundingClientRect().top);
+  await page.evaluate(() => window.scrollTo({ top: 180, behavior: 'instant' }));
   await expect
-    .poll(() => page.evaluate(() => window.innerWidth - document.documentElement.clientWidth))
-    .toBeLessThan(2);
-
-  const title = page.locator('.hero-title-layer h1');
-  await expect(title).toContainText('Youngkx');
-  await expect(title).toContainText('Blog');
-  const initialTitleBox = await title.boundingBox();
-  expect(initialTitleBox).not.toBeNull();
-  expect(initialTitleBox?.height ?? 0).toBeGreaterThan(
-    testInfo.project.name.startsWith('mobile') ? 110 : 250,
-  );
-  const transitionTravel = await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    return (stage.offsetHeight - window.innerHeight) / window.innerHeight;
-  });
-  expect(transitionTravel).toBeGreaterThanOrEqual(2.7);
-  expect(transitionTravel).toBeLessThanOrEqual(3.1);
-
-  // The first wheel movement must already move the title instead of consuming a blank lead-in.
-  await page.evaluate(() => window.scrollTo({ top: 100, behavior: 'instant' }));
-  await expect
-    .poll(async () => {
-      const box = await title.boundingBox();
-      return (initialTitleBox?.width ?? 0) - (box?.width ?? 0);
-    })
-    .toBeGreaterThan(0.5);
-
-  const readableScroll = await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    const travel = Math.max(1, stage.offsetHeight - window.innerHeight);
-    return stage.offsetTop + travel * 0.44;
-  });
-  await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), readableScroll);
-  await page.waitForTimeout(450);
-  for (const selector of [
-    '.hero-detail-layer',
-    '.hero-copy-intro',
-    '.hero-copy-description',
-    '.hero-copy-actions',
-  ]) {
-    await expect
-      .poll(() =>
-        page.locator(selector).evaluate((element) => Number(getComputedStyle(element).opacity)),
-      )
-      .toBeGreaterThan(0.98);
-  }
-
-  const targetScroll = await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    const travel = Math.max(1, stage.offsetHeight - window.innerHeight);
-    return stage.offsetTop + travel * 0.46;
-  });
-  await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), targetScroll);
-  await page.waitForTimeout(650);
-
-  const stickyBox = await page.locator('.hero-sticky').boundingBox();
-  expect(Math.abs(stickyBox?.y ?? Infinity)).toBeLessThan(2);
-
-  await expect(page.locator('.hero-copy-intro')).toBeVisible();
-  await expect(page.locator('.hero-copy-description')).toBeVisible();
-  await expect(page.locator('.hero-copy-actions')).toBeVisible();
-  await expect(page.locator('.hero-detail-copy')).toContainText('Recording, Learning & Building');
-  await expect(page.locator('.hero-quote')).toHaveText('Life is real, life is earnest.');
-  await expect(page.locator('.hero-copy-description')).toHaveText(
-    'Notes on OI, C / C++, the web, and everyday life.',
-  );
-  await expect(page.locator('.hero-detail-copy')).toContainText('Explore Posts');
-  await expect(page.locator('.hero-detail-copy')).toContainText('Browse Topics');
-  await expect(page.getByText('SCROLL TO EXPLORE')).toHaveCount(0);
-
-  const restingTitleBox = await title.boundingBox();
-  const detailBox = await page.locator('.hero-detail-layer').boundingBox();
-  const viewport = page.viewportSize();
-  expect(restingTitleBox).not.toBeNull();
-  expect(detailBox).not.toBeNull();
-  expect(viewport).not.toBeNull();
-  expect(Math.abs((restingTitleBox?.x ?? 0) - (detailBox?.x ?? 0))).toBeLessThan(
-    testInfo.project.name.startsWith('mobile') ? 24 : 48,
-  );
-  expect(restingTitleBox?.width ?? 0).toBeGreaterThan(
-    (viewport?.width ?? 0) * (testInfo.project.name.startsWith('mobile') ? 0.5 : 0.3),
-  );
-
-  const exitScroll = await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    return stage.offsetTop + (stage.offsetHeight - window.innerHeight) * 0.64;
-  });
-  await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), exitScroll);
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const titleOpacity = Number(
-          getComputedStyle(document.querySelector('.hero-title-layer')!).opacity,
-        );
-        const detailOpacity = Number(
-          getComputedStyle(document.querySelector('.hero-detail-layer')!).opacity,
-        );
-        return (
-          titleOpacity > 0.2 && titleOpacity < 0.8 && Math.abs(titleOpacity - detailOpacity) < 0.01
-        );
-      }),
-    )
-    .toBe(true);
-
-  const emergingScroll = await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    return stage.offsetTop + (stage.offsetHeight - window.innerHeight) * 0.76;
-  });
-  await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), emergingScroll);
-  await expect
-    .poll(async () => (await page.locator('.signal-deck__grid').boundingBox())?.y ?? Infinity)
-    .toBeLessThan((viewport?.height ?? 0) * 0.55);
-  const emergingGridBox = await page.locator('.signal-deck__grid').boundingBox();
-  expect(emergingGridBox?.y ?? 0).toBeGreaterThan((viewport?.height ?? 0) * 0.25);
-
-  const transitionScroll = await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    const travel = Math.max(1, stage.offsetHeight - window.innerHeight);
-    return stage.offsetTop + travel * 0.92;
-  });
-  await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), transitionScroll);
-  await page.waitForTimeout(450);
-  await expect(
-    page.locator('[data-home-transition="portal"], [data-home-transition="bridge"]'),
-  ).toHaveCount(0);
-  await expect
-    .poll(() =>
-      page
-        .locator('.signal-deck__grid')
-        .evaluate((element) => Number(getComputedStyle(element).opacity)),
-    )
-    .toBeGreaterThan(0.8);
-  await expect
-    .poll(() =>
-      page
-        .locator('.signal-deck__content')
-        .evaluate((element) => getComputedStyle(element).transform),
-    )
-    .not.toBe('none');
-  await expect(page.locator('.signal-deck__grid')).toHaveCSS('transform', 'none');
-  await expect
-    .poll(() =>
-      page.locator('.signal-deck__grid').evaluate((element) => getComputedStyle(element).clipPath),
-    )
-    .toBe('none');
-
-  const settledScroll = await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    const travel = Math.max(1, stage.offsetHeight - window.innerHeight);
-    return stage.offsetTop + travel * 0.94;
-  });
-  await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), settledScroll);
-  await page.waitForTimeout(650);
-  await expect
-    .poll(() =>
-      page
-        .locator('.hero-detail-layer')
-        .evaluate((element) => Number(getComputedStyle(element).opacity)),
-    )
-    .toBeLessThan(0.02);
-  await expect
-    .poll(() =>
-      page.locator('.signal-deck').evaluate((element) => Number(getComputedStyle(element).opacity)),
-    )
-    .toBeGreaterThan(0.5);
-
-  const postTransitionScroll = await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    return stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight) + 400;
-  });
-  await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), postTransitionScroll);
-  await page.waitForTimeout(700);
-  await expect
-    .poll(() =>
-      page.locator('.signal-deck').evaluate((element) => Number(getComputedStyle(element).opacity)),
-    )
-    .toBeGreaterThan(0.98);
-  await expect(page.locator('.signal-card').first()).toBeVisible();
+    .poll(() => background.evaluate((element) => element.getBoundingClientRect().top))
+    .toBeLessThan(bgTop - 175);
+  await cards.evaluate((element) => element.scrollIntoView({ behavior: 'instant' }));
+  await expect(background).not.toBeInViewport();
+  await expect(cards.getByRole('heading', { name: 'Cards', exact: true })).toBeInViewport();
+  await expect(largeLogo.locator('canvas')).toHaveCount(0);
 });
 
-test('界面字体变为现代粗体且主页展示标题保持原字体', async ({ page }) => {
+test('导航和 Cards 标题保留各自的界面字体', async ({ page }) => {
   await useStoredTheme(page);
   await openPage(page, '/');
 
   const fonts = await page.evaluate(() => ({
     navigation: getComputedStyle(document.querySelector('.nav-links')!).fontFamily,
-    title: getComputedStyle(document.querySelector('.hero-title-layer h1')!).fontFamily,
+    title: getComputedStyle(document.querySelector('#signal-deck-title')!).fontFamily,
   }));
 
   expect(fonts.navigation).not.toBe(fonts.title);
@@ -219,180 +65,76 @@ test('界面字体变为现代粗体且主页展示标题保持原字体', async
 test('滚轮连续通过 Cards 且可以立即反向滚动', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name.startsWith('mobile'), '桌面滚轮回归测试');
   await useStoredTheme(page);
-  await openPage(page, '/');
+  await openPage(page, '/#interactive-cards');
 
-  const deckStop = await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    return stage.offsetTop + stage.offsetHeight - window.innerHeight;
-  });
-  await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), deckStop - 100);
+  const carousel = page.getByRole('region', { name: '站点入口' });
+  await expect(carousel).toHaveAttribute('data-renderer', 'liquid', { timeout: 15_000 });
+  const box = await carousel.locator('canvas').boundingBox();
+  if (!box) throw new Error('找不到 Liquid 轮播画布');
+  const initialScroll = await page.evaluate(() => window.scrollY);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, 800);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(deckStop + 500);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(initialScroll + 500);
   const forwardScroll = await page.evaluate(() => window.scrollY);
   await page.mouse.wheel(0, -600);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(forwardScroll - 400);
 });
 
-test('Cards 连续浮出时不回跳且保持卡片尺寸', async ({ page }) => {
+test('主页 Cards 使用 Liquid 轮播并显示最新文章标题', async ({ page }, testInfo) => {
   await useStoredTheme(page);
-  await openPage(page, '/');
-  const motion = await page.evaluate(async () => {
-    const stage = document.querySelector<HTMLElement>('.hero-stage')!;
-    const grid = document.querySelector<HTMLElement>('.signal-deck__grid')!;
-    const travel = stage.offsetHeight - window.innerHeight;
-    window.scrollTo({ top: travel * 0.645, behavior: 'instant' });
-    await new Promise((resolve) => window.setTimeout(resolve, 700));
-    const samples: { top: number; height: number }[] = [];
-    await new Promise<void>((resolve) => {
-      const started = performance.now();
-      const frame = (now: number) => {
-        const elapsed = now - started;
-        const progress = Math.min(1, elapsed / 1_400);
-        window.scrollTo({ top: travel * (0.645 + progress * 0.355), behavior: 'instant' });
-        const box = grid.getBoundingClientRect();
-        samples.push({ top: box.top, height: box.height });
-        if (elapsed < 1_800) requestAnimationFrame(frame);
-        else resolve();
-      };
-      requestAnimationFrame(frame);
-    });
-    return {
-      downwardStep: Math.max(
-        0,
-        ...samples.slice(1).map((sample, index) => sample.top - samples[index].top),
-      ),
-      heightChange:
-        Math.max(...samples.map((sample) => sample.height)) -
-        Math.min(...samples.map((sample) => sample.height)),
-      upwardTravel: samples[0].top - samples.at(-1)!.top,
-      viewportHeight: window.innerHeight,
-    };
-  });
-  expect(motion.downwardStep).toBeLessThan(0.75);
-  expect(motion.heightChange).toBeLessThan(0.5);
-  expect(motion.upwardTravel).toBeGreaterThan(60);
-  expect(motion.upwardTravel).toBeLessThan(motion.viewportHeight * 0.2);
-});
+  await openPage(page, '/#interactive-cards');
 
-test('主页动态索引卡片支持鼠标景深并保持移动端布局', async ({ page }, testInfo) => {
-  await useStoredTheme(page);
-  await openPage(page, '/');
+  const carousel = page.getByRole('region', { name: '站点入口' });
+  const latest = carousel.getByRole('link', { name: /打开最新文章/ });
+  const topics = carousel.getByRole('link', { name: '浏览文章主题' });
+  const repo = carousel.getByRole('link', { name: '打开文件仓库 Repo' });
+  const firstArticle = page.locator('#posts .article-card').first();
+  await expect(latest.locator('small')).toHaveText(await firstArticle.locator('h3').innerText());
+  const latestHref = await firstArticle.getByRole('link').getAttribute('href');
+  if (!latestHref) throw new Error('找不到最新文章链接');
+  await expect(latest).toHaveAttribute('href', latestHref);
+  await expect(latest).toBeInViewport();
+  await expect(carousel).toHaveAttribute('data-renderer', 'liquid', { timeout: 15_000 });
+  await expect(page.locator('.card-swap, .global-particle-scene')).toHaveCount(0);
 
-  const deck = page.locator('.signal-deck');
-  const cards = deck.locator('.signal-card');
-  await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    window.scrollTo({
-      top: stage.offsetTop + stage.offsetHeight - window.innerHeight,
-      behavior: 'instant',
-    });
-  });
-  await page.waitForTimeout(900);
-
-  await expect(cards).toHaveCount(5);
-  await expect(cards.first()).toBeVisible();
-  await expect(deck.getByRole('heading', { name: 'Cards', exact: true })).toBeVisible();
-  const sectionHeadingSizes = await page.evaluate(() => {
-    const cardsHeading = document.querySelector('#signal-deck-title');
-    const articlesHeading = document.querySelector('#posts .section-heading h2');
-    if (!(cardsHeading instanceof HTMLElement) || !(articlesHeading instanceof HTMLElement)) {
-      throw new Error('Cards 或 Articles 标题不存在');
-    }
-    return {
-      cards: Number.parseFloat(getComputedStyle(cardsHeading).fontSize),
-      articles: Number.parseFloat(getComputedStyle(articlesHeading).fontSize),
-    };
-  });
-  expect(Math.abs(sectionHeadingSizes.cards - sectionHeadingSizes.articles)).toBeLessThan(0.5);
-  await expect(deck).not.toContainText('移动鼠标');
-  await expect(deck).not.toContainText('CURSOR REACTIVE');
-  await expect(page.locator('.signal-deck__heading > p, .section-heading > p')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Articles', exact: true })).toHaveCount(1);
-  await expect(page.getByRole('heading', { name: 'Topics', exact: true })).toHaveCount(1);
-  await expect(deck.getByRole('link', { name: /打开最新文章/ })).toHaveAttribute('href', /\/$/);
-  await expect(deck.getByRole('link', { name: '浏览文章主题' })).toHaveAttribute(
-    'href',
-    '/categories/',
-  );
-  await expect(deck.getByRole('link', { name: '打开常用链接' })).toHaveAttribute('href', '/links/');
-
-  const grid = deck.locator('.signal-deck__grid');
-  const readGridSurface = () =>
-    grid.evaluate((element) => {
-      const style = getComputedStyle(element);
-      return {
-        overflowX: style.overflowX,
-        overflowY: style.overflowY,
-        clipPath: style.clipPath,
-        backgroundColor: style.backgroundColor,
-        backgroundImage: style.backgroundImage,
-        borderWidths: [
-          style.borderTopWidth,
-          style.borderRightWidth,
-          style.borderBottomWidth,
-          style.borderLeftWidth,
-        ],
-        boxShadow: style.boxShadow,
-      };
-    });
-  const expectClearGridSurface = async () => {
-    const surface = await readGridSurface();
-    expect(surface.overflowX).toBe('visible');
-    expect(surface.overflowY).toBe('visible');
-    expect(surface.clipPath).toBe('none');
-    expect(surface.backgroundColor).toBe('rgba(0, 0, 0, 0)');
-    expect(surface.backgroundImage).toBe('none');
-    expect(surface.borderWidths).toEqual(['0px', '0px', '0px', '0px']);
-    expect(surface.boxShadow).toBe('none');
-  };
-
-  await expectClearGridSurface();
-  await page.locator('.theme-toggle').click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expectClearGridSurface();
+  const canvas = carousel.locator('canvas');
+  await expect(canvas).toBeInViewport();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('找不到 Liquid 轮播画布');
+  const x = Math.round(box.x + box.width * 0.67);
+  const y = Math.round(box.y + box.height / 2);
+  const distance = Math.round(Math.min(box.width * 0.63, 310));
 
   if (testInfo.project.name.startsWith('mobile')) {
-    const layout = await cards.evaluateAll((elements) => ({
-      viewportWidth: window.innerWidth,
-      documentWidth: document.documentElement.scrollWidth,
-      boxes: elements.map((element) => {
-        const rect = element.getBoundingClientRect();
-        return { left: rect.left, right: rect.right, width: rect.width };
-      }),
-    }));
-    expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
-    for (const box of layout.boxes) {
-      expect(box.left).toBeGreaterThanOrEqual(14);
-      expect(box.right).toBeLessThanOrEqual(layout.viewportWidth - 14);
-      expect(box.width).toBeGreaterThan(300);
+    const client = await page.context().newCDPSession(page);
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    for (const fraction of [0.16, 0.4, 0.65, 1]) {
+      await client.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: x - Math.round(distance * fraction), y }],
+      });
     }
-    return;
+    // Let the velocity sample expire to exercise snap-to-card without a fling.
+    await page.waitForTimeout(120);
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await client.detach();
+  } else {
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x - distance, y, { steps: 8 });
+    await page.waitForTimeout(120);
+    await page.mouse.up();
   }
 
-  const leadCard = deck.locator('.signal-card--lead');
-  const box = await leadCard.boundingBox();
-  const gridBox = await grid.boundingBox();
-  expect(box).not.toBeNull();
-  expect(gridBox).not.toBeNull();
-  const initialTransform = await leadCard.evaluate(
-    (element) => getComputedStyle(element).transform,
-  );
-  await page.mouse.move((box?.x ?? 0) + (box?.width ?? 0) * 0.82, (box?.y ?? 0) + 90);
-  await expect
-    .poll(() => leadCard.evaluate((element) => getComputedStyle(element).transform))
-    .not.toBe(initialTransform);
-  await expect
-    .poll(() =>
-      leadCard
-        .locator('.signal-card__glare')
-        .evaluate((element) => getComputedStyle(element).backgroundImage),
-    )
-    .toContain('radial-gradient');
+  await expect(topics).toHaveAttribute('href', '/categories/');
+  await expect(topics).toBeInViewport();
+  await expect(page).toHaveURL(/\/#interactive-cards$/);
 
-  const hoverTranslation = await leadCard.evaluate(
-    (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
-  );
-  expect(Math.abs(hoverTranslation)).toBeLessThan(0.1);
+  await topics.press('End');
+  await expect(repo).toBeFocused();
+  await expect(repo).toHaveAttribute('href', '/repo/');
+  await carousel.getByRole('button', { name: '下一张卡片' }).click();
+  await expect(latest).toHaveAttribute('href', latestHref);
 });
 
 test('常用链接卡片进入独立目录页', async ({ page }) => {
@@ -403,17 +145,20 @@ test('常用链接卡片进入独立目录页', async ({ page }) => {
       headers: { 'Cache-Control': 'no-store' },
     });
   });
-  await openPage(page, '/');
+  await openPage(page, '/#interactive-cards');
 
-  const linksCard = page.locator('.signal-card--portal a');
-  await linksCard.scrollIntoViewIfNeeded();
+  const carousel = page.getByRole('region', { name: '站点入口' });
+  await carousel.press('End');
+  await carousel.press('ArrowLeft');
+  const linksCard = page.getByRole('link', { name: '打开常用链接' });
   await expect(linksCard).toHaveAttribute('href', '/links/');
+  await expect(linksCard).toBeInViewport({ ratio: 0.9 });
   await linksCard.click();
 
   await expect(page).toHaveURL(/\/links\/$/, { timeout: 5_000 });
   await expect(page.getByRole('heading', { name: 'Useful Links' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Ready For Your Links' })).toBeVisible();
-  await expect(page.locator('.scene canvas')).toBeVisible();
+  await expect(page.locator('.global-particle-scene, .home-ascii-background')).toHaveCount(0);
 });
 
 test('常用链接目录从接口读取标题和说明', async ({ page }) => {
@@ -514,7 +259,9 @@ test('主题切换保留粒子幕并快速应用新主题', async ({ page }) => 
   await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('light');
   await expect(page.locator('.site-transition')).toHaveCount(0, { timeout: 1_300 });
   await expect(page.getByRole('heading', { name: 'All Articles' })).toBeVisible();
-  await expect(page.locator('.scene canvas')).toBeVisible();
+  await expect(
+    page.locator('.global-particle-scene, .home-ascii-background, .dot-grid'),
+  ).toHaveCount(0);
 });
 
 test('跨页面切换显示粒子幕并到达目标页面', async ({ page }) => {
@@ -527,47 +274,74 @@ test('跨页面切换显示粒子幕并到达目标页面', async ({ page }) => 
   await expect(page.locator('.site-transition--page-out')).toBeVisible();
   await expect(page).toHaveURL(/\/categories\/$/, { timeout: 5_000 });
   await expect(page.getByRole('heading', { name: 'Topics' })).toBeVisible();
-  await expect(page.locator('.scene canvas')).toBeVisible();
+  await expect(page.locator('.global-particle-scene, .home-ascii-background')).toHaveCount(0);
 });
 
-test('从内页返回首页后重新同步星球滚动坐标', async ({ page }) => {
+test('内页的 Sticker Peel Logo 可以返回首页', async ({ page }) => {
   await useStoredTheme(page);
-  await openPage(page, '/');
+  await page.goto('/categories/', { waitUntil: 'domcontentloaded' });
 
-  const progress = 0.58;
-  const assertHeroCoordinates = async () => {
-    const travel = await page.locator('.hero-stage').evaluate((stage) => {
-      if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-      return Math.max(1, stage.offsetHeight - window.innerHeight);
-    });
-    await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), travel * progress);
-    await page.waitForTimeout(150);
-    const measuredTravel = Number(
-      await page.locator('.scene').getAttribute('data-hero-scroll-travel'),
-    );
-    expect(Math.abs(measuredTravel - travel)).toBeLessThan(2);
-  };
-
-  await assertHeroCoordinates();
-  await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    window.scrollTo({
-      top: stage.offsetTop + stage.offsetHeight - window.innerHeight,
-      behavior: 'instant',
-    });
-  });
-  await expect
-    .poll(() =>
-      page.locator('.signal-deck').evaluate((deck) => Number(getComputedStyle(deck).opacity)),
-    )
-    .toBeGreaterThan(0.98);
-  await page.locator('.signal-card--topics a').click();
-  await expect(page).toHaveURL(/\/categories\/$/, { timeout: 5_000 });
-  await expect(page.locator('.site-transition')).toHaveCount(0, { timeout: 1_300 });
-  await page.locator('.brand').click();
+  const brand = page.getByRole('link', { name: 'Youngkx Blog 首页' });
+  await expect(brand).toHaveAttribute('data-sticker-peel', '');
+  await brand.click();
   await expect(page).toHaveURL(/\/#top$/, { timeout: 5_000 });
-  await expect(page.locator('.scene')).toHaveAttribute('data-subject-layout', 'synced');
-  await assertHeroCoordinates();
+  await expect(page.getByRole('heading', { level: 1, name: 'Youngkx Blog' })).toBeInViewport();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(3);
+});
+
+test('贴纸 Logo 跟随鼠标和触点从四个方向卷边', async ({ page, context }, testInfo) => {
+  await useStoredTheme(page);
+  await page.goto('/categories/', { waitUntil: 'domcontentloaded' });
+  const brand = page.getByRole('link', { name: 'Youngkx Blog 首页' });
+  await expect(brand).toHaveAttribute('data-sticker-peel', '');
+  const canvas = brand.locator('canvas');
+  const box = await brand.boundingBox();
+  if (!box) throw new Error('未找到顶栏 Logo 的位置');
+  expect(
+    await canvas.evaluate((element: HTMLCanvasElement) => element.width),
+  ).toBeGreaterThanOrEqual(Math.round(box.width * 3));
+
+  const touch = testInfo.project.name.startsWith('mobile')
+    ? await context.newCDPSession(page)
+    : undefined;
+  try {
+    for (const [x, y] of [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ]) {
+      const position = {
+        x: box.width * (0.5 + 0.32 * x),
+        y: box.height * (0.5 + 0.32 * y),
+      };
+      if (touch) {
+        await touch.send('Input.dispatchTouchEvent', {
+          type: 'touchStart',
+          touchPoints: [{ x: box.x + position.x, y: box.y + position.y }],
+        });
+      } else {
+        await brand.hover({ position });
+      }
+      await expect
+        .poll(() =>
+          canvas.evaluate((element: HTMLCanvasElement) => {
+            const gl = element.getContext('webgl2');
+            const program = gl?.getParameter(gl.CURRENT_PROGRAM);
+            if (!gl || !program) return null;
+            const direction = gl.getUniformLocation(program, 'uDir');
+            if (!direction) return null;
+            const value = gl.getUniform(program, direction) as Float32Array;
+            return Array.from(value, (axis) => (Math.abs(axis) > 0.4 ? Math.sign(axis) : 0));
+          }),
+        )
+        .toEqual([-x, -y]);
+      if (touch)
+        await touch.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+    }
+  } finally {
+    await touch?.detach();
+  }
 });
 
 test('文章代码块能够识别语言并复制', async ({ page }) => {
@@ -582,35 +356,53 @@ test('文章代码块能够识别语言并复制', async ({ page }) => {
   await expect(copyButton).toContainText('已复制');
 });
 
-test('减少动态效果时立即切换且不创建粒子幕', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await useStoredTheme(page);
-  await openPage(page, '/');
+test('首页固定为暗色，并在减少动态效果时使用静态 Logo', async ({ page }) => {
+  await useStoredTheme(page, 'light');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-  await page.locator('.theme-toggle').click();
+  const brand = page.getByRole('link', { name: 'Youngkx Blog 首页' });
+  await expect(brand).toHaveAttribute('data-sticker-peel', '');
+  const largeLogo = page.locator('.electric-logo');
+  await expect(largeLogo).toHaveAttribute('data-electric-logo', '');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(brand.locator('canvas')).toHaveCount(0);
+  await expect(largeLogo.locator('canvas')).toHaveCount(0);
+  await expect(page.locator('.tech-text canvas')).toBeHidden();
+
+  await expect(page.locator('.theme-toggle')).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('.home-page')).toHaveCSS('background-color', 'rgb(8, 9, 13)');
+  await expect(page.locator('#topics')).toHaveCSS('color', 'rgb(232, 234, 242)');
+  await expect(page.locator('.home-lighting, .side-rays, .home-topics-region')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '更多文章', exact: true })).toHaveAttribute(
+    'href',
+    '/articles/',
+  );
   await expect(page.locator('.site-transition')).toHaveCount(0);
-  await page.locator('.signal-deck').scrollIntoViewIfNeeded();
-  await expect(page.locator('[data-home-transition="portal"]')).toHaveCount(0);
-  await expect(page.locator('[data-home-transition="bridge"]')).toHaveCount(0);
-  await expect
-    .poll(() =>
-      page.locator('.signal-deck').evaluate((element) => Number(getComputedStyle(element).opacity)),
-    )
-    .toBeGreaterThan(0.98);
-  await expect
-    .poll(() =>
-      page
-        .locator('.signal-card')
-        .first()
-        .evaluate((element) => getComputedStyle(element).transform),
-    )
-    .toBe('none');
+  await expect(brand).toBeVisible();
+  expect(await brand.evaluate((link) => getComputedStyle(link, '::before').maskImage)).toContain(
+    '/youngkx-logo.webp',
+  );
+  await expect(page.getByRole('heading', { level: 1, name: 'Youngkx Blog' })).toBeInViewport();
+  const carousel = page.getByRole('region', { name: '站点入口' });
+  await expect(carousel).toHaveAttribute('data-renderer', 'poster');
+  await carousel.getByRole('button', { name: '下一张卡片' }).click();
+  await expect(carousel.getByRole('link', { name: '浏览文章主题' })).toBeInViewport({
+    ratio: 0.9,
+  });
+  await expect(carousel.locator('.flex-carousel__reel').first()).toHaveCSS(
+    'transition-duration',
+    '0s',
+  );
 });
 
-test('Cards 导航落在动画终点且手机菜单保持可用', async ({ page }, testInfo) => {
+test('Cards 导航越过首屏且手机菜单保持可用', async ({ page }, testInfo) => {
   await useStoredTheme(page);
-  await openPage(page, '/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('link', { name: 'Youngkx Blog 首页' })).toHaveAttribute(
+    'data-sticker-peel',
+    '',
+  );
 
   const mobile = testInfo.project.name.startsWith('mobile');
   const menu = page.getByRole('button', { name: '切换菜单' });
@@ -642,6 +434,7 @@ test('Cards 导航落在动画终点且手机菜单保持可用', async ({ page 
     expect(menuBox?.y ?? 0).toBeGreaterThan(50);
   }
 
+  await page.evaluate(() => window.scrollTo({ top: 650, behavior: 'instant' }));
   await interactiveCardsLink.click();
   await expect(page).toHaveURL(/#interactive-cards$/);
   if (mobile) {
@@ -650,85 +443,22 @@ test('Cards 导航落在动画终点且手机菜单保持可用', async ({ page 
   }
   await expect
     .poll(() =>
-      page.locator('.hero-stage').evaluate((stage) => {
-        if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-        const expected = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
-        return Math.abs(window.scrollY - expected);
-      }),
+      page
+        .locator('#interactive-cards')
+        .evaluate((element) => Math.abs(element.getBoundingClientRect().top)),
     )
     .toBeLessThan(3);
-
-  await expect
-    .poll(() =>
-      page.locator('#signal-deck-title').evaluate((content) => {
-        const nav = document.querySelector('.nav')!;
-        return content.getBoundingClientRect().top - nav.getBoundingClientRect().bottom;
-      }),
-    )
-    .toBeLessThanOrEqual(70);
-  const landing = await page.evaluate(() => {
-    const nav = document.querySelector('.nav');
-    const deck = document.querySelector('.signal-deck__content');
-    const heading = document.querySelector('#signal-deck-title');
-    if (
-      !(nav instanceof HTMLElement) ||
-      !(deck instanceof HTMLElement) ||
-      !(heading instanceof HTMLElement)
-    ) {
-      throw new Error('导航或 Cards 栏目不存在');
-    }
-    return {
-      navBottom: nav.getBoundingClientRect().bottom,
-      deckTop: deck.getBoundingClientRect().top,
-      headingTop: heading.getBoundingClientRect().top,
-    };
-  });
-  expect(landing.deckTop - landing.navBottom).toBeGreaterThanOrEqual(46);
-  expect(landing.deckTop - landing.navBottom).toBeLessThanOrEqual(70);
-  expect(landing.headingTop - landing.navBottom).toBeGreaterThanOrEqual(46);
-  expect(landing.headingTop - landing.navBottom).toBeLessThanOrEqual(70);
+  await expect(page.getByRole('heading', { level: 2, name: 'Cards' })).toBeInViewport();
 
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page).toHaveURL(/#interactive-cards$/);
-  await expect(page.locator('.scene canvas')).toBeVisible({ timeout: 12_000 });
-  await expect(page.locator('#interactive-cards')).toHaveClass(/signal-deck--settled/);
-  await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'smooth');
-  await expect
-    .poll(() =>
-      page.locator('.hero-stage').evaluate((stage) => {
-        if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-        const expected = stage.offsetTop + Math.max(1, stage.offsetHeight - window.innerHeight);
-        return Math.abs(window.scrollY - expected);
-      }),
-    )
-    .toBeLessThan(3);
-  const reloadedHeadingGap = () =>
-    page.evaluate(() => {
-      const nav = document.querySelector('.nav');
-      const heading = document.querySelector('#signal-deck-title');
-      if (!(nav instanceof HTMLElement) || !(heading instanceof HTMLElement)) {
-        throw new Error('导航或 Cards 标题不存在');
-      }
-      return heading.getBoundingClientRect().top - nav.getBoundingClientRect().bottom;
-    });
-  await expect.poll(reloadedHeadingGap).toBeGreaterThanOrEqual(46);
-  await expect.poll(reloadedHeadingGap).toBeLessThanOrEqual(70);
-
-  await page.locator('.hero-stage').evaluate((stage) => {
-    if (!(stage instanceof HTMLElement)) throw new Error('hero-stage 必须是 HTML 元素');
-    window.scrollTo({ top: (stage.offsetHeight - window.innerHeight) * 0.44, behavior: 'instant' });
-  });
-  await expect(page.locator('#interactive-cards')).not.toHaveClass(/signal-deck--settled/);
-  await expect
-    .poll(() =>
-      page.locator('.signal-deck').evaluate((deck) => Number(getComputedStyle(deck).opacity)),
-    )
-    .toBeLessThan(0.02);
+  await expect(page.getByRole('heading', { level: 2, name: 'Cards' })).toBeInViewport();
+  await expect(page.getByRole('region', { name: 'Cards', exact: true })).toBeInViewport();
   await expect
     .poll(() =>
       page
-        .locator('.hero-title-layer')
-        .evaluate((title) => Number(getComputedStyle(title).opacity)),
+        .locator('#interactive-cards')
+        .evaluate((element) => Math.abs(element.getBoundingClientRect().top)),
     )
-    .toBeGreaterThan(0.98);
+    .toBeLessThan(3);
 });
