@@ -94,11 +94,11 @@
 
 @media (max-width: 820px) {
   .stage {
-    --pass-rest-height: clamp(120px, calc(44svh - 141px), 236px);
+    --pass-rest-height: clamp(172px, min(calc(56svh - 120px), 66vw), 280px);
     --lanyard-rest-x: 0.79;
-    --lanyard-rest-card: 0;
+    --lanyard-rest-card: 0.085;
     --lanyard-rest-grip: 0;
-    --pass-top: max(calc(var(--pass-frame-height) * 0.285), 50px);
+    --pass-top: max(calc(var(--pass-stage-height) * var(--lanyard-rest-card)), 50px);
   }
 }
 

@@ -29,6 +29,7 @@ export interface LanyardProps {
   cardColor?: string;
   orientation?: Orientation;
   finish?: Finish;
+  offsetFaces?: boolean;
   cornerRadius?: number;
   size?: number;
   anchor?: Anchor;
@@ -56,6 +57,7 @@ interface Settings {
   cardColor: string;
   orientation: Orientation;
   finish: Finish;
+  offsetFaces: boolean;
   cornerRadius: number;
   size: number;
   anchor: Anchor;
@@ -985,6 +987,7 @@ const Lanyard = ({
   cardColor = '#ffffff',
   orientation = 'portrait',
   finish = 'glossy',
+  offsetFaces = false,
   cornerRadius = 0.3,
   size = 0.6,
   anchor = 'center',
@@ -1021,6 +1024,7 @@ const Lanyard = ({
     cardColor,
     orientation: orientation === 'landscape' ? 'landscape' : 'portrait',
     finish,
+    offsetFaces,
     cornerRadius,
     size,
     anchor,
@@ -1380,6 +1384,10 @@ const Lanyard = ({
         material.clearcoat = finish.clearcoat;
         material.clearcoatRoughness = finish.clearcoatRoughness;
         material.anisotropy = finish.anisotropy;
+        // Bias the artwork toward the camera where depth precision is lower.
+        material.polygonOffset = s.offsetFaces;
+        material.polygonOffsetFactor = -1;
+        material.polygonOffsetUnits = -2;
       });
       foilUniforms.foilStrength.value = finish.foil;
       foilUniforms.foilAspect.value = layout.height / layout.width;

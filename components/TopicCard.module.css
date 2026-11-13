@@ -3,11 +3,11 @@
   --padding: clamp(19px, 2.6vw, 30px);
   --control-size: 44px;
   --lift: 28px;
-  --ink-on-glass: #26231f;
-  --muted-on-glass: #62594f;
-  --rim: #4f3b241f;
-  --text-shadow: #3c2c231a;
-  --field: #e8e3d9;
+  --ink-on-glass: #1d2638;
+  --muted-on-glass: #4c586f;
+  --rim: #283b6129;
+  --text-shadow: #24345115;
+  --field: #e8ebf2;
   position: relative;
   min-inline-size: 0;
   min-block-size: 320px;
@@ -16,33 +16,33 @@
 }
 
 .card[data-topic='oi'] {
-  --field: #e4e3dd;
+  --field: #e4e9f1;
   --topic-photo: url('/cards/topics/algorithms.webp');
 }
 
 .card[data-topic='c'] {
-  --field: #e8e0d3;
+  --field: #eaecf2;
   --topic-photo: url('/cards/topics/keyboard.webp');
 }
 
 .card[data-topic='web'] {
-  --field: #dce2e3;
+  --field: #e1e9f5;
   --topic-photo: url('/cards/topics/network.webp');
 }
 
 .card[data-topic='ai'] {
-  --field: #e3deda;
+  --field: #e9e6f1;
   --topic-photo: url('/cards/topics/vision.webp');
 }
 
 /* The category IDs encode the letters in cs and talk. */
 .card[data-topic='tag-63-73'] {
-  --field: #e0e2d8;
+  --field: #e3eaf0;
   --topic-photo: url('/cards/topics/logic-board.webp');
 }
 
 .card[data-topic='tag-74-61-6c-6b'] {
-  --field: #ebe1d9;
+  --field: #eeebf3;
   --topic-photo: url('/cards/topics/notebook.webp');
   --photo-position: center 70%;
 }
@@ -82,7 +82,7 @@
   background: color-mix(in srgb, var(--field) 94%, transparent);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  box-shadow: 0 16px 32px -21px #54422b45;
+  box-shadow: 0 16px 32px -21px #2f40604d;
 }
 
 .photo {
@@ -253,9 +253,69 @@
   text-underline-offset: 4px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
+@media (max-width: 820px) {
+  .flip[data-flipped='true'] {
+    transform: none;
+  }
+
   .flip {
-    transition: transform 640ms cubic-bezier(0.25, 0.8, 0.3, 1);
+    perspective: 1000px;
+    transform-style: flat;
+  }
+
+  .face {
+    /* Keep the photo and controls on the same plane as the rotating face. */
+    transform: rotateY(0deg);
+    transform-style: flat;
+  }
+
+  .face[aria-hidden='true'] {
+    transform: rotateY(var(--hidden-angle, 180deg));
+    opacity: 0;
+  }
+
+  .backFace {
+    --hidden-angle: -180deg;
+  }
+
+  .surface {
+    background: var(--field);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .front,
+  .back,
+  .open,
+  .articles {
+    transform: none;
+  }
+
+  .front {
+    padding-inline: clamp(23px, 6.7vw, 30px);
+    padding-block-start: clamp(28px, 8vw, 36px);
+  }
+
+  .open,
+  .close {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @media (width > 820px) {
+    .flip {
+      transition: transform 640ms cubic-bezier(0.25, 0.8, 0.3, 1);
+    }
+  }
+
+  @media (max-width: 820px) {
+    .face {
+      /* Switch faces edge-on so WebKit never paints the inactive face in reverse. */
+      transition:
+        transform 520ms ease-in-out,
+        opacity 520ms steps(2, jump-none);
+    }
   }
 
   @media (any-hover: hover) {

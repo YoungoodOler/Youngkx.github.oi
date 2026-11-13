@@ -10,7 +10,13 @@ const backImage = '/archive-pass/back.svg';
 const strapImage = '/archive-pass/strap.svg';
 const visibleThreshold = 0.12;
 
-export default function ArchivePass({ heroReady }: { heroReady: boolean }) {
+export default function ArchivePass({
+  compactLayout,
+  heroReady,
+}: {
+  compactLayout: boolean;
+  heroReady: boolean;
+}) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [Model, setModel] = useState<ComponentType<LanyardProps> | null>(null);
   const [modelLoaded, setModelLoaded] = useState(false);
@@ -105,7 +111,8 @@ export default function ArchivePass({ heroReady }: { heroReady: boolean }) {
           backImage={backImage}
           strapImage={strapImage}
           cardColor="#000000"
-          finish="metallic"
+          finish={compactLayout ? 'matte' : 'metallic'}
+          offsetFaces={compactLayout}
           metal="silver"
           anchor="right"
           strapColor="#111521"

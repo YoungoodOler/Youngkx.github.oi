@@ -54,6 +54,7 @@ export default function HomePage({
   usefulLinkCount: number;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [compactLayout, setCompactLayout] = useState(false);
   const [backgroundReady, setBackgroundReady] = useState(false);
   const [logoReady, setLogoReady] = useState(false);
   const onBackgroundReady = useCallback(() => setBackgroundReady(true), []);
@@ -105,6 +106,14 @@ export default function HomePage({
       label: '打开文件仓库 Repo',
     },
   ];
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 820px)');
+    const updateLayout = () => setCompactLayout(media.matches);
+    updateLayout();
+    media.addEventListener('change', updateLayout);
+    return () => media.removeEventListener('change', updateLayout);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -214,7 +223,7 @@ export default function HomePage({
           <TechText id="home-title" text="Youngkx Blog" theme="dark" />
         </div>
       </section>
-      <ArchivePass heroReady={backgroundReady && logoReady} />
+      <ArchivePass compactLayout={compactLayout} heroReady={backgroundReady && logoReady} />
 
       <section
         ref={cardsRef}
@@ -251,7 +260,18 @@ export default function HomePage({
       </section>
 
       <div className="writing-background">
-        <DotGrid />
+        <DotGrid
+          {...(compactLayout && {
+            dotSize: 2.6,
+            proximity: 92,
+            shockRadius: 180,
+            shockStrength: 3,
+            swell: 0.15,
+            stretch: 0.07,
+            glow: 0.1,
+            opacity: 0.7,
+          })}
+        />
         <section className="writing shell section" id="posts">
           <ScrollStack
             heading={
