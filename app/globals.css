@@ -29,9 +29,12 @@ button { font: inherit; }
 .site-transition-canvas { position:absolute; inset:0; display:block; width:100%; height:100%; }
 html.page-entering::after { content:''; position:fixed; inset:0; z-index:299; background:var(--bg); pointer-events:none; }
 html.theme-changing .nav::before,html.theme-changing body,html.theme-changing .theme-toggle,html.theme-changing .category-group,html.theme-changing .modern-article-hero,html.theme-changing .modern-article-content,html.theme-changing .modern-copyright,html.theme-changing .modern-article-tools,html.theme-changing .modern-toc { transition:none!important; }
-.ambient { position: fixed; width: 50vw; height: 50vw; border-radius: 50%; pointer-events: none; filter: blur(150px); opacity: .075; z-index: 0; }
-.ambient-one { background: #496889; top: -25vw; right: -15vw; }
-.ambient-two { background: #273e5a; bottom: -30vw; left: -22vw; }
+/*
+ * Sub-page backdrop: the homepage's dot grid and blue glow, drawn in CSS so the
+ * first frame stays readable. It fades out under the hero, before the lists.
+ */
+:root { --backdrop-dot:#262c3f; --backdrop-glow:#24357a3d; }
+:is(.articles-page,.categories-page)::before { content:''; position:absolute; inset:0 0 auto; z-index:-1; height:clamp(560px,86svh,880px); pointer-events:none; background:radial-gradient(ellipse 72% 62% at 50% 0%,var(--backdrop-glow),transparent 72%),radial-gradient(circle,var(--backdrop-dot) 1.1px,transparent 1.5px) 0 0/18px 18px; -webkit-mask-image:linear-gradient(#000 30%,transparent); mask-image:linear-gradient(#000 30%,transparent); }
 
 .nav { height: 82px; display: flex; align-items: center; justify-content: space-between; position: fixed; inset: 0 0 auto; z-index: 90; border-bottom: 1px solid var(--line); isolation: isolate; }
 .nav::before { content: ''; position: absolute; z-index: -1; top: 0; bottom: 0; left: 50%; width: 100vw; transform: translateX(-50%); background: #08090dc2; backdrop-filter: blur(18px) saturate(125%); }
@@ -204,8 +207,7 @@ html.theme-changing .nav::before,html.theme-changing body,html.theme-changing .t
 html[data-theme='light'] { --ink:#171922; --muted:#686d7c; --line:#13182621; --bg:#f3f1eb; --accent:#526fc8; color-scheme:light; }
 html[data-theme='dark'],.home-page { color-scheme:dark; }
 html[data-theme='light'] body::before { opacity:.027; mix-blend-mode:multiply; }
-html[data-theme='light'] .ambient-one { background:#6884e8; opacity:.12; }
-html[data-theme='light'] .ambient-two { background:#7187aa; opacity:.1; }
+html[data-theme='light'] { --backdrop-dot:#1719222e; --backdrop-glow:#526fc824; }
 html[data-theme='light'] .nav:not(.home-page > .nav)::before { background:#f3f1ebcc; }
 html[data-theme='light'] .nav-links:not(.home-page *) a { color:#5e6473; }
 html[data-theme='light'] .theme-toggle { color:#596071; background:#ffffff6b; }
@@ -284,11 +286,7 @@ html[data-theme='light'] .modern-article-tools a:hover,html[data-theme='light'] 
 
 @media (max-width: 560px) {
   .shell { width: calc(100% - 30px); }
-  .ambient { width:90vw; height:90vw; filter:none; opacity:.12; }
-  .ambient-one { background:radial-gradient(circle,#4968893d 0%,#49688914 36%,transparent 70%); }
-  .ambient-two { background:radial-gradient(circle,#273e5a38 0%,#273e5a12 38%,transparent 70%); }
-  html[data-theme='light'] .ambient-one { background:radial-gradient(circle,#6884e833 0%,#6884e80f 38%,transparent 70%); }
-  html[data-theme='light'] .ambient-two { background:radial-gradient(circle,#7187aa2e 0%,#7187aa0d 38%,transparent 70%); }
+  :is(.articles-page,.categories-page)::before { height:clamp(440px,70svh,620px); }
   .nav::before { background:#08090df0; backdrop-filter:none; }
   html[data-theme='light'] .nav:not(.home-page > .nav)::before { background:#f3f1ebf5; }
   .home-page .nav-links,.nav.resource-header .nav-links { background:#0b0e14f7; backdrop-filter:none; }
