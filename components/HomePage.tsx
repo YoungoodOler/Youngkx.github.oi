@@ -261,6 +261,8 @@ export default function HomePage({
 
       <div className="writing-background">
         <DotGrid
+          baseColor="#2b3145"
+          activeColor="#c9d4ff"
           {...(compactLayout && {
             dotSize: 2.6,
             proximity: 92,
@@ -360,73 +362,11 @@ export default function HomePage({
             </p>
           </m.div>
         </div>
-        <div className="topics-cut" aria-hidden="true">
-          <svg viewBox="0 0 1440 120" preserveAspectRatio="none" focusable="false">
-            <defs>
-              <linearGradient id="topics-cut-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#f9f7f2" />
-                <stop offset="0.45" stopColor="#f8f6f1" />
-                <stop offset="1" stopColor="#f7f5f0" />
-              </linearGradient>
-              <linearGradient
-                id="topics-cut-stroke"
-                x1="0"
-                y1="0"
-                x2="1440"
-                y2="0"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop offset="0" stopColor="#f7f5f0" stopOpacity="0" />
-                <stop offset="0.09" stopColor="#eef0f8" stopOpacity="0.6" />
-                <stop offset="0.45" stopColor="#d8dceb" stopOpacity="0.95" />
-                <stop offset="0.74" stopColor="#bdb5e4" />
-                <stop offset="0.92" stopColor="#A78BFA" />
-                <stop offset="1" stopColor="#A78BFA" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M 1006 50 C 1108 42 1226 33 1348 26"
-              fill="none"
-              stroke="#A78BFA"
-              strokeWidth="1"
-              strokeDasharray="2 7"
-              strokeLinecap="round"
-              opacity="0.55"
-              vectorEffect="non-scaling-stroke"
-            />
-            <circle cx="1348" cy="26" r="2.4" fill="#A78BFA" opacity="0.8" />
-            <path
-              d="M0 88 C 180 96 340 101 496 96 C 660 91 774 74 906 68 C 1058 61 1260 52 1440 44 L 1440 120 L 0 120 Z"
-              fill="url(#topics-cut-fill)"
-            />
-            <path
-              d="M0 88 C 180 96 340 101 496 96 C 660 91 774 74 906 68 C 1058 61 1260 52 1440 44"
-              fill="none"
-              stroke="url(#topics-cut-stroke)"
-              strokeWidth="1.75"
-              vectorEffect="non-scaling-stroke"
-              style={{ filter: 'drop-shadow(0 0 7px rgba(167, 139, 250, 0.28))' }}
-            />
-            <path
-              d="M 2 94 C 180 102 340 107 496 102 C 660 97 774 80 906 74 C 1058 67 1258 58 1428 50"
-              fill="none"
-              stroke="#1c1a16"
-              strokeOpacity="0.18"
-              strokeWidth="0.7"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-        </div>
-        <div className="topics-band">
-          <span className="topics-spine" aria-hidden="true">
-            Youngkx Journal — Topic Index
-          </span>
-          <div className="topics-inner shell">
-            <div className="category-grid">
-              {categories.map((category) => (
-                <TopicCard key={category.id} category={category} />
-              ))}
-            </div>
+        <div className="topics-inner shell">
+          <div className="category-grid">
+            {categories.map((category, index) => (
+              <TopicCard key={category.id} category={category} index={index + 1} />
+            ))}
           </div>
         </div>
       </section>

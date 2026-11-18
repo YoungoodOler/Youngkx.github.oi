@@ -1,9 +1,18 @@
+/*
+ * Shared homepage tokens. Each section keeps its own title effect; the shared
+ * pieces are the dark page, one blue accent, paper cards and outline controls.
+ */
 .home-page {
+  --home-accent: #90a8ff;
+  --home-rule: #ffffff24;
+  --home-radius: 4px;
   position: relative;
   color: var(--ink);
   background: var(--bg);
-  --topics-band: #f7f5f0;
-  --topics-band-deep: #f1eee7;
+}
+
+.home-page > .progress {
+  background: var(--home-accent);
 }
 
 .home-intro {
@@ -204,33 +213,53 @@
   justify-content: center;
   gap: 16px;
   padding: 10px 20px;
-  border: 1px solid #ffffff26;
-  border-radius: 14px;
-  background: #ffffff12;
-  backdrop-filter: blur(14px);
-  box-shadow: inset 0 1px #ffffff0d;
-  color: #f2f0f5;
-  font: 550 15px/1.2 var(--sans);
+  font: 500 15px/1.2 var(--sans);
   white-space: nowrap;
-}
-
-.more-posts__link:hover {
-  background-color: #ffffff1c;
-  border-color: #ffffff38;
 }
 
 .more-posts__link::after {
   content: '';
   inline-size: 7px;
   block-size: 7px;
-  border: solid currentColor;
+  border: solid var(--home-accent);
   border-width: 1.5px 1.5px 0 0;
   rotate: 45deg;
 }
 
+/* Shared outline control: carousel arrows and the "more articles" link. */
+.home-page .signal-deck .manager-row-actions button,
+.more-posts__link {
+  border: 1px solid var(--home-rule);
+  border-radius: var(--home-radius);
+  color: var(--ink);
+  background: transparent;
+  transition:
+    color 0.25s,
+    border-color 0.25s,
+    background-color 0.25s;
+}
+
+.home-page .signal-deck .manager-row-actions button:hover:not(:disabled),
+.more-posts__link:hover {
+  border-color: color-mix(in srgb, var(--home-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--home-accent) 10%, transparent);
+}
+
+.home-page .signal-deck .manager-row-actions button:focus-visible,
 .more-posts__link:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
+  outline: 2px solid var(--home-accent);
+  outline-offset: 3px;
+}
+
+.signal-deck .manager-row-actions button {
+  min-width: 40px;
+  min-height: 40px;
+  font: 400 14px/1 var(--mono);
+}
+
+.signal-deck .flex-carousel__count {
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
 }
 
 @media (max-width: 820px) {
@@ -238,8 +267,7 @@
     min-inline-size: 0;
     min-block-size: 44px;
     gap: 9px;
-    padding: 6px 12px;
-    border-radius: 10px;
+    padding: 6px 14px;
     font-size: 13px;
   }
 
@@ -252,7 +280,7 @@
 .topics {
   --topic-grid-width: 380px;
   --topic-columns: 1;
-  padding-block: clamp(56px, 7vw, 96px) 0;
+  padding-block: clamp(56px, 7vw, 96px) clamp(96px, 10vw, 152px);
 }
 
 .topics-heading {
@@ -315,84 +343,12 @@
   letter-spacing: 0.08em;
 }
 
-/* The designed cut: the topic band shares the Topics page's warm-white tone. */
-.topics-cut {
-  position: relative;
-  block-size: clamp(64px, 6.6vw, 120px);
-  margin-block-end: -1px;
-}
-
-.topics-cut svg {
-  position: absolute;
-  inset: 0;
-  display: block;
-  inline-size: 100%;
-  block-size: 100%;
-}
-
-.topics-band {
-  position: relative;
-  padding-block: clamp(56px, 7vw, 92px) clamp(76px, 9.5vw, 132px);
-  color: #171922;
-  background:
-    radial-gradient(120% 80% at 50% 118%, #ebe7dd 0%, transparent 60%),
-    linear-gradient(
-      180deg,
-      var(--topics-band) 0%,
-      var(--topics-band) 44%,
-      var(--topics-band-deep) 100%
-    );
-}
-
-/* The home footer continues the warm-white band to the bottom of the page. */
-.home-page > .site-footer {
-  background: var(--topics-band-deep);
-  box-shadow: 0 0 0 100vmax var(--topics-band-deep);
-  clip-path: inset(0 -100vmax);
-  border-top-color: #1c1a1621;
-  color: #686e7c;
-}
-
-.home-page > .site-footer .site-status {
-  color: #5b6070;
-}
-
-/* Vertical printing spine in the empty left margin of the spread. */
-.topics-spine {
-  position: absolute;
-  inset-block-end: clamp(44px, 5vw, 76px);
-  inset-inline-start: max(18px, calc((100% - 1280px) / 2 + 6px));
-  display: none;
-  writing-mode: vertical-rl;
-  color: #17192240;
-  font: 400 9px/1 var(--ui);
-  letter-spacing: 0.42em;
-  text-transform: uppercase;
-  user-select: none;
-}
-
 .category-grid {
   display: grid;
   grid-template-columns: repeat(var(--topic-columns), minmax(0, 1fr));
   gap: clamp(18px, 2.2vw, 30px);
   max-inline-size: var(--topic-grid-width);
   margin-inline: auto;
-  counter-reset: topic-card;
-}
-
-.category-grid > article {
-  counter-increment: topic-card;
-}
-
-/* Folio numeral above each card. */
-.category-grid > article::before {
-  content: counter(topic-card, decimal-leading-zero);
-  position: absolute;
-  inset-block-start: -22px;
-  inset-inline-start: 6px;
-  color: #17192259;
-  font: 400 10px/1 var(--mono);
-  letter-spacing: 0.18em;
 }
 
 @media (min-width: 620px) {
@@ -419,12 +375,6 @@
 
   .category-grid > :nth-child(3n + 3) {
     translate: 0 calc(-1 * clamp(10px, 1.2vw, 18px));
-  }
-}
-
-@media (min-width: 1380px) {
-  .topics-spine {
-    display: block;
   }
 }
 

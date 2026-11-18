@@ -4,7 +4,7 @@ import { loadLogoShape, spawnArc } from './shape';
 
 type Theme = 'dark' | 'light';
 const palettes = {
-  dark: { line: [0.93, 0.78, 1], glow: [0.68, 0.43, 1], ink: 0 },
+  dark: { line: [0.86, 0.9, 1], glow: [0.5, 0.6, 1], ink: 0 },
   light: { line: [0.2, 0.09, 0.35], glow: [0.52, 0.33, 0.72], ink: 1 },
 };
 const speed = 2.3;

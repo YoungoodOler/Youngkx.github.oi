@@ -20,7 +20,7 @@ const clickLife = 1.2;
 
 const styles = {
   dark: {
-    colors: ['#1e3fd8', '#f6f8ff', '#a5d8ff', '#38bdf8'],
+    colors: ['#1e3fd8', '#f6f8ff', '#b9c6ff', '#7088ff'],
     gradientOpacity: 0.34,
     glyphOpacity: 0.73,
   },

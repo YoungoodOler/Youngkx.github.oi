@@ -9,7 +9,7 @@
 
 .scroll-stack__card {
   position: relative;
-  border-radius: 3px;
+  border-radius: var(--home-radius, 3px);
 }
 
 @media (prefers-reduced-motion: no-preference) and (min-height: 34rem) {

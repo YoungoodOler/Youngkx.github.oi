@@ -9,7 +9,13 @@ export type TopicCardCategory = Pick<CategorySummary, 'id' | 'title' | 'descript
   posts: Pick<ArticleSummary, 'href' | 'title'>[];
 };
 
-export default function TopicCard({ category }: { category: TopicCardCategory }) {
+export default function TopicCard({
+  category,
+  index,
+}: {
+  category: TopicCardCategory;
+  index: number;
+}) {
   const { id, title, description, posts } = category;
   const [flipped, setFlipped] = useState(false);
   const openButtonRef = useRef<HTMLButtonElement>(null);
@@ -36,16 +42,12 @@ export default function TopicCard({ category }: { category: TopicCardCategory })
     const { left, top, width, height } = card.getBoundingClientRect();
     const x = Math.min(1, Math.max(0, (event.clientX - left) / width));
     const y = Math.min(1, Math.max(0, (event.clientY - top) / height));
-    card.style.setProperty(
-      '--tilt',
-      `rotateX(${(0.5 - y) * 20}deg) rotateY(${(x - 0.5) * 24}deg) scale(1.02)`,
-    );
-    card.style.setProperty('--glare-position', `${x * 100}% ${y * 100}%`);
+    // Same gentle tilt as the featured article cards.
+    card.style.setProperty('--tilt', `rotateX(${(0.5 - y) * 9}deg) rotateY(${(x - 0.5) * 12}deg)`);
   }
 
   function resetTilt(event: PointerEvent<HTMLElement>) {
     event.currentTarget.style.removeProperty('--tilt');
-    event.currentTarget.style.removeProperty('--glare-position');
   }
 
   return (
@@ -66,12 +68,14 @@ export default function TopicCard({ category }: { category: TopicCardCategory })
               <div className={styles.photo} />
             </div>
             <div className={styles.front}>
-              <div>
-                <h3 className={styles.title} id={titleId}>
-                  {title}
-                </h3>
-                <p className={styles.description}>{description}</p>
+              <div className={styles.kicker} aria-hidden="true">
+                <span className={styles.issue}>No.{String(index).padStart(2, '0')}</span>
+                <span>Topic</span>
               </div>
+              <h3 className={styles.title} id={titleId}>
+                {title}
+              </h3>
+              <p className={styles.description}>{description}</p>
               <span className={styles.count} id={countId}>
                 {posts.length} 篇文章
               </span>

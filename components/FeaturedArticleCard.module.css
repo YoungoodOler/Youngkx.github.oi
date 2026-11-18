@@ -4,7 +4,7 @@
   --spot: #705449;
   --photo-ink: #6a5a52;
   --photo-position: 50% 50%;
-  --page-radius: 3px;
+  --page-radius: var(--home-radius, 4px);
   perspective: 1100px;
   color: var(--ink-on-paper);
 }
@@ -158,8 +158,8 @@
   inset-inline-end: clamp(10px, 1.4vw, 18px);
   inset-block-end: -0.08em;
   color: color-mix(in srgb, var(--ink-on-paper) 8%, transparent);
-  font: 700 clamp(88px, 10vw, 148px)/0.72 var(--sans);
-  letter-spacing: -0.06em;
+  font: italic 400 clamp(96px, 11vw, 156px)/0.72 var(--display);
+  letter-spacing: -0.04em;
   pointer-events: none;
   user-select: none;
 }
