@@ -1,75 +1,120 @@
+/*
+ * Homepage article card, in the backdrop's language (Linear surfaces, Aceternity
+ * card spotlight): an opaque dark panel with a hairline border, a lit top edge,
+ * a faint grid, and a pointer-tracked glow. Each family keeps its own hue,
+ * used only for the spot colour and the photo tint. Stays opaque because the
+ * cards stack on top of each other while scrolling.
+ */
 .card {
-  --paper: #e5e1d9;
-  --ink-on-paper: #23201b;
-  --spot: #705449;
-  --photo-ink: #6a5a52;
+  --surface: #0c0e15;
+  --surface-raised: #11141d;
+  --card-ink: #e6e8f0;
+  --card-muted: #8a90a2;
+  --card-line: #ffffff14;
+  --spot: #90a8ff;
   --photo-position: 50% 50%;
-  --page-radius: var(--home-radius, 4px);
+  --page-radius: 10px;
   perspective: 1100px;
-  color: var(--ink-on-paper);
+  color: var(--card-ink);
 }
 
-/* One flat paper stock and one photo tint per family, all near-neutral. */
+/* One hue per family, kept close to the site's blue accent. */
 .card[data-family='code'] {
-  --paper: #e5e1d9;
-  --ink-on-paper: #23201b;
-  --spot: #705449;
-  --photo-ink: #6a5a52;
+  --spot: #90a8ff;
 }
 
 .card[data-family='cs'] {
-  --paper: #dfe2e5;
-  --ink-on-paper: #1d2024;
-  --spot: #48545e;
-  --photo-ink: #46525c;
+  --spot: #7cc4e8;
 }
 
 .card[data-family='ai'] {
-  --paper: #e2dfe4;
-  --ink-on-paper: #221f23;
-  --spot: #615a66;
-  --photo-ink: #565060;
+  --spot: #a78bfa;
 }
 
 .card[data-family='vlog'] {
-  --paper: #e9e3dd;
-  --ink-on-paper: #2a241f;
-  --spot: #6e5b4f;
-  --photo-ink: #75635a;
+  --spot: #d9a37f;
   --photo-position: 58% 53%;
 }
 
 .card[data-family='talk'] {
-  --paper: #e1e2dd;
-  --ink-on-paper: #23251f;
-  --spot: #5a6052;
-  --photo-ink: #525747;
+  --spot: #8fc7a5;
   --photo-position: 64% 55%;
 }
 
 .card[data-family='web'] {
-  --paper: #dde2e1;
-  --ink-on-paper: #1b201f;
-  --spot: #51625f;
-  --photo-ink: #46544f;
+  --spot: #74c9c0;
 }
 
 .spread {
   position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr);
   min-block-size: clamp(300px, 27vw, 372px);
   overflow: clip;
+  border: 1px solid var(--card-line);
   border-radius: var(--page-radius);
-  background: var(--paper);
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 22% 0%,
+      color-mix(in srgb, var(--spot) 9%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, var(--surface-raised), var(--surface));
   box-shadow:
-    0 1px 0 #ffffff1a inset,
-    0 26px 48px -32px #000e;
+    0 1px 0 #ffffff12 inset,
+    0 30px 60px -36px #000;
   transform: var(--tilt, none);
   transition:
     transform 180ms ease-out,
+    border-color 300ms ease-out,
     box-shadow 300ms ease-out;
   will-change: transform;
+}
+
+/* Lit top edge, like the glowing rules elsewhere on the site. */
+.spread::before {
+  position: absolute;
+  z-index: 3;
+  inset: 0 12% auto;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--spot) 70%, transparent) 30%,
+    color-mix(in srgb, var(--spot) 30%, #fff) 50%,
+    color-mix(in srgb, var(--spot) 70%, transparent) 70%,
+    transparent
+  );
+  opacity: 0.55;
+  content: '';
+  transition: opacity 300ms;
+  pointer-events: none;
+}
+
+/* Pointer glow on the border (ring) — fill glow lives on .copy::after. */
+.spread::after {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, 0%),
+    color-mix(in srgb, var(--spot) 80%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  content: '';
+  transition: opacity 300ms;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
 }
 
 .spread:focus-visible {
@@ -77,7 +122,7 @@
   outline-offset: 4px;
 }
 
-/* Type half: a flat plate of coloured paper on the left page. */
+/* Type half: a faint hairline grid fading from the top-left corner. */
 .copy {
   position: relative;
   display: flex;
@@ -85,17 +130,32 @@
   grid-area: 1 / 1;
   min-width: 0;
   padding: clamp(22px, 2.6vw, 38px);
-  background: var(--paper);
 }
 
-/* Hard printed edge between the paper and the plate. */
 .copy::before {
   position: absolute;
-  inset-block: 0;
-  inset-inline-end: 0;
-  width: 1px;
-  background: color-mix(in srgb, var(--ink-on-paper) 28%, transparent);
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(#ffffff09 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, #ffffff09 1px, transparent 1px) 0 0 / 32px 32px;
   content: '';
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 0% 0%, #000 10%, transparent 70%);
+  mask-image: radial-gradient(ellipse 90% 80% at 0% 0%, #000 10%, transparent 70%);
+}
+
+.copy::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: radial-gradient(
+    380px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--spot) 11%, transparent),
+    transparent 65%
+  );
+  opacity: 0;
+  content: '';
+  transition: opacity 300ms;
 }
 
 .kicker {
@@ -106,7 +166,7 @@
   align-items: baseline;
   gap: 6px 12px;
   padding-block-end: 13px;
-  border-block-end: 1px solid color-mix(in srgb, var(--ink-on-paper) 24%, transparent);
+  border-block-end: 1px solid var(--card-line);
   font: 400 10px/1.4 var(--mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -114,17 +174,21 @@
 
 .issue {
   color: var(--spot);
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.06em;
 }
 
 .tag {
-  color: color-mix(in srgb, var(--ink-on-paper) 72%, transparent);
+  padding: 3px 8px;
+  border: 1px solid var(--card-line);
+  border-radius: 999px;
+  color: var(--card-muted);
+  line-height: 1;
 }
 
 .date {
   margin-inline-start: auto;
-  color: color-mix(in srgb, var(--ink-on-paper) 52%, transparent);
+  color: color-mix(in srgb, var(--card-muted) 80%, transparent);
   white-space: nowrap;
 }
 
@@ -135,6 +199,7 @@
   font: 500 clamp(24px, 2.7vw, 39px)/1.14 var(--display);
   letter-spacing: -0.03em;
   text-wrap: balance;
+  transition: color 300ms;
 }
 
 .excerpt {
@@ -146,39 +211,43 @@
   -webkit-line-clamp: 3;
   max-inline-size: 46ch;
   margin: clamp(10px, 1.2vw, 14px) 0 0;
-  color: color-mix(in srgb, var(--ink-on-paper) 74%, transparent);
+  color: var(--card-muted);
   font-size: clamp(12.5px, 1.05vw, 14px);
   line-height: 1.75;
 }
 
-/* Oversized folio numeral printed into the paper. */
+/* Oversized outlined folio numeral, like the archive count on /articles/. */
 .folio {
   position: absolute;
   z-index: 0;
   inset-inline-end: clamp(10px, 1.4vw, 18px);
   inset-block-end: -0.08em;
-  color: color-mix(in srgb, var(--ink-on-paper) 8%, transparent);
+  color: transparent;
   font: italic 400 clamp(96px, 11vw, 156px)/0.72 var(--display);
   letter-spacing: -0.04em;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--spot) 22%, transparent);
   pointer-events: none;
   user-select: none;
 }
 
-/* Photo half: printed duotone, no glass, no bleed into the type. */
+/* Photo half: monochrome plate tinted toward the family hue, fading into the card. */
 .art {
   position: relative;
   grid-area: 1 / 2;
   isolation: isolate;
   overflow: hidden;
-  background: var(--photo-ink);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%);
+  mask-image: linear-gradient(90deg, transparent, #000 40%);
 }
 
 .photo {
   object-fit: cover;
   object-position: var(--photo-position);
-  filter: grayscale(1) contrast(1.08) brightness(1.04);
+  filter: grayscale(1) contrast(1.12) brightness(0.72);
   transform: scale(1.001);
-  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 600ms;
 }
 
 .tint,
@@ -188,47 +257,68 @@
   pointer-events: none;
 }
 
-/* Inks the grayscale plate with the family colour, like a two-plate print. */
 .tint {
-  background: var(--photo-ink);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--spot) 55%, #1b2350), #121633);
   mix-blend-mode: color;
-  opacity: 0.92;
+  opacity: 0.85;
 }
 
-/* Coarse halftone screen sitting on top of the tint. */
+/* Fine scanlines with a darker foot under the credit badge. */
 .screen {
-  background-image: radial-gradient(#000 0.75px, transparent 1.05px);
-  background-size: 4px 4px;
-  mix-blend-mode: multiply;
-  opacity: 0.16;
+  background:
+    linear-gradient(0deg, color-mix(in srgb, var(--surface) 70%, transparent), transparent 45%),
+    repeating-linear-gradient(0deg, #0000 0 2px, #0000002e 2px 3px);
 }
 
 .credit {
   position: absolute;
+  z-index: 1;
   inset-block-end: 14px;
-  inset-inline-start: 14px;
-  padding: 6px 9px;
-  background: var(--ink-on-paper);
-  color: var(--paper);
+  inset-inline-end: 14px;
+  padding: 7px 10px;
+  border: 1px solid #ffffff24;
+  border-radius: 999px;
+  background: #0c0e15b3;
+  color: #c6cbda;
   font: 400 9px/1 var(--mono);
-  letter-spacing: 0.26em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  transition: background-color 300ms;
+  backdrop-filter: blur(8px);
+  transition:
+    color 300ms,
+    border-color 300ms;
 }
 
 @media (any-hover: hover) {
   .spread:hover {
+    border-color: color-mix(in srgb, var(--spot) 22%, transparent);
     box-shadow:
-      0 1px 0 #ffffff1a inset,
-      0 34px 58px -30px #000f;
+      0 1px 0 #ffffff12 inset,
+      0 36px 70px -34px #000,
+      0 0 60px -30px color-mix(in srgb, var(--spot) 55%, transparent);
+  }
+
+  .spread:hover::before {
+    opacity: 1;
+  }
+
+  .spread:hover::after,
+  .spread:hover .copy::after {
+    opacity: 1;
+  }
+
+  .spread:hover .title {
+    color: #fff;
   }
 
   .spread:hover .photo {
+    filter: grayscale(1) contrast(1.12) brightness(0.86);
     transform: scale(1.045);
   }
 
   .spread:hover .credit {
-    background: var(--spot);
+    border-color: color-mix(in srgb, var(--spot) 55%, transparent);
+    color: #fff;
   }
 }
 
@@ -241,17 +331,13 @@
 
   .art {
     grid-area: 1 / 1;
+    -webkit-mask-image: linear-gradient(0deg, transparent, #000 45%);
+    mask-image: linear-gradient(0deg, transparent, #000 45%);
   }
 
   .copy {
     grid-area: 2 / 1;
     padding: 20px 20px 24px;
-  }
-
-  .copy::before {
-    inset: 0 0 auto;
-    width: auto;
-    height: 1px;
   }
 
   .title {

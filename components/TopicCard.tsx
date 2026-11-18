@@ -44,6 +44,9 @@ export default function TopicCard({
     const y = Math.min(1, Math.max(0, (event.clientY - top) / height));
     // Same gentle tilt as the featured article cards.
     card.style.setProperty('--tilt', `rotateX(${(0.5 - y) * 9}deg) rotateY(${(x - 0.5) * 12}deg)`);
+    // Spotlight position for the surface glow and ring.
+    card.style.setProperty('--mx', `${event.clientX - left}px`);
+    card.style.setProperty('--my', `${event.clientY - top}px`);
   }
 
   function resetTilt(event: PointerEvent<HTMLElement>) {

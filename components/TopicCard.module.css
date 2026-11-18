@@ -1,17 +1,19 @@
 /*
- * Topic cards share the paper stock, type and duotone photo treatment of the
- * featured article cards (FeaturedArticleCard.module.css); keep the two in step.
+ * Topic cards share the dark surface, lit top edge, pointer glow and tinted
+ * photo of the featured article cards (FeaturedArticleCard.module.css); keep
+ * the two in step. Each topic has its own hue, used for accents only.
  */
 .card {
-  --radius: var(--home-radius, 4px);
+  --radius: 10px;
   --padding: clamp(20px, 2.4vw, 28px);
   --control-size: 44px;
   --lift: 28px;
-  --paper: #e5e1d9;
-  --ink-on-paper: #23201b;
-  --spot: #705449;
-  --photo-ink: #6a5a52;
-  --rule: color-mix(in srgb, var(--ink-on-paper) 24%, transparent);
+  --surface: #0c0e15;
+  --surface-raised: #11141d;
+  --card-ink: #e6e8f0;
+  --card-muted: #8a90a2;
+  --spot: #90a8ff;
+  --rule: #ffffff14;
   position: relative;
   min-inline-size: 0;
   min-block-size: 340px;
@@ -24,43 +26,28 @@
 }
 
 .card[data-topic='c'] {
-  --paper: #e9e3dd;
-  --ink-on-paper: #2a241f;
-  --spot: #6e5b4f;
-  --photo-ink: #75635a;
+  --spot: #d9a37f;
   --topic-photo: url('/cards/topics/keyboard.webp');
 }
 
 .card[data-topic='web'] {
-  --paper: #dde2e1;
-  --ink-on-paper: #1b201f;
-  --spot: #51625f;
-  --photo-ink: #46544f;
+  --spot: #74c9c0;
   --topic-photo: url('/cards/topics/network.webp');
 }
 
 .card[data-topic='ai'] {
-  --paper: #e2dfe4;
-  --ink-on-paper: #221f23;
-  --spot: #615a66;
-  --photo-ink: #565060;
+  --spot: #a78bfa;
   --topic-photo: url('/cards/topics/vision.webp');
 }
 
 /* The category IDs encode the letters in cs and talk. */
 .card[data-topic='tag-63-73'] {
-  --paper: #dfe2e5;
-  --ink-on-paper: #1d2024;
-  --spot: #48545e;
-  --photo-ink: #46525c;
+  --spot: #7cc4e8;
   --topic-photo: url('/cards/topics/logic-board.webp');
 }
 
 .card[data-topic='tag-74-61-6c-6b'] {
-  --paper: #e1e2dd;
-  --ink-on-paper: #23251f;
-  --spot: #5a6052;
-  --photo-ink: #525747;
+  --spot: #8fc7a5;
   --topic-photo: url('/cards/topics/notebook.webp');
   --photo-position: center 70%;
 }
@@ -96,22 +83,97 @@
 .surface {
   pointer-events: none;
   overflow: hidden;
-  background: var(--paper);
+  border: 1px solid var(--rule);
+  /* Lit top edge (like the glowing rules elsewhere), a hue wash, the panel. */
+  background:
+    linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in srgb, var(--spot) 40%, transparent) 30%,
+        color-mix(in srgb, color-mix(in srgb, var(--spot) 30%, #fff) 65%, transparent) 50%,
+        color-mix(in srgb, var(--spot) 40%, transparent) 70%,
+        transparent
+      )
+      50% 0 / 72% 1px no-repeat,
+    radial-gradient(
+      ellipse 80% 45% at 30% 0%,
+      color-mix(in srgb, var(--spot) 10%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, var(--surface-raised), var(--surface));
   box-shadow:
-    0 1px 0 #ffffff1a inset,
-    0 26px 48px -32px #000e;
+    0 1px 0 #ffffff12 inset,
+    0 30px 60px -36px #000;
+  transition:
+    border-color 300ms ease-out,
+    box-shadow 300ms ease-out;
+}
+
+/* Pointer glow: a soft fill (::before) and a brighter inner ring (::after). */
+.surface::before,
+.surface::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  content: '';
+  transition: opacity 300ms;
+}
+
+.surface::before {
+  background: radial-gradient(
+    320px circle at var(--mx, 50%) var(--my, 0%),
+    color-mix(in srgb, var(--spot) 11%, transparent),
+    transparent 65%
+  );
+}
+
+.surface::after {
+  padding: 1px;
+  background: radial-gradient(
+    240px circle at var(--mx, 50%) var(--my, 0%),
+    color-mix(in srgb, var(--spot) 80%, transparent),
+    transparent 70%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
 }
 
 .backFace .surface {
-  background: color-mix(in srgb, var(--paper) 72%, white);
+  background:
+    linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in srgb, var(--spot) 40%, transparent) 30%,
+        color-mix(in srgb, color-mix(in srgb, var(--spot) 30%, #fff) 65%, transparent) 50%,
+        color-mix(in srgb, var(--spot) 40%, transparent) 70%,
+        transparent
+      )
+      50% 0 / 72% 1px no-repeat,
+    radial-gradient(
+      ellipse 80% 45% at 70% 0%,
+      color-mix(in srgb, var(--spot) 12%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, #141822, var(--surface-raised));
 }
 
-/* Printed plate: the photo inked in the topic colour under a halftone screen. */
+/* Photo plate: monochrome, tinted toward the topic hue, fading in at the top. */
 .photo {
   position: absolute;
   inset: 47% var(--padding) calc(var(--padding) + var(--control-size) + 14px);
   isolation: isolate;
+  overflow: hidden;
+  border-radius: 6px;
   background: var(--topic-photo, none) var(--photo-position, center) / cover no-repeat;
+  -webkit-mask-image: linear-gradient(transparent, #000 35%);
+  mask-image: linear-gradient(transparent, #000 35%);
 }
 
 .photo::before,
@@ -122,23 +184,23 @@
 }
 
 .photo::before {
-  background: var(--photo-ink);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--spot) 55%, #1b2350), #121633);
   mix-blend-mode: color;
-  opacity: 0.92;
+  opacity: 0.9;
 }
 
+/* Darken toward the card and lay fine scanlines over the plate. */
 .photo::after {
-  background-image: radial-gradient(#000 0.75px, transparent 1.05px);
-  background-size: 4px 4px;
-  mix-blend-mode: multiply;
-  opacity: 0.16;
+  background:
+    linear-gradient(#00000033, #00000073),
+    repeating-linear-gradient(0deg, #0000 0 2px, #0000002e 2px 3px);
 }
 
 .front,
 .back,
 .open {
   padding: var(--padding);
-  color: var(--ink-on-paper);
+  color: var(--card-ink);
 }
 
 .back,
@@ -159,7 +221,7 @@
   gap: 12px;
   padding-block-end: 12px;
   border-block-end: 1px solid var(--rule);
-  color: color-mix(in srgb, var(--ink-on-paper) 62%, transparent);
+  color: var(--card-muted);
   font: 400 10px/1.4 var(--mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -167,7 +229,7 @@
 
 .issue {
   color: var(--spot);
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.06em;
 }
 
@@ -208,7 +270,7 @@
 
 .description,
 .count {
-  color: color-mix(in srgb, var(--ink-on-paper) 74%, transparent);
+  color: var(--card-muted);
   font-size: 13px;
   line-height: 1.6;
   overflow-wrap: anywhere;
@@ -231,9 +293,10 @@
   inline-size: var(--control-size);
   block-size: var(--control-size);
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--ink-on-paper) 28%, transparent);
-  border-radius: var(--radius);
-  color: var(--ink-on-paper);
+  border: 1px solid #ffffff24;
+  border-radius: 999px;
+  background: #ffffff06;
+  color: var(--card-ink);
   font-size: 20px;
   line-height: 1;
   transition:
@@ -243,9 +306,9 @@
 }
 
 .card button:hover .icon {
-  border-color: var(--spot);
-  background: var(--spot);
-  color: var(--paper);
+  border-color: color-mix(in srgb, var(--spot) 70%, transparent);
+  background: color-mix(in srgb, var(--spot) 14%, transparent);
+  color: #fff;
 }
 
 .back {
@@ -366,5 +429,20 @@
       transform: var(--tilt, none);
       transition: transform 180ms ease-out;
     }
+  }
+}
+
+@media (any-hover: hover) {
+  .card:hover .surface {
+    border-color: color-mix(in srgb, var(--spot) 22%, transparent);
+    box-shadow:
+      0 1px 0 #ffffff12 inset,
+      0 36px 70px -34px #000,
+      0 0 60px -30px color-mix(in srgb, var(--spot) 55%, transparent);
+  }
+
+  .card:hover .surface::before,
+  .card:hover .surface::after {
+    opacity: 1;
   }
 }
