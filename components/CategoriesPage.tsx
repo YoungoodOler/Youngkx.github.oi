@@ -4,6 +4,7 @@ import { m } from 'framer-motion';
 import Link from 'next/link';
 import type { CategorySummary } from '@/lib/articles';
 import SiteFooter from './SiteFooter';
+import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
 
 export default function CategoriesPage({
@@ -15,6 +16,7 @@ export default function CategoriesPage({
 }) {
   return (
     <main className="categories-page">
+      <PageBackdrop />
       <SiteHeader navClassName="categories-nav" resources />
 
       <section className="categories-hero shell">

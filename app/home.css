@@ -392,3 +392,109 @@
     margin: 0;
   }
 }
+
+/*
+ * Backgrounds, after Aceternity UI and Linear, in the sub-pages' language of
+ * glowing hairlines: a lamp pouring light onto the Cards title, and a lit seam
+ * with a soft glow opening the Topics section. Title effects are untouched.
+ */
+.signal-deck__heading {
+  position: relative;
+}
+
+.signal-deck__heading h2 {
+  position: relative;
+  z-index: 1;
+}
+
+.home-lamp {
+  position: absolute;
+  left: 50%;
+  top: clamp(-36px, -2.4vw, -12px);
+  width: min(100%, 60rem);
+  height: clamp(190px, 19vw, 260px);
+  translate: -50% 0;
+  transform-origin: 50% 0;
+  pointer-events: none;
+}
+
+.home-lamp span,
+.home-lamp i {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  translate: -50% 0;
+}
+
+/* The cone: brightest along its edges, fading downward and to the sides. */
+.home-lamp span:first-child {
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(
+    from 114deg at 50% -24%,
+    transparent 0deg,
+    color-mix(in srgb, var(--home-accent) 70%, transparent) 12deg,
+    color-mix(in srgb, var(--home-accent) 18%, transparent) 66deg,
+    color-mix(in srgb, var(--home-accent) 70%, transparent) 120deg,
+    transparent 132deg
+  );
+  -webkit-mask-image: radial-gradient(ellipse 58% 100% at 50% 0%, #000 25%, transparent 100%);
+  mask-image: radial-gradient(ellipse 58% 100% at 50% 0%, #000 25%, transparent 100%);
+  opacity: 0.6;
+}
+
+.home-lamp span:last-child {
+  width: min(64%, 34rem);
+  height: 110px;
+  border-radius: 50%;
+  background: var(--home-accent);
+  opacity: 0.22;
+  filter: blur(46px);
+}
+
+.home-lamp i {
+  width: min(52%, 28rem);
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--home-accent) 18%,
+    #e4eaff 50%,
+    var(--home-accent) 82%,
+    transparent
+  );
+  box-shadow: 0 0 22px 3px color-mix(in srgb, var(--home-accent) 45%, transparent);
+}
+
+.topics-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.topics-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 46% 520px at 50% 0%, #a78bfa1c, transparent 72%);
+}
+
+/* Linear-style seam between Articles and Topics. */
+.topics-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 8%,
+    #a78bfa59 34%,
+    #d6dcff 50%,
+    #a78bfa59 66%,
+    transparent 92%
+  );
+  box-shadow: 0 0 26px 2px #a78bfa2e;
+}

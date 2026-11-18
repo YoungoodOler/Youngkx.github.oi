@@ -1,0 +1,236 @@
+/*
+ * Sub-page backdrop (see PageBackdrop.tsx). Loaded only on routes that render it.
+ * Layers, back to front: accent glow, hairline grid, pointer-lit grid, beams
+ * running along grid lines. The whole stack fades out under the hero.
+ */
+.page-backdrop {
+  --pb-cell: 64px;
+  --pb-line: #ffffff10;
+  --pb-lit: color-mix(in srgb, var(--accent) 60%, transparent);
+  --pb-glow: color-mix(in srgb, var(--accent) 22%, transparent);
+  --pb-glow-wide: color-mix(in srgb, var(--accent) 7%, transparent);
+  --pb-head: #fff;
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: clamp(560px, 86svh, 880px);
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(#000 52%, transparent);
+  mask-image: linear-gradient(#000 52%, transparent);
+}
+
+html[data-theme='light'] .page-backdrop {
+  --pb-line: #1719220f;
+  --pb-lit: color-mix(in srgb, var(--accent) 45%, transparent);
+  --pb-glow: color-mix(in srgb, var(--accent) 14%, transparent);
+  --pb-glow-wide: color-mix(in srgb, var(--accent) 5%, transparent);
+  --pb-head: var(--accent);
+}
+
+/* One soft accent glow from the top edge, Linear-style. No grey haze. */
+.page-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 46% 34% at 50% 0%, var(--pb-glow), transparent 72%),
+    radial-gradient(ellipse 80% 60% at 50% 0%, var(--pb-glow-wide), transparent 75%);
+}
+
+/* Hairline grid, centred so beams can be placed on its columns. */
+.page-backdrop__field {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 0%, #000 25%, transparent 78%);
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 0%, #000 25%, transparent 78%);
+}
+
+.page-backdrop__grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--pb-line) 1px, transparent 1px) 0 0 / var(--pb-cell) var(--pb-cell),
+    linear-gradient(90deg, var(--pb-line) 1px, transparent 1px) calc(50% - var(--pb-cell) / 2) 0 /
+      var(--pb-cell) var(--pb-cell);
+}
+
+.page-backdrop__grid--lit {
+  --pb-line: var(--pb-lit);
+  opacity: 0;
+  transition: opacity 0.5s;
+  -webkit-mask-image: radial-gradient(
+    220px circle at var(--pb-x, -999px) var(--pb-y, -999px),
+    #000,
+    transparent 75%
+  );
+  mask-image: radial-gradient(
+    220px circle at var(--pb-x, -999px) var(--pb-y, -999px),
+    #000,
+    transparent 75%
+  );
+}
+
+.page-backdrop[data-pointer] .page-backdrop__grid--lit {
+  opacity: 0.85;
+}
+
+/* Beams: short light streaks running along grid lines, with a bright head. */
+.page-backdrop__beam {
+  position: absolute;
+  top: -160px;
+  left: calc(50% - var(--pb-cell) / 2 + var(--col) * var(--pb-cell));
+  width: 1px;
+  height: 160px;
+  background: linear-gradient(transparent, var(--accent) 75%, var(--pb-head));
+  opacity: 0;
+  animation: pb-beam-y var(--beam-duration) linear var(--beam-delay) infinite;
+}
+
+.page-backdrop__beam::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: -1px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--pb-head);
+  box-shadow: 0 0 10px 2px var(--accent);
+}
+
+.page-backdrop__beam--x {
+  top: calc(var(--row) * var(--pb-cell));
+  left: -180px;
+  width: 180px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent) 75%, var(--pb-head));
+  animation-name: pb-beam-x;
+}
+
+.page-backdrop__beam--x::after {
+  inset: -1px -1px auto auto;
+}
+
+@keyframes pb-beam-y {
+  0% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  55% {
+    opacity: 1;
+    translate: 0 1100px;
+  }
+  55.1%,
+  100% {
+    opacity: 0;
+    translate: 0 1100px;
+  }
+}
+
+@keyframes pb-beam-x {
+  0% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  60% {
+    opacity: 1;
+    translate: calc(100vw + 180px) 0;
+  }
+  60.1%,
+  100% {
+    opacity: 0;
+    translate: calc(100vw + 180px) 0;
+  }
+}
+
+/* Linear-style glowing horizon on the hero's bottom rule. */
+:is(.articles-hero, .categories-hero) {
+  position: relative;
+  border-bottom-color: transparent;
+}
+
+:is(.articles-hero, .categories-hero)::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 55%, transparent) 30%,
+    color-mix(in srgb, var(--accent) 80%, var(--ink)) 50%,
+    color-mix(in srgb, var(--accent) 55%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 22px 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* Card spotlight: rows glow where the pointer is, fill and border both. */
+:is(.directory-row, .category-posts a, .repo-file-row) {
+  position: relative;
+  isolation: isolate;
+}
+
+:is(.directory-row, .category-posts a, .repo-file-row)::before,
+:is(.directory-row, .category-posts a, .repo-file-row)::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+:is(.directory-row, .category-posts a, .repo-file-row)::before {
+  inset: 0;
+  background: radial-gradient(
+    380px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    color-mix(in srgb, var(--accent) 13%, transparent),
+    transparent 65%
+  );
+}
+
+:is(.directory-row, .category-posts a)::after {
+  inset: -1px;
+  padding: 1px;
+  background: radial-gradient(
+    240px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    color-mix(in srgb, var(--accent) 75%, transparent),
+    transparent 70%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+:is(.directory-row, .category-posts a, .repo-file-row):hover {
+  background: transparent;
+}
+
+:is(.directory-row, .category-posts a, .repo-file-row):is(:hover, :focus-visible)::before,
+:is(.directory-row, .category-posts a):is(:hover, :focus-visible)::after {
+  opacity: 1;
+}
+
+@media (max-width: 560px) {
+  .page-backdrop {
+    --pb-cell: 48px;
+    height: clamp(440px, 70svh, 620px);
+  }
+
+  .page-backdrop__beam:nth-of-type(odd) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-backdrop__beam {
+    display: none;
+  }
+}

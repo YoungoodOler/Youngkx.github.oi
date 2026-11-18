@@ -2,11 +2,13 @@ import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import type { ArticleSummary } from '@/lib/articles';
 import SiteFooter from './SiteFooter';
+import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
 
 export default function ArticlesPage({ posts }: { posts: ArticleSummary[] }) {
   return (
     <main className="articles-page">
+      <PageBackdrop />
       <SiteHeader navClassName="articles-nav" articleHref="/#posts" resources />
 
       <section className="articles-hero shell">

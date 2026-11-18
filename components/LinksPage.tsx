@@ -10,6 +10,7 @@ import {
   type UsefulLinksPayload,
 } from '@/lib/useful-links';
 import SiteFooter from './SiteFooter';
+import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
 
 export default function LinksPage({ groups }: { groups: UsefulLinkGroup[] }) {
@@ -46,6 +47,7 @@ export default function LinksPage({ groups }: { groups: UsefulLinkGroup[] }) {
 
   return (
     <main className="categories-page links-page">
+      <PageBackdrop />
       <SiteHeader navClassName="categories-nav" resources />
 
       <section className="categories-hero shell">

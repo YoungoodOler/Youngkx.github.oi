@@ -7,6 +7,7 @@ import type { ArticleRecord } from '@/lib/articles';
 import { getTagTitle } from '@/lib/tag-titles';
 import ArticleInteractions from './ArticleInteractions';
 import SiteFooter from './SiteFooter';
+import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
 
 type TocItem = { id: string; text: string; level: number };
@@ -316,6 +317,7 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
   return (
     <main className="modern-article-page">
       <m.div className="progress" style={{ scaleX: progress }} />
+      <PageBackdrop />
       <SiteHeader navClassName="article-nav-links" resources />
 
       <header className="modern-article-hero">

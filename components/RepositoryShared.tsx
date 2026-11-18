@@ -8,6 +8,7 @@ import {
   type RepositoryListing,
   type RepositoryFolder,
 } from '@/lib/file-repository';
+import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import { managementTokenKey } from '@/lib/browser-storage';
@@ -238,6 +239,7 @@ export function RepositoryShell({
 }) {
   return (
     <main className="repo-page categories-page">
+      <PageBackdrop />
       <SiteHeader navClassName="categories-nav" resources />
       <div className="repo-body shell">
         {manage && (

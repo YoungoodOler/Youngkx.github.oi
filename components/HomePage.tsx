@@ -232,6 +232,18 @@ export default function HomePage({
         aria-labelledby="signal-deck-title"
       >
         <div className="signal-deck__heading">
+          <m.div
+            className="home-lamp"
+            aria-hidden="true"
+            initial={{ opacity: 0, scaleX: 0.45 }}
+            whileInView={{ opacity: 1, scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.15, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span />
+            <span />
+            <i />
+          </m.div>
           <h2 id="signal-deck-title">
             <WarpText
               text="Cards"
@@ -320,6 +332,7 @@ export default function HomePage({
       </div>
 
       <section className="topics section" id="topics" aria-labelledby="topics-title">
+        <div className="topics-backdrop" aria-hidden="true" />
         <div className="topics-inner shell">
           <m.div
             className="section-heading topics-heading"

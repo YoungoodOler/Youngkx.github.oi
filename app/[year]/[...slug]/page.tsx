@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ArticleView from '@/components/ArticleView';
 import { articles, getArticleByPath } from '@/lib/articles';
+import './article-shell.css';
 import './code-highlighting.css';
 import './article-content.css';
 import './article-interactions.css';

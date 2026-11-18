@@ -10,6 +10,7 @@ import {
   type UsefulLinksPayload,
 } from '@/lib/useful-links';
 import SiteFooter from './SiteFooter';
+import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
 import { managementTokenKey, readStoredValue, writeStoredValue } from '@/lib/browser-storage';
 
@@ -223,6 +224,7 @@ export default function LinksManager() {
 
   return (
     <main className="categories-page links-manager-page">
+      <PageBackdrop />
       <SiteHeader navClassName="categories-nav" resources />
 
       <section className="categories-hero shell links-manager-hero">
