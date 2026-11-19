@@ -53,6 +53,7 @@
   color: #46506d;
 }
 .modern-article-layout {
+  width: min(960px, calc(100% - 96px));
   padding-top: 90px;
   padding-bottom: 100px;
 }
