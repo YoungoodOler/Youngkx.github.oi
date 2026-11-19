@@ -460,6 +460,220 @@
   transform: translateX(3px);
 }
 
+/* Sidebar: only a real column on wide screens. Below that its children fall back
+ * into the page flow — the card hides and the contents stay a floating panel. */
+.article-sidebar,
+.article-sidebar-inner {
+  display: contents;
+}
+.article-author {
+  display: none;
+}
+
+@media (min-width: 1201px) {
+  .modern-article-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 272px;
+    gap: 48px;
+    /* Side margins clear the fixed tool buttons on the right edge. */
+    width: min(1280px, calc(100% - 192px));
+  }
+  .modern-article-main {
+    min-width: 0;
+  }
+  .article-sidebar {
+    display: block;
+  }
+  .article-sidebar-inner {
+    position: sticky;
+    top: 108px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: calc(100vh - 132px);
+  }
+  .article-author {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 24px 26px;
+    background: linear-gradient(145deg, #11141df5, #0b0d13fa);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  .article-author img {
+    width: 84px;
+    height: 84px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .article-author strong {
+    margin: 16px 0 18px;
+    color: #d6dae4;
+    font: 500 19px/1 var(--display);
+    letter-spacing: -0.02em;
+  }
+  .article-author-links {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .article-author-links [data-kind] {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    color: #929bad;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition:
+      color 0.25s,
+      border-color 0.25s,
+      background 0.25s,
+      transform 0.25s;
+  }
+  .article-author-links [data-kind]:hover,
+  .article-author-links [data-kind]:focus-visible {
+    border-color: currentColor;
+    background: #849dff14;
+    transform: translateY(-2px);
+  }
+  .article-author-links [data-kind='github']:hover {
+    color: #f0f2f7;
+  }
+  .article-author-links [data-kind='linkedin']:hover {
+    color: #3d8ee8;
+  }
+  .article-author-links [data-kind='douyin']:hover {
+    color: #fe2c55;
+  }
+  .article-author-links [data-kind='email']:hover,
+  .article-author-links [data-kind='email'].active {
+    color: #a9baff;
+    border-color: currentColor;
+    background: #849dff14;
+  }
+  .article-author {
+    position: relative;
+    z-index: 2;
+  }
+  .article-author-email {
+    position: relative;
+  }
+  .article-author-email-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: -6px;
+    display: grid;
+    gap: 4px;
+    width: 220px;
+    padding: 12px;
+    background: #0d0f15f7;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    box-shadow: 0 24px 60px #00000066;
+    backdrop-filter: blur(18px);
+  }
+  .article-author-email-menu[hidden] {
+    display: none;
+  }
+  .article-author-email-menu > span {
+    padding: 2px 8px 10px;
+    margin-bottom: 4px;
+    overflow: hidden;
+    color: #8fa5ee;
+    border-bottom: 1px solid var(--line);
+    font: 400 11px/1.5 var(--mono);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .article-author-email-menu > :is(button, a) {
+    padding: 9px 8px;
+    color: #b2b7c4;
+    text-align: left;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.2;
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      background 0.2s;
+  }
+  .article-author-email-menu > :is(button, a):hover,
+  .article-author-email-menu > :is(button, a):focus-visible {
+    color: #fff;
+    background: #849dff1f;
+  }
+  html[data-theme='light'] .article-author-email-menu {
+    background: #fffefaf7;
+    border-color: #e0e3e9;
+    box-shadow: 0 18px 50px #262d411f;
+  }
+  html[data-theme='light'] .article-author-email-menu > span {
+    color: #405aa8;
+    border-color: #e0e3e9;
+  }
+  html[data-theme='light'] .article-author-email-menu > :is(button, a) {
+    color: #505663;
+  }
+  html[data-theme='light'] .article-author-email-menu > :is(button, a):hover,
+  html[data-theme='light'] .article-author-email-menu > :is(button, a):focus-visible {
+    color: #304a9b;
+    background: #526fc41a;
+  }
+  .modern-toc {
+    position: static;
+    z-index: auto;
+    flex: 0 1 auto;
+    width: auto;
+    min-height: 0;
+    max-height: none;
+    padding: 24px;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    background: linear-gradient(145deg, #11141df5, #0b0d13fa);
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .modern-article-tools .article-toc-toggle {
+    display: none;
+  }
+  html[data-theme='light'] .article-author,
+  html[data-theme='light'] .article-sidebar .modern-toc {
+    background: #fffefa;
+    border-color: #e0e3e9;
+    box-shadow: 0 8px 28px #26375405;
+  }
+  html[data-theme='light'] .article-author strong {
+    color: #252934;
+  }
+  html[data-theme='light'] .article-author-links [data-kind] {
+    color: #6b7282;
+    border-color: #e0e3e9;
+  }
+  html[data-theme='light'] .article-author-links [data-kind='github']:hover {
+    color: #252934;
+  }
+  html[data-theme='light'] .article-author-links [data-kind='linkedin']:hover {
+    color: #0a66c2;
+  }
+  html[data-theme='light'] .article-author-links [data-kind='email']:hover,
+  html[data-theme='light'] .article-author-links [data-kind='email'].active {
+    color: #405aa8;
+  }
+}
+
 html[data-theme='light'] .modern-article-hero {
   background: linear-gradient(180deg, transparent 40%, #f3f1eb8c);
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ArticleRecord } from '@/lib/articles';
 import { getTagTitle } from '@/lib/tag-titles';
+import ArticleAuthorCard from './ArticleAuthorCard';
 import ArticleInteractions from './ArticleInteractions';
 import SiteFooter from './SiteFooter';
 import PageBackdrop from './PageBackdrop';
@@ -338,46 +339,55 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
       </header>
 
       <div className="modern-article-layout shell">
-        <article
-          ref={contentRef}
-          className="modern-article-content"
-          dangerouslySetInnerHTML={articleMarkup}
-        />
-        <div className="modern-copyright">
-          <span>作者</span>
-          <strong>Youngkx</strong>
-          <span>说明</span>
-          <code>原创内容，转载请注明出处</code>
+        <div className="modern-article-main">
+          <article
+            ref={contentRef}
+            className="modern-article-content"
+            dangerouslySetInnerHTML={articleMarkup}
+          />
+          <div className="modern-copyright">
+            <span>作者</span>
+            <strong>Youngkx</strong>
+            <span>说明</span>
+            <code>原创内容，转载请注明出处</code>
+          </div>
+          <ArticleInteractions
+            key={article.path.join('/')}
+            articlePath={`/${article.path.join('/')}/`}
+          />
         </div>
-        <ArticleInteractions
-          key={article.path.join('/')}
-          articlePath={`/${article.path.join('/')}/`}
-        />
-      </div>
 
-      <aside className={tocOpen ? 'modern-toc open' : 'modern-toc'}>
-        <div>
-          <strong>Contents</strong>
-          <small>{toc.length} Sections</small>
+        {/* Wide screens: sticky column with the author card, then the contents.
+            Narrower screens: the card hides and the contents become the floating panel. */}
+        <div className="article-sidebar">
+          <div className="article-sidebar-inner">
+            <ArticleAuthorCard />
+            <nav className={tocOpen ? 'modern-toc open' : 'modern-toc'} aria-label="文章目录">
+              <div>
+                <strong>Contents</strong>
+                <small>{toc.filter((item) => item.level === 2).length} Sections</small>
+              </div>
+              {toc.map((item) => (
+                <a
+                  className={item.level === 3 ? 'level-3' : ''}
+                  href={`#${item.id}`}
+                  key={item.id}
+                  onClick={() => setTocOpen(false)}
+                >
+                  {item.text}
+                </a>
+              ))}
+            </nav>
+          </div>
         </div>
-        {toc.map((item) => (
-          <a
-            className={item.level === 3 ? 'level-3' : ''}
-            href={`#${item.id}`}
-            key={item.id}
-            onClick={() => setTocOpen(false)}
-          >
-            {item.text}
-          </a>
-        ))}
-      </aside>
+      </div>
 
       <div className="modern-article-tools">
         <Link href="/#top" title="返回主页" aria-label="返回主页">
           ⌂
         </Link>
         <button
-          className={tocOpen ? 'active' : ''}
+          className={tocOpen ? 'article-toc-toggle active' : 'article-toc-toggle'}
           onClick={() => setTocOpen(!tocOpen)}
           title="Contents"
           aria-label="Contents"
