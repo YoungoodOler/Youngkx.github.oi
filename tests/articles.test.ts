@@ -32,6 +32,25 @@ describe('Markdown front matter', () => {
   });
 });
 
+describe('Markdown math', () => {
+  it('renders escaped \\\\( \\\\) and \\\\[ \\\\] TeX and strips Markdown escapes inside it', () => {
+    const html = renderMarkdown(
+      String.raw`退化到 \\(O(n^2)\\)。` + '\n\n' + String.raw`\\[ X\_{n+1}=x\\%m \\]`,
+    );
+
+    expect(html).not.toContain('katex-error');
+    expect(html).not.toContain('\\(');
+    expect(html).toContain('<annotation encoding="application/x-tex">O(n^2)</annotation>');
+    expect(html).toContain('<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">');
+    expect(html).toContain('<annotation encoding="application/x-tex">X_{n+1}=x\\%m</annotation>');
+  });
+
+  it('leaves escaped TeX delimiters inside code untouched', () => {
+    const html = renderMarkdown('`\\\\(x\\\\)`');
+    expect(html).toBe('<p><code>\\\\(x\\\\)</code></p>\n');
+  });
+});
+
 describe('Markdown code highlighting', () => {
   it.each(['cpp', 'C++', 'c', 'python', 'js', 'ts'])(
     'highlights fenced %s code during Markdown rendering',
@@ -130,6 +149,7 @@ describe('article index', () => {
       '/2026/10/08/cpp-stl/',
       '/2026/11/02/cpp-sort-tutorial/',
       '/2026/11/03/greedy-algorithm/',
+      '/2026/11/19/cpp-randomization/',
     ]);
   });
 

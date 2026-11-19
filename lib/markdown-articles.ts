@@ -3,6 +3,7 @@ import path from 'node:path';
 import { load as parseYaml } from 'js-yaml';
 import hljs from 'highlight.js';
 import { Marked, Renderer } from 'marked';
+import katex from 'katex';
 import markedKatex from 'marked-katex-extension';
 import { isCardPreset, type CardPreset } from './card-presets';
 
@@ -45,6 +46,42 @@ const markdown = new Marked({
   },
 });
 markdown.use(markedKatex({ nonStandard: true, output: 'mathml', throwOnError: false }));
+
+// Editors such as Typora export TeX as `\\( … \\)` / `\\[ … \\]` and escape Markdown
+// punctuation inside it (`X\_{n}`, `\\%`), expecting Markdown to run before MathJax.
+// Strip those Markdown escapes first, then hand the TeX to KaTeX.
+const markdownEscape = /\\([!-/:-@[-`{-~])/g;
+const escapedTexPattern = /^\\\\(\(|\[)([\s\S]+?)\\\\(\)|\])/;
+
+markdown.use({
+  extensions: [
+    {
+      name: 'escapedTex',
+      level: 'inline',
+      start(source) {
+        const index = source.search(/\\\\[([]/);
+        return index < 0 ? undefined : index;
+      },
+      tokenizer(source) {
+        const match = escapedTexPattern.exec(source);
+        if (!match || (match[1] === '(') !== (match[3] === ')')) return undefined;
+        return {
+          type: 'escapedTex',
+          raw: match[0],
+          text: match[2].replace(markdownEscape, '$1').trim(),
+          displayMode: match[1] === '[',
+        };
+      },
+      renderer(token) {
+        return katex.renderToString(token.text, {
+          displayMode: token.displayMode,
+          output: 'mathml',
+          throwOnError: false,
+        });
+      },
+    },
+  ],
+});
 
 export function parseFrontMatter(source: string, filename = 'Markdown source'): FrontMatterResult {
   const normalizedSource = source.replace(/^\uFEFF/, '');
