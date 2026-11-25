@@ -34,6 +34,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
     title: `${article.title} | Youngkx`,
     description: article.excerpt,
     alternates: { canonical },
+    ...(article.parentPath && { robots: { index: false } }),
     openGraph: {
       type: 'article',
       title: article.title,

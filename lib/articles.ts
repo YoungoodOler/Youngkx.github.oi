@@ -76,7 +76,8 @@ function validateArticles(records: ArticleRecord[]) {
 
 validateArticles(articles);
 
-export const articleSummaries: ArticleSummary[] = [...articles]
+export const articleSummaries: ArticleSummary[] = articles
+  .filter((article) => !article.parentPath)
   .sort(
     (left, right) =>
       right.date.localeCompare(left.date) || left.title.localeCompare(right.title, 'zh-CN'),

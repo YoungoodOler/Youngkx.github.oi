@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, type Dirent } from 'node:fs';
 import path from 'node:path';
 import { load as parseYaml } from 'js-yaml';
 import hljs from 'highlight.js';
@@ -9,6 +9,7 @@ import { isCardPreset, type CardPreset } from './card-presets';
 
 export type MarkdownArticleRecord = {
   path: string[];
+  parentPath?: string[];
   title: string;
   date: string;
   tags: string[];
@@ -166,49 +167,72 @@ export function renderMarkdown(source: string) {
   return addHeadingIds(markdown.parse(source, { async: false }));
 }
 
+function isMarkdownPost(entry: Dirent) {
+  return entry.isFile() && /\.md$/i.test(entry.name) && !entry.name.startsWith('_');
+}
+
+function readMarkdownArticle(
+  directory: string,
+  relativePath: string,
+  parent?: MarkdownArticleRecord,
+): MarkdownArticleRecord | undefined {
+  const filename = `content/posts/${relativePath}`;
+  const source = readFileSync(path.join(directory, relativePath), 'utf8');
+  const { data, content } = parseFrontMatter(source, filename);
+  if (data.draft === true) return;
+
+  const title = String(data.title ?? '').trim();
+  const excerpt = String(data.excerpt ?? '').trim();
+  if (!title) throw new Error(`${filename} 缺少 title`);
+  if (!excerpt) throw new Error(`${filename} 缺少 excerpt`);
+  if (!content.trim()) throw new Error(`${filename} 没有正文`);
+
+  const date = parent?.date ?? normalizeDate(data.date, filename);
+  const slug = normalizeSlug(
+    data.slug,
+    path.basename(relativePath, path.extname(relativePath)),
+    filename,
+  );
+  const card = data.card === undefined ? parent?.card : data.card;
+  const cardValue = typeof card === 'string' ? card.toLowerCase() : card;
+  if (cardValue !== undefined && !isCardPreset(cardValue)) {
+    throw new Error(`${filename} 的 card 不受支持：${String(cardValue)}`);
+  }
+
+  return {
+    path: [...(parent?.path ?? date.split('-')), slug],
+    ...(parent && { parentPath: parent.path }),
+    title,
+    date,
+    tags: parent?.tags ?? normalizeTags(data.tags, filename),
+    excerpt,
+    content: renderMarkdown(content),
+    card: cardValue,
+  };
+}
+
 export function loadMarkdownArticles(): MarkdownArticleRecord[] {
   const directory = path.join(process.cwd(), 'content', 'posts');
   if (!existsSync(directory)) return [];
 
-  return readdirSync(directory, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.md$/i.test(entry.name) && !entry.name.startsWith('_'))
-    .flatMap((entry) => {
-      const fullPath = path.join(directory, entry.name);
-      const source = readFileSync(fullPath, 'utf8');
-      const parsed = parseFrontMatter(source, `content/posts/${entry.name}`);
-      if (parsed.data.draft === true) return [];
+  const entries = readdirSync(directory, { withFileTypes: true });
+  const packageDirectories = new Set(
+    entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name),
+  );
+  const articles: MarkdownArticleRecord[] = [];
+  for (const entry of entries.filter(isMarkdownPost)) {
+    const article = readMarkdownArticle(directory, entry.name);
+    if (!article) continue;
+    articles.push(article);
 
-      const filename = `content/posts/${entry.name}`;
-      const title = String(parsed.data.title ?? '').trim();
-      const excerpt = String(parsed.data.excerpt ?? '').trim();
-      if (!title) throw new Error(`${filename} 缺少 title`);
-      if (!excerpt) throw new Error(`${filename} 缺少 excerpt`);
-      if (!parsed.content.trim()) throw new Error(`${filename} 没有正文`);
-
-      const date = normalizeDate(parsed.data.date, filename);
-      const slug = normalizeSlug(
-        parsed.data.slug,
-        path.basename(entry.name, path.extname(entry.name)),
-        filename,
-      );
-      const cardValue =
-        typeof parsed.data.card === 'string' ? parsed.data.card.toLowerCase() : parsed.data.card;
-      if (cardValue !== undefined && !isCardPreset(cardValue)) {
-        throw new Error(`${filename} 的 card 不受支持：${String(parsed.data.card)}`);
-      }
-
-      const rendered = renderMarkdown(parsed.content);
-
-      return [
-        {
-          path: [...date.split('-'), slug],
-          title,
-          date,
-          tags: normalizeTags(parsed.data.tags, filename),
-          excerpt,
-          content: rendered,
-          card: cardValue as CardPreset | undefined,
-        },
-      ];
-    });
+    // The directory sharing the overview's slug contains its unlisted articles.
+    const slug = article.path.at(-1);
+    if (!slug || !packageDirectories.has(slug)) continue;
+    const children = readdirSync(path.join(directory, slug), { withFileTypes: true });
+    for (const child of children.filter(isMarkdownPost)) {
+      const detail = readMarkdownArticle(directory, `${slug}/${child.name}`, article);
+      if (detail) articles.push(detail);
+    }
+  }
+  return articles;
 }

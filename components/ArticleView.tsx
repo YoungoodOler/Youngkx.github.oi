@@ -426,7 +426,10 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
         </a>
       </div>
 
-      <SiteFooter backHref="/articles/" backLabel="全部文章 ↗" />
+      <SiteFooter
+        backHref={article.parentPath ? `/${article.parentPath.join('/')}/` : '/articles/'}
+        backLabel={article.parentPath ? '返回总览 ↗' : '全部文章 ↗'}
+      />
     </main>
   );
 }

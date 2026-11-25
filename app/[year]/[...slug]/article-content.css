@@ -50,3 +50,37 @@
   width: max-content;
   margin-inline: auto;
 }
+
+.ds-figure {
+  max-width: 520px;
+  margin: 1rem auto;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+
+.ds-figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: inherit;
+}
+
+.ds-figure figcaption {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 0.88em;
+  line-height: 1.5;
+}
+
+.ds-note {
+  margin: 1rem 0;
+  padding: 0.65rem 1rem;
+  border-inline-start: 3px solid color-mix(in srgb, #2c9b86 72%, currentColor);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+.ds-note p {
+  margin: 0;
+}

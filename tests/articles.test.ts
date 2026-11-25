@@ -150,6 +150,7 @@ describe('article index', () => {
       '/2026/11/02/cpp-sort-tutorial/',
       '/2026/11/03/greedy-algorithm/',
       '/2026/11/19/cpp-randomization/',
+      '/2026/11/25/algorithm-competition-data-structure/',
     ]);
   });
 
@@ -159,6 +160,37 @@ describe('article index', () => {
     expect(new Set(paths).size).toBe(paths.length);
     for (const article of articles) {
       expect(getArticleByPath(article.path)).toBe(article);
+    }
+  });
+
+  it('serves every data structure chapter without putting it in article listings', () => {
+    const overviewPath = ['2026', '11', '25', 'algorithm-competition-data-structure'];
+    const overviewHref = `/${overviewPath.join('/')}/`;
+    const overview = getArticleByPath(overviewPath);
+    expect(overview).toBeDefined();
+    expect(articleSummaries.some((article) => article.href === overviewHref)).toBe(true);
+
+    const chapters = articles.filter(
+      (article) => article.parentPath?.join('/') === overviewPath.join('/'),
+    );
+    expect(chapters).toHaveLength(14);
+
+    const summaries = new Set(articleSummaries.map((article) => article.href));
+    const categoryHrefs = new Set(
+      categorySummaries.flatMap((category) => category.posts.map((post) => post.href)),
+    );
+    const sitemapUrls = new Set(sitemap().map((entry) => entry.url));
+
+    for (const chapter of chapters) {
+      const href = `/${chapter.path.join('/')}/`;
+      expect(getArticleByPath(chapter.path)).toBe(chapter);
+      expect(chapter.path.slice(0, -1)).toEqual(overviewPath);
+      expect(chapter.content).toContain('href="../"');
+      expect(overview?.content).toContain(`class="ds-map-link" href="${href}"`);
+      expect(overview?.content).toContain(`<p><a href="${href}">`);
+      expect(summaries.has(href)).toBe(false);
+      expect(categoryHrefs.has(href)).toBe(false);
+      expect(sitemapUrls.has(absoluteUrl(href))).toBe(false);
     }
   });
 
