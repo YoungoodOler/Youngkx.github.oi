@@ -32,10 +32,11 @@ async function sendCommentEmail(env: CommentEmailEnv, job: PendingEmail, apiKey:
       const subject =
         job.kind === 'reply' ? 'Youngkx 博客 · 你的留言有新回复' : 'Youngkx 博客 · 新留言通知';
       let status: number | undefined;
+      let transportError: string | undefined;
       try {
         const response = await fetch('https://api.resend.com/emails', {
           method: 'POST',
-          redirect: 'error',
+          redirect: 'manual',
           signal: AbortSignal.timeout(8_000),
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -52,8 +53,14 @@ async function sendCommentEmail(env: CommentEmailEnv, job: PendingEmail, apiKey:
         });
         status = response.status;
         await response.body?.cancel();
-      } catch {
-        // This job remains in the outbox for the next attempt.
+      } catch (error) {
+        transportError =
+          error instanceof Error
+            ? `${error.name}: ${error.message.replaceAll(apiKey, '[secret]').replaceAll(to, '[email]')}`.slice(
+                0,
+                240,
+              )
+            : 'Unknown transport error';
       }
       if (status === undefined || status < 200 || status >= 300) {
         console.error(
@@ -63,6 +70,7 @@ async function sendCommentEmail(env: CommentEmailEnv, job: PendingEmail, apiKey:
             kind: job.kind,
             attempt: job.attempts,
             status,
+            transportError,
           }),
         );
         return;

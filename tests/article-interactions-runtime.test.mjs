@@ -171,6 +171,7 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
       if (url !== 'https://api.resend.com/emails') return realFetch(url, init);
       const message = JSON.parse(init.body);
       expect(init.headers.Authorization).toBe('Bearer test-key');
+      expect(init.redirect).toBe('manual');
       if (message.to[0] === 'direct+tag@example.com') {
         replyAttempts.push(init.headers['Idempotency-Key']);
         if (replyAttempts.length === 1) return new Response(null, { status: 503 });
