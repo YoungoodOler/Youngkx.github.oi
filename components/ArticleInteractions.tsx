@@ -3,16 +3,19 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   maximumCommentEmailLength,
+  maximumCommentEmailLookupIds,
   maximumCommentLength,
   maximumNicknameLength,
   mergeCommentsInOrder,
   type ArticleComment,
   type ArticleInteractions as Interactions,
   type ArticleReplies,
+  type CommentEmails,
   type PublishedComment,
   type DeletedComment,
 } from '@/lib/article-interactions';
 import {
+  InteractionError,
   interactionRequest,
   interactionErrorMessage as errorMessage,
   rememberCommentManagementToken,
@@ -31,7 +34,7 @@ function CommentEmailInput({
   return (
     <>
       <label htmlFor={id}>
-        邮箱 <span>必填，仅用于接收回复通知</span>
+        邮箱 <span>必填，不会公开显示</span>
       </label>
       <input
         id={id}
@@ -59,7 +62,68 @@ function commentDate(value: string) {
   });
 }
 
-function CommentDetails({ comment, reply }: { comment: ArticleComment; reply?: boolean }) {
+function useCommentEmails(
+  query: string,
+  comments: ArticleComment[] | undefined,
+  token: string | null,
+  onUnauthorized: () => void,
+) {
+  const [lookup, setLookup] = useState<{
+    query: string;
+    token: string;
+    emails?: CommentEmails;
+    failed?: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!token || !comments?.length) {
+      setLookup(null);
+      return;
+    }
+    const controller = new AbortController();
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]);
+    const requests: Promise<{ emails: CommentEmails }>[] = [];
+    for (let index = 0; index < comments.length; index += maximumCommentEmailLookupIds) {
+      const params = new URLSearchParams(query);
+      for (const { id } of comments.slice(index, index + maximumCommentEmailLookupIds)) {
+        params.append('id', String(id));
+      }
+      requests.push(
+        interactionRequest(`/api/articles/admin/comment-emails?${params}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal,
+        }),
+      );
+    }
+    void Promise.all(requests)
+      .then((results) => {
+        if (controller.signal.aborted) return;
+        setLookup({
+          query,
+          token,
+          emails: Object.assign({}, ...results.map(({ emails }) => emails)),
+        });
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        if (error instanceof InteractionError && error.status === 401) onUnauthorized();
+        else setLookup({ query, token, failed: true });
+      });
+    return () => controller.abort();
+  }, [query, comments, token, onUnauthorized]);
+
+  return lookup?.query === query && lookup.token === token ? lookup : null;
+}
+
+function CommentDetails({
+  comment,
+  reply,
+  email,
+}: {
+  comment: ArticleComment;
+  reply?: boolean;
+  email?: string | null;
+}) {
   return (
     <>
       <div className="article-comment-avatar" aria-hidden="true">
@@ -69,6 +133,9 @@ function CommentDetails({ comment, reply }: { comment: ArticleComment; reply?: b
         <header>
           <strong>{comment.nickname}</strong>
           <time dateTime={comment.createdAt}>{commentDate(comment.createdAt)}</time>
+          {email !== undefined && (
+            <span className="article-comment-email">邮箱 {email ?? '未填写'}</span>
+          )}
         </header>
         <p>
           {reply && comment.replyTo && (
@@ -83,6 +150,7 @@ function CommentDetails({ comment, reply }: { comment: ArticleComment; reply?: b
 
 function CommentThread({
   comment,
+  email,
   query,
   onPublished,
   adminToken,
@@ -90,6 +158,7 @@ function CommentThread({
   onUnauthorized,
 }: {
   comment: ArticleComment;
+  email?: string | null;
   query: string;
   onPublished: (result: PublishedComment) => void;
   adminToken: string | null;
@@ -108,6 +177,12 @@ function CommentThread({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const requestId = useRef<string | null>(null);
+  const replyEmails = useCommentEmails(
+    query,
+    expanded ? replies : undefined,
+    adminToken,
+    onUnauthorized,
+  );
 
   useEffect(() => {
     try {
@@ -203,7 +278,7 @@ function CommentThread({
   return (
     <li className="article-comment-thread" data-comment-id={comment.id}>
       <div className="article-comment">
-        <CommentDetails comment={comment} />
+        <CommentDetails comment={comment} email={email} />
       </div>
       <div className="article-comment-actions">
         <button
@@ -233,12 +308,17 @@ function CommentThread({
           onUnauthorized={onUnauthorized}
         />
       </div>
+      {expanded && replyEmails?.failed && (
+        <p className="interaction-error" role="alert">
+          暂时无法读取回复邮箱。
+        </p>
+      )}
       {expanded && replies.length > 0 && (
         <ol className="article-reply-list" aria-label={`${comment.nickname} 的评论回复`}>
           {replies.map((reply) => (
             <li key={reply.id} data-comment-id={reply.id}>
               <div className="article-comment">
-                <CommentDetails comment={reply} reply />
+                <CommentDetails comment={reply} reply email={replyEmails?.emails?.[reply.id]} />
               </div>
               <div className="article-comment-actions">
                 <button
@@ -382,7 +462,13 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
     setAdminToken(token);
     setActionError('');
   }, []);
+  const lockExpiredManagement = useCallback(() => {
+    setAdminToken(null);
+    rememberCommentManagementToken(null);
+    setActionError('管理凭证已失效，请点击“管理评论”重新解锁。');
+  }, []);
   const requestId = useRef<string | null>(null);
+  const commentEmails = useCommentEmails(query, data?.comments, adminToken, lockExpiredManagement);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -526,12 +612,6 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
     setNotice(result.parentId === null ? '评论及其回复已删除。' : '回复已删除。');
   };
 
-  const lockExpiredManagement = () => {
-    setAdminToken(null);
-    rememberCommentManagementToken(null);
-    setActionError('管理凭证已失效，请点击“管理评论”重新解锁。');
-  };
-
   return (
     <section
       id="article-interactions"
@@ -668,6 +748,11 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
           {actionError}
         </p>
       )}
+      {commentEmails?.failed && (
+        <p className="interaction-error" role="alert">
+          暂时无法读取评论邮箱，请刷新页面后重试。
+        </p>
+      )}
 
       {loading && !data && (
         <p className="article-comments-empty" role="status">
@@ -683,6 +768,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
             <CommentThread
               key={comment.id}
               comment={comment}
+              email={commentEmails?.emails?.[comment.id]}
               query={query}
               adminToken={adminToken}
               onDeleted={handleDeleted}

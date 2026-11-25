@@ -1,5 +1,6 @@
 import {
   maximumCommentEmailLength,
+  maximumCommentEmailLookupIds,
   maximumCommentLength,
   maximumNicknameLength,
   type ArticleComment,
@@ -141,12 +142,14 @@ async function handleRequest(
   const path = articlePath(url.searchParams.get('article'));
   if (!path) return jsonResponse({ error: '文章地址无效。' }, 400);
   const route = url.pathname;
+  const emailLookup = route === '/api/articles/admin/comment-emails';
   const deletion = /^\/api\/articles\/comments\/([1-9]\d*)$/.exec(route);
   const allowed =
     (route === '/api/articles/interactions' && request.method === 'GET') ||
     (route === '/api/articles/replies' && request.method === 'GET') ||
     (route === '/api/articles/like' && request.method === 'PUT') ||
     (route === '/api/articles/comments' && request.method === 'POST') ||
+    (emailLookup && request.method === 'GET') ||
     (deletion && request.method === 'DELETE');
   if (!allowed) return jsonResponse({ error: '不支持的请求方式或地址。' }, 405);
   if (request.method !== 'GET' && !sameOrigin(request, env)) {
@@ -155,6 +158,28 @@ async function handleRequest(
   if (!env.ARTICLE_INTERACTIONS)
     return jsonResponse({ error: '互动服务暂时不可用，请稍后再试。' }, 503);
   const db = env.ARTICLE_INTERACTIONS;
+
+  if (emailLookup) {
+    const denied = await authorizeManagement(request, env);
+    if (denied) return denied;
+    const ids = url.searchParams.getAll('id').map(Number);
+    if (
+      ids.length === 0 ||
+      ids.length > maximumCommentEmailLookupIds ||
+      ids.some((id) => !Number.isSafeInteger(id) || id < 1)
+    ) {
+      return jsonResponse({ error: '评论地址无效。' }, 400);
+    }
+    const { results } = await db
+      .prepare(
+        `SELECT id, email FROM article_comments WHERE article_path = ? AND id IN (${ids.map(() => '?').join(', ')})`,
+      )
+      .bind(path, ...ids)
+      .all<{ id: number; email: string | null }>();
+    return jsonResponse({
+      emails: Object.fromEntries(results.map(({ id, email }) => [id, email])),
+    });
+  }
 
   if (deletion) {
     const denied = await authorizeManagement(request, env);

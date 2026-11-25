@@ -44,6 +44,7 @@ test('访客可以点赞、自定义用户名评论并回复，刷新后仍保�
     await page.getByLabel('评论内容', { exact: true }).fill(text);
     const commentEmail = page.getByRole('textbox', { name: /^邮箱/ });
     await expect(commentEmail).toHaveJSProperty('required', true);
+    await expect(commentEmail).toHaveAccessibleName('邮箱 必填，不会公开显示');
     await page.getByRole('button', { name: '发布评论' }).click();
     await expect(commentEmail).toBeFocused();
     await commentEmail.fill('reader@example.com');
@@ -164,6 +165,19 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
           ? { json: { authorized: true } }
           : { status: 401, json: { error: '管理口令不正确，请重新输入。' } },
       );
+    } else if (url.pathname.endsWith('/comment-emails')) {
+      const ids = url.searchParams.getAll('id');
+      await route.fulfill(
+        authorized
+          ? {
+              json: {
+                emails: Object.fromEntries(
+                  ids.map((id) => [id, id === '2' ? null : `reader${id}@example.com`]),
+                ),
+              },
+            }
+          : { status: 401, json: { error: '管理口令已失效。' } },
+      );
     } else if (url.pathname.endsWith('/interactions')) {
       const result = pageOf(null, Number(url.searchParams.get('after') ?? 0));
       await route.fulfill({
@@ -281,10 +295,20 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
   await page.getByRole('button', { name: '解锁管理', exact: true }).click();
   await expect(page.locator('.comment-moderation-form')).toContainText('管理口令不正确');
   await expect(page.getByRole('button', { name: /^删除(?:评论|回复) / })).toHaveCount(0);
+  await expect(page.locator('.article-comment-email')).toHaveCount(0);
   await page.getByLabel('管理口令', { exact: true }).fill(token);
   await page.getByRole('button', { name: '解锁管理', exact: true }).click();
   await expect(page.getByRole('button', { name: '退出管理', exact: true })).toBeVisible();
   const firstReply = thread.locator('.article-reply-list > li[data-comment-id="101"]');
+  await expect(thread.locator(':scope > .article-comment .article-comment-email')).toHaveText(
+    '邮箱 reader1@example.com',
+  );
+  await expect(firstReply.locator('.article-comment-email')).toHaveText(
+    '邮箱 reader101@example.com',
+  );
+  await expect(
+    page.locator('.article-comment-thread[data-comment-id="2"] .article-comment-email'),
+  ).toHaveText('邮箱 未填写');
   await firstReply.getByRole('button', { name: '删除回复 101', exact: true }).click();
   await firstReply.getByRole('button', { name: '取消', exact: true }).click();
   await expect(firstReply).toBeVisible();
@@ -319,10 +343,12 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
   ).toBeVisible();
   await expect(page.getByRole('button', { name: /^删除(?:评论|回复) / })).toHaveCount(0);
   expect(await page.evaluate(() => sessionStorage.getItem('youngkx-links-token'))).toBeNull();
+  await expect(page.locator('.article-comment-email')).toHaveCount(0);
   expired = false;
   await page.getByRole('button', { name: '管理评论', exact: true }).click();
   await page.getByLabel('管理口令', { exact: true }).fill(token);
   await page.getByRole('button', { name: '解锁管理', exact: true }).click();
   await page.getByRole('button', { name: '退出管理', exact: true }).click();
   await expect(page.getByRole('button', { name: /^删除(?:评论|回复) / })).toHaveCount(0);
+  await expect(page.locator('.article-comment-email')).toHaveCount(0);
 });

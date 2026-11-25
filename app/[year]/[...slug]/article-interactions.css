@@ -282,6 +282,11 @@ html[data-theme='light'] .interaction-error {
   color: var(--muted);
   font: 400 11px/1.5 var(--mono);
 }
+.article-comment-email {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
 .article-comment-body > p {
   margin: 12px 0 0;
   white-space: pre-wrap;

@@ -140,6 +140,47 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
     expect((await snapshot(cookie, otherArticle)).comments).toEqual([]);
   });
 
+  it('returns comment and reply emails only to verified administrators for the requested article', async () => {
+    const root = await post(await visitor(), commentInput('根评论', { email: 'root@example.com' }));
+    const reply = await post(
+      await visitor(),
+      commentInput('回复', { email: 'reply@example.com', replyToId: root.comment.id }),
+    );
+    const unrelated = await post(await visitor(), commentInput(), otherArticle);
+    const legacy = await db
+      .prepare(
+        'INSERT INTO article_comments (article_path, visitor_id, request_id, nickname, content, created_at) VALUES (?, ?, ?, ?, ?, ?) RETURNING id',
+      )
+      .bind(article, 'legacy-visitor', randomUUID(), '旧访客', '旧评论', new Date().toISOString())
+      .first();
+    const url = new URL(endpoint('admin/comment-emails'));
+    for (const id of [root.comment.id, reply.comment.id, legacy.id, unrelated.comment.id]) {
+      url.searchParams.append('id', String(id));
+    }
+    for (const authorization of ['', 'Bearer incorrect-token']) {
+      const denied = await server.fetch(url.href, { headers: { Authorization: authorization } });
+      expect(denied.status).toBe(401);
+      expect(await denied.json()).not.toHaveProperty('emails');
+    }
+
+    const authorized = await server.fetch(url.href, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    expect(authorized.status).toBe(200);
+    expect(authorized.headers.get('cache-control')).toBe('no-store');
+    expect(await authorized.json()).toEqual({
+      emails: {
+        [root.comment.id]: 'root@example.com',
+        [reply.comment.id]: 'reply@example.com',
+        [legacy.id]: null,
+      },
+    });
+    const publicReplies = await server.fetch(
+      endpoint('replies', article, { parent: root.comment.id }),
+    );
+    expect((await publicReplies.json()).replies[0]).not.toHaveProperty('email');
+  });
+
   it('notifies the owner and the directly replied-to address with independent retries', async () => {
     const rootVisitor = await visitor();
     const rootInput = commentInput('根评论', { email: 'root@example.com' });

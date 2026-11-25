@@ -8,7 +8,6 @@
   "preview_urls": true,
   "vars": {
     "COMMENT_EMAIL_FROM": "comments@notify.youngkx.cn",
-    "COMMENT_EMAIL_OWNER": "ykx756474427@gmail.com",
   },
   "triggers": { "crons": ["*/5 * * * *"] },
   "routes": [
@@ -49,7 +48,7 @@
     },
   ],
   "secrets": {
-    "required": ["LINKS_ADMIN_TOKEN"],
+    "required": ["LINKS_ADMIN_TOKEN", "COMMENT_EMAIL_OWNER"],
   },
   "observability": {
     "enabled": true,
