@@ -1,17 +1,19 @@
 ---
 title: "平衡树（Balanced Search Tree）"
-excerpt: "讲解 AVL、红黑树的平衡思路与旋转，以及 set、multiset、map 的常用操作。"
+excerpt: "平衡搜索树如何用旋转控制高度，以及 set、multiset 和 map 的用法。"
 ---
 
 [← 返回数据结构总览](../)
 
-## 1. 平衡维护的是树高
+## 1. 基本概念
 
-动态有序集合希望每次沿树高找键都只走 $O(\log n)$ 层。AVL 树要求每个节点左右子树的高度差至多为 1。红黑树用颜色约束限制最长和最短路径的差距。两者都用旋转调整局部结构，旋转前后的中序顺序相同。
+平衡搜索树（Balanced Search Tree）在维持键的顺序时限制树高。普通 BST 在极端情况下会变成一条链，平衡搜索树通过旋转等局部调整，把搜索路径控制在 $O(\log n)$ 层。AVL 树和红黑树是常见的两类。
 
-### 一次旋转移动了什么？
+## 2. 结构与工作原理
 
-如果连续插入 30、20、10，AVL 树在 30 处失衡。右旋让 20 成为这棵子树的新根，30 成为 20 的右孩子。原先 20 的右子树也要接到 30 的左边，因为这部分键大于 20、小于 30。
+### 2.1 AVL 的平衡条件
+
+AVL 树要求每个结点的左右子树高度差绝对值不超过 1。依次插入 30、20、10 后，30 的左侧过高。以 30 为中心右旋，20 成为新根，10、30 分别位于两侧。
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 137" role="img" aria-label="AVL 树对 30 执行一次右旋" fill="currentColor">
@@ -39,7 +41,16 @@ excerpt: "讲解 AVL、红黑树的平衡思路与旋转，以及 set、multiset
   <figcaption>20 成为新根，中序顺序仍是 10、20、30。</figcaption>
 </figure>
 
-左旋与之对称。若较高的孩子自身向相反的方向倾斜，例如插入顺序是 30、10、20，先对孩子 10 左旋，再对 30 右旋。重新计算高度或子树大小时，应先更新位置较低的旧根，再更新新根。
+一般的右旋还要把 20 原来的右子树接给 30 的左侧。这些键在 20 和 30 之间。旋转前后，整棵子树的中序顺序一致。
+
+### 2.2 单旋与双旋
+
+| 失衡方向 | 高子树倾斜方向 | 处理方法 |
+| --- | --- | --- |
+| 左 | 左 | 对失衡结点右旋 |
+| 右 | 右 | 对失衡结点左旋 |
+| 左 | 右 | 左孩子先左旋，失衡结点再右旋 |
+| 右 | 左 | 右孩子先右旋，失衡结点再左旋 |
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 136" role="img" aria-label="AVL 左右型失衡经过两次旋转得到平衡" fill="currentColor">
@@ -78,67 +89,108 @@ excerpt: "讲解 AVL、红黑树的平衡思路与旋转，以及 set、multiset
   <figcaption>两个旋转前后的中序顺序都是 10、20、30，最终由 20 作为子树的根。</figcaption>
 </figure>
 
-## 2. 操作和复杂度
+### 2.3 红黑树怎样约束树高？
 
-| 操作 | C++ 接口 | 时间复杂度 |
+红黑树用颜色规则控制高度。例如红结点不能再有红孩子，从同一个结点向任意空叶子走，路径上经过的黑结点数相同。更新时可通过重新着色和旋转恢复性质。
+
+## 3. 基本操作及时间复杂度
+
+| 操作 | `set` 常用接口 | 时间复杂度 |
 | --- | --- | --- |
-| 查找精确键 | `find(x)` | $O(\log n)$ |
-| 找第一个键 $y\ge x$ | `lower_bound(x)` | $O(\log n)$ |
-| 找第一个键 $y>x$ | `upper_bound(x)` | $O(\log n)$ |
-| 插入一个键 | `insert(x)` | $O(\log n)$ |
-| 按键删除 | `erase(x)` | $O(\log n+k)$，$k$ 是删掉的数量 |
-| 已知迭代器时删除单项 | `erase(it)` | 均摊 $O(1)$ |
-| 按顺序遍历 | 从 `begin()` 走到 `end()` | $O(n)$ |
+| 查找、插入单个键 | `find(x)`、`insert(x)` | $O(\log n)$ |
+| 按键删除 | `erase(x)` | $O(\log n)$ |
+| 查第一个键 $\ge x$ 或 $>x$ | `lower_bound(x)`、`upper_bound(x)` | $O(\log n)$ |
+| 按序遍历全部键 | 迭代器从 `begin()` 到 `end()` | $O(n)$ |
 
-要找严格小于 `x` 的前驱，先取得 `lower_bound(x)`，若返回的迭代器不等于 `begin()`，就向前退一步。要找严格大于 `x` 的后继，直接用 `upper_bound(x)` 并检查是否到了 `end()`。
+存 `n` 个结点需要 $O(n)$ 空间。若在 `multiset` 用键删除 `k` 个相等元素，总耗时为 $O(\log n+k)$。
 
-## 3. C++ 有序容器
+<aside class="ds-note" aria-label="排名查询">
+  <p><strong>排名查询。</strong><code>set</code> 的迭代器是双向迭代器。从 <code>begin()</code> 到目标位置逐步计数，最坏要走线性步数。</p>
+</aside>
 
-| 容器 | 键允许重复 | 适用情况 |
-| --- | --- | --- |
-| `std::set` | 否 | 动态有序集合 |
-| `std::multiset` | 是 | 维护有重复值的有序集合 |
-| `std::map` | 否 | 按键查值并保持键有序 |
-| `std::multimap` | 是 | 一个键关联多个独立值 |
+## 4. C++ 代码实现
 
-有序关联容器通常以红黑树实现，C++ 标准保证的是接口与复杂度。如果需要删除 `multiset` 中一个等于 `x` 的值，用 `find` 取得迭代器后调用 `erase(it)`。直接 `erase(x)` 会删掉全部相等项。对 `set` 调用 `distance(s.begin(), it)` 需要逐步移动迭代器，因此不能用它实现对数时间的排名查询。 [C++ 标准工作草案](https://eel.is/c++draft/associative.reqmts)
+### 4.1 查询最接近的键
 
-## 4. 操作示例：动态找离 x 最近的值
-
-将候选键排序后，离 `x` 最近的键只可能是 `lower_bound(x)` 与它的前驱。更左侧的元素不小于前驱的距离，更右侧的元素不小于后继的距离。下面在距离相同时选择较小的键，空集合返回空值。
+有序集合中离 `x` 最近的值，只可能是 `lower_bound(x)` 返回的键和它的前驱。下面的示例约定集合非空，距离相同则取较小的值。查询本身为 $O(\log n)$。
 
 ```cpp
+#include <iostream>
 #include <iterator>
-#include <optional>
 #include <set>
+using namespace std;
 
-std::optional<int> nearest(const std::set<int>& s, int x) {
-    if (s.empty()) return std::nullopt;
+int main() {
+    set<int> s = {4, 11, 18};
+    int x = 15;
+
     auto hi = s.lower_bound(x);
-    if (hi == s.begin()) return *hi;
-
-    auto lo = std::prev(hi);
-    if (hi == s.end()) return *lo;
-
-    long long left = static_cast<long long>(x) - *lo;
-    long long right = static_cast<long long>(*hi) - x;
-    return left <= right ? *lo : *hi;
+    if (hi == s.begin()) {
+        cout << *hi << '\n';
+    } else if (hi == s.end()) {
+        cout << *s.rbegin() << '\n';
+    } else {
+        auto lo = prev(hi);
+        long long left = (long long)x - *lo;
+        long long right = (long long)*hi - x;
+        cout << (left <= right ? *lo : *hi) << '\n';
+    }
 }
 ```
 
-例如集合 `{4, 11, 18}` 查询 15 时，候选为 11 和 18，分别相距 4 和 3，因此返回 18。动态增删和单次查询各为 $O(\log n)$。若还需要按值查第 $k$ 小，可维护带子树大小的平衡搜索树，或在已知离散值域上用树状数组、线段树维护频次。
+运行结果
 
-## 5. 旋转速查和比较规则
+```text
+18
+```
 
-| AVL 插入后高的一侧 | 高子树自身的方向 | 修复方式 |
+## 5. STL 中的对应容器
+
+| 容器 | 头文件 | 用途 |
 | --- | --- | --- |
-| 左 | 左 | 对失衡节点右旋 |
-| 右 | 右 | 对失衡节点左旋 |
-| 左 | 右 | 对左孩子左旋，再对失衡节点右旋 |
-| 右 | 左 | 对右孩子右旋，再对失衡节点左旋 |
+| `set`、`multiset` | `<set>` | 有序键，分别去重和保留重复 |
+| `map`、`multimap` | `<map>` | 按键存值，分别使用唯一键和重复键 |
 
-红黑树通过另一套条件控制高度。例如红节点不能有红孩子，且从同一节点到各空叶子的路径包含相同数量的黑节点。修改后可能需要重新着色并配合旋转。使用 STL 时无需手动维护这些规则。
+标准规定的是接口和复杂度，实现通常采用红黑树。`ms.erase(x)` 删除所有相等元素。只删一个时用 `find(x)` 找到迭代器，再调用 `erase(it)`。
 
-<aside class="ds-note" aria-label="比较规则">
-  <p><strong>比较器。</strong>有序容器通过比较器判断两个键是否等价。若 comp(a,b) 和 comp(b,a) 都为假，容器就把两者视为等价。比较器要用严格顺序，例如升序用小于，不能用小于等于。</p>
-</aside>
+```cpp
+#include <iostream>
+#include <set>
+using namespace std;
+
+int main() {
+    set<int> s = {10, 20, 30};
+    s.insert(25);
+
+    auto it = s.lower_bound(21);
+    if (it != s.end()) cout << *it << '\n';
+
+    s.erase(20);
+    for (int x : s) cout << x << ' ';
+    cout << '\n';
+}
+```
+
+运行结果
+
+```text
+25
+10 25 30
+```
+
+## 6. 典型应用场景
+
+### 6.1 典型用法
+
+动态查前驱、后继或区间端点，也常用于扫描线活动集合。若需要排名或第 `k` 小，要给树维护子树大小，或在离散值域上用树状数组、线段树维护频次。
+
+### 6.2 洛谷例题
+
+| 题目 | 练习点 |
+| --- | --- |
+| [洛谷 P5250 木材仓库](https://www.luogu.com.cn/problem/P5250) | 在有序集合中比较前驱、后继和目标距离 |
+| [洛谷 P3369 普通平衡树](https://www.luogu.com.cn/problem/P3369) | 动态排名和第 k 小，需要维护子树规模等额外信息 |
+
+## 7. 优点与局限性
+
+平衡树适合动态有序集合。顺序查找比线性遍历快，且复杂度不会随插入顺序退化。若只查询键是否存在且不需要排序，哈希表更直接。

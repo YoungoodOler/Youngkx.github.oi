@@ -1,15 +1,21 @@
 ---
 title: "线段树（Segment Tree）"
-excerpt: "讲解区间拆分、合并规则与懒标记，给出区间加和区间求和模板。"
+excerpt: "线段树怎样拆分区间，以及如何实现单点修改和区间求和。"
 ---
 
 [← 返回数据结构总览](../)
 
-## 1. 节点负责一个区间
+## 1. 基本概念
 
-线段树从整个区间开始递归二分。对半开区间 `[l, r)`，令 `m = l + (r - l) / 2`，两个孩子分别管 `[l, m)` 和 `[m, r)`。当 `r - l = 1` 时，节点对应一个原数组元素。
+线段树（Segment Tree）把一段区间递归二分。每个结点负责一段区间，并保存可由左右孩子合并得到的信息，例如和、最小值、最大值或 GCD。单个位置是一个叶子。
 
-如果维护区间和，父节点存左边的和加上右边的和。维护最值时，改为对两个孩子取最值。合并规则要有结合律。如果查询范围只包含部分孩子，要选与合并规则匹配的空结果，例如求和的空区间是 0，求最小值的空区间可用足够大的初始值。
+## 2. 结构与工作原理
+
+### 2.1 区间划分和合并
+
+若用半开区间，`[l,r)` 被分成 `[l,m)` 和 `[m,r)`，其中 `m=l+(r-l)/2`。当 `r-l=1` 时到达叶子。父结点通过加法、取最值等方式合并两个孩子。合并函数需要满足结合律。
+
+### 2.2 查询与单点修改
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 153" role="img" aria-label="线段树拆分查询区间 [1, 4)" fill="currentColor">
@@ -37,25 +43,11 @@ excerpt: "讲解区间拆分、合并规则与懒标记，给出区间加和区�
   <figcaption>查询 [1, 4) 时，合并完整覆盖的 [1, 2) 和 [2, 4) 两个节点。</figcaption>
 </figure>
 
-图里查询 `[1, 4)` 时，`[2, 4)` 整段在查询范围里，可以直接读它保存的结果。`[0, 2)` 只与查询部分相交，需要继续往下走。最后把 `[1, 2)` 和 `[2, 4)` 的结果合并。
+查询 `[1,4)` 时，`[2,4)` 可以整段使用，`[0,2)` 只部分相交，就继续向下取 `[1,2)`。修改单点时，从叶子更新，再沿祖先向上重算。无交集时，区间和可以返回 0 作为合并的单位元，区间最小值则使用正无穷。
 
-## 2. 基本操作和复杂度
+### 2.3 懒标记
 
-| 操作 | 做法 | 时间复杂度 |
-| --- | --- | --- |
-| 建树 | 叶子读原值，父节点合并孩子 | $O(n)$ |
-| 单点修改 | 沿根到叶修改，再逐层合并 | $O(\log n)$ |
-| 区间查询 | 整段命中直接返回，部分命中继续分治 | $O(\log n)$ |
-| 区间加 | 整段命中先更新节点并记懒标记 | $O(\log n)$ |
-| 空间 | 保存各区间及所需标记 | $O(n)$ |
-
-区间查询每一层至多有两个节点需要继续分解，分别位于询问区间的两个边界。完全被覆盖的节点直接提供结果，于是总访问量与树高同阶。
-
-## 3. 懒标记保存什么？
-
-若长度为 `len` 的区间整段加 `x`，区间和立即增加 `len * x`。暂时无需改两个孩子，可以把 `x` 累到当前节点的标记里。孩子的值在需要访问它们之前再更新，这一步叫下传。
-
-例如 `[0, 4)` 的初始值为 `[1, 2, 3, 4]`。整段加 5 后，根的和从 10 变成 30。随后查询 `[1, 3)` 时，跨过根向下访问前要先把 +5 下传，结果是 `7 + 8 = 15`。
+整段加 `x` 时，长度为 `len` 的结点区间和立即增加 `len*x`。给结点留下 `+x` 的待下传标记，只有下一次操作需要访问部分子区间时，才传给左右孩子。
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 133" role="img" aria-label="线段树的根先加上增量，再向孩子下传懒标记" fill="currentColor">
@@ -96,100 +88,170 @@ excerpt: "讲解区间拆分、合并规则与懒标记，给出区间加和区�
   <figcaption>在需要读取子区间之前，把 +5 应用给两个长度均为 2 的孩子。</figcaption>
 </figure>
 
-## 4. C++ 区间加与区间和模板
+父结点的值已经包含标记的影响。下传只更新孩子以及孩子的标记，父结点自己的标记清零。
 
-下面用 `tree[p]` 存节点区间和，用 `lazy[p]` 存已计入当前节点但尚未传给孩子的增量。对外传入合法的半开区间 `[l, r)`。
+## 3. 基本操作及时间复杂度
+
+| 操作 | 时间复杂度 |
+| --- | --- |
+| 建树 | $O(n)$ |
+| 单点修改、区间查询 | $O(\log n)$ |
+| 用懒标记做区间加 | $O(\log n)$ |
+| 存储区间值和标记 | $O(n)$ |
+
+查询时每层至多有两个与范围部分相交、需要继续向下拆分的结点。其余结点要么整段使用，要么跳过，所以访问量与树高同阶。
+
+<aside class="ds-note" aria-label="懒标记何时下传">
+  <p><strong>懒标记何时下传。</strong>整段覆盖可直接改当前和并累计标记。只有需要向下查询或修改子区间时，再分发给孩子。</p>
+</aside>
+
+## 4. C++ 代码实现
+
+### 4.1 单点赋值、区间求和
+
+把叶子数补到二次幂，根用下标 1。`set_value(i,x)` 修改第 `i` 项并更新父结点；`query(l,r)` 查询 `[l,r)`。迭代查询每轮先取不能和相邻块一起向上合并的边端，再进入父层。
 
 ```cpp
+#include <iostream>
 #include <vector>
+using namespace std;
 
-class LazySumTree {
-    int n;
-    std::vector<long long> tree, lazy;
+int base;
+vector<long long> tree;
 
-    void build(int p, int l, int r, const std::vector<long long>& a) {
-        if (r - l == 1) {
-            tree[p] = a[l];
-            return;
-        }
-        int m = l + (r - l) / 2;
-        build(2 * p, l, m, a);
-        build(2 * p + 1, m, r, a);
-        pull(p);
+void build(const vector<int>& a) {
+    base = 1;
+    while (base < int(a.size())) base *= 2;
+    tree.assign(2 * base, 0);
+
+    for (int i = 0; i < int(a.size()); ++i) tree[base + i] = a[i];
+    for (int p = base - 1; p > 0; --p) tree[p] = tree[2 * p] + tree[2 * p + 1];
+}
+
+void set_value(int i, int x) {
+    int p = base + i;
+    tree[p] = x;
+    for (p /= 2; p > 0; p /= 2) tree[p] = tree[2 * p] + tree[2 * p + 1];
+}
+
+long long query(int l, int r) {
+    long long ans = 0;
+    for (l += base, r += base; l < r; l /= 2, r /= 2) {
+        if (l % 2 == 1) ans += tree[l++];
+        if (r % 2 == 1) ans += tree[--r];
     }
+    return ans;
+}
 
-    void pull(int p) {
-        tree[p] = tree[2 * p] + tree[2 * p + 1];
-    }
-
-    void apply(int p, int len, long long delta) {
-        tree[p] += len * delta;
-        lazy[p] += delta;
-    }
-
-    void push(int p, int l, int r) {
-        if (lazy[p] == 0 || r - l == 1) return;
-        int m = l + (r - l) / 2;
-        apply(2 * p, m - l, lazy[p]);
-        apply(2 * p + 1, r - m, lazy[p]);
-        lazy[p] = 0;
-    }
-
-    void add(int p, int l, int r, int ql, int qr, long long delta) {
-        if (qr <= l || r <= ql) return;
-        if (ql <= l && r <= qr) {
-            apply(p, r - l, delta);
-            return;
-        }
-        push(p, l, r);
-        int m = l + (r - l) / 2;
-        add(2 * p, l, m, ql, qr, delta);
-        add(2 * p + 1, m, r, ql, qr, delta);
-        pull(p);
-    }
-
-    long long sum(int p, int l, int r, int ql, int qr) {
-        if (qr <= l || r <= ql) return 0;
-        if (ql <= l && r <= qr) return tree[p];
-
-        push(p, l, r);
-        int m = l + (r - l) / 2;
-        return sum(2 * p, l, m, ql, qr) + sum(2 * p + 1, m, r, ql, qr);
-    }
-
-public:
-    explicit LazySumTree(const std::vector<long long>& a)
-        : n(static_cast<int>(a.size())), tree(4 * a.size()), lazy(4 * a.size()) {
-        if (n > 0) build(1, 0, n, a);
-    }
-
-    void add(int l, int r, long long delta) {
-        if (l < r) add(1, 0, n, l, r, delta);
-    }
-
-    long long sum(int l, int r) {
-        return l < r ? sum(1, 0, n, l, r) : 0;
-    }
-};
+int main() {
+    build({1, 2, 3, 4});
+    cout << query(1, 4) << '\n';
+    set_value(2, 8);
+    cout << query(1, 4) << '\n';
+}
 ```
 
-## 5. 应用和扩展
+运行结果
 
-- **动态区间最值。** 当修改只发生在单点时，沿一条分支更新节点，合并规则改为 `min` 或 `max`，不需要懒标记。
-- **区间赋值。** 赋值标记覆盖更早的赋值。若同时支持加法和赋值，要根据时间顺序组合标记，并用独立的标志区分「尚无赋值」和「赋值为 0」。
-- **树上二分。** 数组元素非负时，可以用左子树的和判断第一个达到目标前缀和的位置在哪个孩子。元素为负时，单靠区间和无法作这一判断。
-- **选型。** 数组不改时，静态区间最值可用 ST 表。只维护加法和前缀或区间和时，树状数组通常更短。需要同时支持整段修改和更一般的区间信息时，再用线段树。
+```text
+9
+14
+```
 
-## 6. 模板检查
+### 4.2 区间加、区间求和
 
-| 情况 | 处理方式 |
+下面改用递归。整段覆盖时直接更新和与标记，部分覆盖时先下传。数组须非空，操作使用合法的 0 起始半开区间。示例在 `[0,4)` 上加 5，再读取 `[1,3)`。
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<long long> tree, lazy;
+
+void build(int p, int l, int r, const vector<int>& a) {
+    if (r - l == 1) {
+        tree[p] = a[l];
+        return;
+    }
+    int m = (l + r) / 2;
+    build(p * 2, l, m, a);
+    build(p * 2 + 1, m, r, a);
+    tree[p] = tree[p * 2] + tree[p * 2 + 1];
+}
+
+void apply_add(int p, int len, long long x) {
+    tree[p] += len * x;
+    lazy[p] += x;
+}
+
+void push(int p, int l, int r) {
+    if (lazy[p] == 0) return;
+    int m = (l + r) / 2;
+    apply_add(p * 2, m - l, lazy[p]);
+    apply_add(p * 2 + 1, r - m, lazy[p]);
+    lazy[p] = 0;
+}
+
+void add(int p, int l, int r, int ql, int qr, long long x) {
+    if (qr <= l || r <= ql) return;
+    if (ql <= l && r <= qr) {
+        apply_add(p, r - l, x);
+        return;
+    }
+    push(p, l, r);
+    int m = (l + r) / 2;
+    add(p * 2, l, m, ql, qr, x);
+    add(p * 2 + 1, m, r, ql, qr, x);
+    tree[p] = tree[p * 2] + tree[p * 2 + 1];
+}
+
+long long sum(int p, int l, int r, int ql, int qr) {
+    if (qr <= l || r <= ql) return 0;
+    if (ql <= l && r <= qr) return tree[p];
+    push(p, l, r);
+    int m = (l + r) / 2;
+    return sum(p * 2, l, m, ql, qr) + sum(p * 2 + 1, m, r, ql, qr);
+}
+
+int main() {
+    vector<int> a = {1, 2, 3, 4};
+    int n = int(a.size());
+    tree.resize(4 * n);
+    lazy.resize(4 * n);
+    build(1, 0, n, a);
+
+    cout << sum(1, 0, n, 0, 4) << '\n';
+    add(1, 0, n, 0, 4, 5);
+    cout << sum(1, 0, n, 1, 3) << '\n';
+}
+```
+
+运行结果
+
+```text
+10
+15
+```
+
+## 5. STL 中的对应容器
+
+STL 没有对应容器。用 `vector<long long>` 存结点值和懒标记。递归建树通常分配 `4*n` 个位置；将叶子补到二次幂之后也可以显式计算所需结点数。
+
+## 6. 典型应用场景
+
+### 6.1 典型用法
+
+- 动态维护区间和、最值、GCD。
+- 区间加或赋值。赋值会覆盖较早的操作，若同时支持赋值与加法，要按时间顺序组合标记。
+- 非负数组上做树上二分。比较左子树的和与目标，就能决定最早达到目标的前缀在哪一边。
+
+### 6.2 洛谷例题
+
+| 题目 | 练习点 |
 | --- | --- |
-| 两个区间无交集 | 求和返回 0。更新时直接结束 |
-| 节点区间被完整覆盖 | 直接返回节点和，或整段应用标记 |
-| 节点区间只被部分覆盖 | 先下传标记，再访问孩子 |
-| 递归修改了孩子 | 回到父节点后重新合并 |
-| 合并与顺序有关 | 按左区间在前、右区间在后进行合并 |
+| [洛谷 P3372 线段树 1](https://www.luogu.com.cn/problem/P3372) | 区间加、区间求和，正确维护和下传标记 |
 
-<aside class="ds-note" aria-label="懒标记检查">
-  <p><strong>标记和区间值。</strong>标记的增量已经计入当前节点，查询整段时直接返回区间值。只有向下访问孩子时才把标记分发给它们，否则容易重复累计。</p>
-</aside>
+## 7. 优点与局限性
+
+线段树能维护多种可合并的信息，还能通过标记支持整段修改，适用面广。代价是多维护结点区间与标记，常数也比树状数组大。数组静态时可用前缀和或 ST 表，单点加与区间求和也可优先考虑树状数组。

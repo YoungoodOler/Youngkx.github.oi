@@ -1,13 +1,21 @@
 ---
 title: "树状数组（Fenwick Tree）"
-excerpt: "解释 lowbit 与前缀分块，提供线性建树、动态区间和及逆序对做法。"
+excerpt: "树状数组的 lowbit、前缀分块，以及单点增加和区间求和的完整示例。"
 ---
 
 [← 返回数据结构总览](../)
 
-## 1. 每格存哪一段？
+## 1. 基本概念
 
-内部下标从 1 起。`lowbit(i) = i & -i` 是 `i` 的最低二进制 1 对应的值。`bit[i]` 记录闭区间 `[i - lowbit(i) + 1, i]` 的和。例如 `bit[6]` 对应 5 到 6，因为 `6` 的二进制是 `110`，最低的 1 在第 1 位，区间长度为 2。
+树状数组（Fenwick Tree，又称 BIT）用数组记录一组可重叠的小区间。每次修改只更新少量区间，查询时取若干互不重叠的区间拼成一个前缀。用于维护可做前缀差的统计量，最常见的是和。
+
+## 2. 结构与工作原理
+
+### 2.1 `lowbit` 与结点覆盖范围
+
+下标从 1 开始。`lowbit(i)=i & -i` 得到最低位二进制 1 的权值。`bit[i]` 对应闭区间 `[i-lowbit(i)+1,i]`。例如 6 的二进制是 `110`，所以 `bit[6]` 覆盖位置 5 和 6。
+
+### 2.2 查询时向左分块
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 110" role="img" aria-label="树状数组将前 7 项拆成长度为 4、2、1 的三个块" fill="currentColor">
@@ -44,11 +52,9 @@ excerpt: "解释 lowbit 与前缀分块，提供线性建树、动态区间和�
   <figcaption>前 7 项的和等于 bit[7]、bit[6]、bit[4] 三段之和。</figcaption>
 </figure>
 
-查询前 7 项时，先取覆盖第 7 项的 `bit[7]`，剩下前 6 项。再取 `bit[6]`，剩下前 4 项。最后取 `bit[4]`，三段相邻且无重叠。每次从 `i` 减去 `lowbit(i)`，就是把这个块从前缀里剥掉。
+求前 7 项时先取 `bit[7]`。接着把右端点减去 `lowbit(7)=1`，剩下前 6 项。继续取 `bit[6]` 和 `bit[4]`，三块拼成完整前缀。
 
-## 2. 修改如何找到所有受影响的块？
-
-内部位置 `i` 改变时，先更新 `bit[i]`，再令 `i += lowbit(i)`，更新包含它的更大块，直到超过数组末尾。例如长度为 8 时，修改内部下标 3 会更新 `bit[3]、bit[4]、bit[8]`。它们分别覆盖 `[3,3]`、`[1,4]`、`[1,8]`。
+### 2.3 修改时向上跳
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 145" role="img" aria-label="修改内部下标 3 会更新三个覆盖块" fill="currentColor">
@@ -79,90 +85,86 @@ excerpt: "解释 lowbit 与前缀分块，提供线性建树、动态区间和�
   <figcaption>从 3 开始不断加 lowbit，访问 3、4、8。标亮的区间都包含下标 3。</figcaption>
 </figure>
 
-| 操作 | 时间复杂度 |
-| --- | --- |
-| 从原数组线性建树 | $O(n)$ |
-| 单点加上增量 | $O(\log n)$ |
-| 查询前缀和、区间和 | $O(\log n)$ |
-| 空间 | $O(n)$ |
+位置 3 改变时，依次更新 `bit[3]、bit[4]、bit[8]`，直到下标大于 `n`。每次向上加 `lowbit`，都跳过与当前位置没有覆盖关系的块。
 
-区间和是两个前缀和之差。若要把单点设为新值，可以保存当前元素，转成一次「新值减旧值」的增量。对外用 0 起始下标，写入前先转换成 `i + 1`，可避免把内部位置 0 放进更新循环。
+## 3. 基本操作及时间复杂度
 
-## 3. C++ 模板
+| 操作 | 做法 | 时间复杂度 |
+| --- | --- | --- |
+| 单点加增量 | 用 `i += lowbit(i)` 更新覆盖块 | $O(\log n)$ |
+| 查询前缀和 | 用 `i -= lowbit(i)` 取出块 | $O(\log n)$ |
+| 查询闭区间和 | 两个前缀和相减 | $O(\log n)$ |
+| 用 `n` 次单点增加建树 | 逐个加入初始值 | $O(n\log n)$ |
+| 线性建树 | 按下标把完整块累加到父块 | $O(n)$ |
 
-下面的模板对外统一使用半开区间。`prefix(end)` 求 `[0, end)` 的和。线性建树时，从小往大扫，把已经合成的块交给它的父块。
+存储空间为 $O(n)$。若题目要求把一个位置设为新值，可保存原值，把赋值换成增加 `新值 - 原值`。
 
-```cpp
-#include <vector>
+<aside class="ds-note" aria-label="不要更新下标 0">
+  <p><strong>不要更新下标 0。</strong><code>lowbit(0)</code> 等于 0，更新循环会停在 0。外部 0 起始的位置传入前先加 1。</p>
+</aside>
 
-class Fenwick {
-    int n;
-    std::vector<long long> bit;
+## 4. C++ 代码实现
 
-public:
-    explicit Fenwick(int n) : n(n), bit(n + 1, 0) {}
-
-    explicit Fenwick(const std::vector<long long>& a)
-        : Fenwick(static_cast<int>(a.size())) {
-        for (int i = 1; i <= n; ++i) {
-            bit[i] += a[i - 1];
-            int parent = i + (i & -i);
-            if (parent <= n) bit[parent] += bit[i];
-        }
-    }
-
-    void add(int i, long long delta) {
-        for (int p = i + 1; p <= n; p += p & -p) bit[p] += delta;
-    }
-
-    long long prefix(int end) const {
-        long long ans = 0;
-        for (int p = end; p > 0; p -= p & -p) ans += bit[p];
-        return ans;
-    }
-
-    long long sum(int l, int r) const {
-        return prefix(r) - prefix(l);
-    }
-};
-```
-
-## 4. 操作示例：统计逆序对
-
-逆序对为 `i < j` 且 `a[i] > a[j]`。从右向左扫描，每次在树状数组中查询已经出现的、严格小于当前值的数量。数值可能很大或为负数，先排序去重，把每个值映射到自己的秩。相同的值映射到同一个秩。
+`add(i,delta)` 增加第 `i` 项，`sum(i)` 查询从 1 到 `i` 的前缀和。令 `sum(0)=0`，则 `[l,r]` 的和为 `sum(r)-sum(l-1)`。
 
 ```cpp
-#include <algorithm>
+#include <iostream>
 #include <vector>
+using namespace std;
 
-// 使用上面的 Fenwick。
-long long count_inversions(const std::vector<int>& a) {
-    std::vector<int> keys = a;
-    std::sort(keys.begin(), keys.end());
-    keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
+int n;
+vector<long long> bit;
 
-    Fenwick seen(static_cast<int>(keys.size()));
+void add(int i, int delta) {
+    for (; i <= n; i += i & -i) bit[i] += delta;
+}
+
+long long sum(int i) {
     long long ans = 0;
-    for (auto it = a.rbegin(); it != a.rend(); ++it) {
-        int rank = static_cast<int>(
-            std::lower_bound(keys.begin(), keys.end(), *it) - keys.begin());
-        ans += seen.prefix(rank);
-        seen.add(rank, 1);
-    }
+    for (; i > 0; i -= i & -i) ans += bit[i];
     return ans;
+}
+
+int main() {
+    int a[] = {1, 2, 3, 4};
+    n = 4;
+    bit.assign(n + 1, 0);
+    for (int i = 1; i <= n; ++i) add(i, a[i - 1]);
+
+    cout << sum(4) - sum(1) << '\n';  // [2, 4]
+    add(3, 5);
+    cout << sum(4) - sum(1) << '\n';
 }
 ```
 
-例如 `[3, 1, 1, 2]` 有 3 个逆序对，均由最左边的 3 形成。`prefix(rank)` 排除相同秩，所以两个 1 不会互相计数。离散化和扫描的总时间为 $O(n\log n)$，空间为 $O(n)$。
+运行结果
 
-## 5. 扩展用法
+```text
+9
+14
+```
 
-- **区间加、单点查。** 在差分数组上维护树状数组。对 `[l, r)` 加 `x`，在 `l` 加 `x`，若 `r < n` 则在 `r` 减 `x`。查询位置 `i` 时累加到 `i`。
-- **按频次找第 k 小。** 频次非负时，前缀和单调。可以二分前缀和，也可以在树状数组的块上按二进制位查找。
-- **区间最值和任意单点赋值。** 最值无法像和一样用两个前缀相减，通常直接使用线段树。
+线性建树时先让每个 `bit[i]` 加上 `a[i]`，再按从小到大的顺序，把已累积的 `bit[i]` 加给范围内的 `bit[i+lowbit(i)]`。每个结点只向上交一次。
 
-区间加和区间求和可以用两棵树状数组。设 $d_i$ 是从 0 开始编号的差分。前 `end` 项的和等于 $\sum_{i<end}(end-i)d_i$，因为新增量 $d_i$ 会影响位置 `i` 到 `end-1`。两棵树分别维护 $d_i$ 和 $i d_i$，就可以把这一式子拆成两个前缀查询。
+## 5. STL 中的对应容器
 
-<aside class="ds-note" aria-label="下标检查">
-  <p><strong>接口边界。</strong>写入使用 0 ≤ i &lt; n。前缀终点可取 0 或 n，空前缀和为 0。维护总和或逆序对数量时，节点和值域统计可能大于 32 位整数范围。</p>
-</aside>
+STL 没有直接对应容器。用 `vector<long long>` 就能保存前缀统计。若维护频次，也可用数组保存原值，再用树状数组维护离散化后的计数。
+
+## 6. 典型应用场景
+
+### 6.1 动态区间与逆序对
+
+- 单点增加与动态区间求和。
+- 对差分维护树状数组。给 `[l,r]` 加 `x`，在 `l` 加 `x`，若 `r+1` 合法就在那里减 `x`。差分前缀和即为当前单点值。
+- 统计逆序对。从右向左扫，用值的离散化秩查询严格比当前值小的已读元素数，再加入当前值。
+
+### 6.2 洛谷例题
+
+| 题目 | 练习点 |
+| --- | --- |
+| [洛谷 P3374 树状数组 1](https://www.luogu.com.cn/problem/P3374) | 单点增加和区间求和 |
+| [洛谷 P3368 树状数组 2](https://www.luogu.com.cn/problem/P3368) | 在差分数组上做区间增加与单点查询 |
+
+## 7. 优点与局限性
+
+树状数组的代码短、存储连续，适合频繁更新和求前缀和。一般区间最值无法用两个前缀最值作差。若需要区间最值和任意更新、或更复杂的区间标记，可以使用线段树。

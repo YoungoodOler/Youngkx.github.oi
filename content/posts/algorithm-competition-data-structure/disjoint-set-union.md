@@ -1,13 +1,21 @@
 ---
 title: "并查集（Disjoint Set Union）"
-excerpt: "解释集合代表、按大小合并和路径压缩，并给出 Kruskal 最小生成树实现。"
+excerpt: "并查集的集合代表、路径压缩、按大小合并和简洁 C++ 示例。"
 ---
 
 [← 返回数据结构总览](../)
 
-## 1. 用一棵树表示一个集合
+## 1. 基本概念
 
-开始时每个元素自成一个集合，父节点是自己。两个元素沿父指针走到同一个根，就属于同一集合。合并两个集合时，只要修改其中一个根的父节点，原来连到它的所有节点就能走到新的根。
+并查集（Disjoint Set Union）维护一组互不相交的集合，主要回答两个元素是否同集合，并可把两个集合合并。任选每棵树的根作为集合代表。
+
+## 2. 结构与工作原理
+
+### 2.1 父指针和查找根
+
+初始每个元素自成集合，`parent[x]=x`。执行 `find_root(x)` 时沿父指针向上，直到 `parent[r]=r`。两个元素的根相同，就属于一个集合。
+
+### 2.2 路径压缩
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 139" role="img" aria-label="并查集对 3 执行 find 前后的父指针" fill="currentColor">
@@ -39,64 +47,88 @@ excerpt: "解释集合代表、按大小合并和路径压缩，并给出 Kruska
   <figcaption>查找 3 时，沿 3 → 2 → 1 找到根，再让 3 直接指向 1。</figcaption>
 </figure>
 
-同一个集合的根可能随着合并改变。因此，保存过去某次 `find(x)` 的结果，只能表示那一刻的根。下一次使用时应重新查找。
+例如从 3 经过 2 找到根 1，返回前可以直接让 3 指向 1。路径缩短后，再查询这些结点时就能更快到达根。压缩只改变树形，集合的元素保持相同。
 
-## 2. 两种优化和基本操作
+### 2.3 按大小合并
 
-- **按大小合并。** 把小树的根接到大树的根上。某个节点每多一层深度，它所在的集合至少翻倍，单靠这项优化，树高就至多为 $O(\log n)$。
-- **路径压缩。** 查到根后，让路径上的节点直接指向根。上图的 `3 → 2 → 1` 就缩成了 `3 → 1`。
+先查到两边的根。若根不同，把较小集合的根挂到较大集合上，再把大小相加。某个结点因挂接多一层时，它所在的集合至少翻倍。仅使用按大小合并就能把树高控制在 $O(\log n)$。
 
-| 操作 | 时间复杂度 |
+## 3. 基本操作及时间复杂度
+
+| 操作 | 复杂度 |
 | --- | --- |
-| 初始化 | $O(n)$ |
-| 查询集合代表、判断同集合 | 均摊 $O(\alpha(n))$ |
+| 初始化 `n` 个集合 | $O(n)$ |
+| 查根、判断同集合 | 均摊 $O(\alpha(n))$ |
 | 合并、查询集合大小 | 均摊 $O(\alpha(n))$ |
+| 存储父结点和大小 | $O(n)$ 空间 |
 
-$\alpha(n)$ 增长很慢。大小只保存在根上，所以查集合大小前也要先调用 `find`。普通并查集适合加入关系，删除一条边后是否还连通则需要别的维护方法。
+$\alpha(n)$ 增长极慢。表中同时使用按大小合并和路径压缩，复杂度是对一串操作平均分摊的开销。
 
-## 3. C++ 手写模板
+<aside class="ds-note" aria-label="大小只记在根上">
+  <p><strong>大小只记在根上。</strong>合并后，被挂接的旧根不再代表整个集合。查询大小应读取 <code>sz[find_root(x)]</code>。</p>
+</aside>
+
+## 4. C++ 代码实现
+
+`parent[x]` 存父结点，`sz[r]` 只保证在根 `r` 处记录正确的集合大小。下面从 0 开始编号。合并 0 与 1、1 与 2 后，0 和 2 同集合，集合大小为 3。
 
 ```cpp
+#include <iostream>
 #include <numeric>
 #include <utility>
 #include <vector>
+using namespace std;
 
-class DSU {
-    std::vector<int> parent, size;
+vector<int> parent, sz;
 
-public:
-    explicit DSU(int n) : parent(n), size(n, 1) {
-        std::iota(parent.begin(), parent.end(), 0);
-    }
+int find_root(int x) {
+    if (parent[x] == x) return x;
+    return parent[x] = find_root(parent[x]);
+}
 
-    int find(int x) {
-        if (parent[x] != x) parent[x] = find(parent[x]);
-        return parent[x];
-    }
+void unite(int a, int b) {
+    a = find_root(a);
+    b = find_root(b);
+    if (a == b) return;
+    if (sz[a] < sz[b]) swap(a, b);
+    parent[b] = a;
+    sz[a] += sz[b];
+}
 
-    bool unite(int a, int b) {
-        a = find(a);
-        b = find(b);
-        if (a == b) return false;
-        if (size[a] < size[b]) std::swap(a, b);
-        parent[b] = a;
-        size[a] += size[b];
-        return true;
-    }
+int main() {
+    parent.resize(4);
+    sz.assign(4, 1);
+    iota(parent.begin(), parent.end(), 0);
 
-    int component_size(int x) {
-        return size[find(x)];
-    }
-};
+    unite(0, 1);
+    unite(1, 2);
+    cout << (find_root(0) == find_root(2)) << '\n';
+    cout << sz[find_root(0)] << '\n';
+}
 ```
 
-`unite` 返回 `false` 表示两个点原来就在同一集合。维护连通块数量时，可以在返回 `true` 时将数量减一。顶点编号是 `0` 到 `n-1`。
+运行结果
 
-## 4. 操作示例：选边连接所有顶点
+```text
+1
+3
+```
 
-Kruskal 将边按权值从小到大排序。遇到一条连接不同连通块的边时加入它，直到选了 `n-1` 条边。如果两端已经连通，再加这条边就会构成环。
+若还要维护连通块数，可把 `unite` 改为返回是否真正合并，只有合并了不同的根才将数量减 1。
 
-例如边 `AB = 1、BC = 2、AC = 3、CD = 4`。选择 AB、BC 后，A 和 C 已在同一集合，于是跳过 AC，再加入 CD，总权值为 7。
+## 5. STL 中的对应容器
+
+STL 没有直接对应的并查集容器。用 `vector<int>` 保存父结点和大小，再用 `iota` 初始化每个元素的父结点。已经得到的根编号可能因下一次合并变化，需要比较时重新查找。
+
+## 6. 典型应用场景
+
+### 6.1 动态连通性与成环判断
+
+无向图中加入一条边前，如果两端已连通，新边会和原来的一条路径形成环。
+
+### 6.2 Kruskal 最小生成树
+
+把边按权值从小到大处理，只选两端属于不同集合的边。选中一条就合并，直到用了 `n-1` 条边。
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 142" role="img" aria-label="Kruskal 跳过同一连通块中的边" fill="currentColor">
@@ -120,43 +152,13 @@ Kruskal 将边按权值从小到大排序。遇到一条连接不同连通块的
   <figcaption>加入权为 1 和 2 的边后，A 与 C 已连通。跳过虚线边，再用权为 4 的边接入 D。</figcaption>
 </figure>
 
-```cpp
-#include <algorithm>
-#include <optional>
-#include <vector>
+### 6.3 洛谷例题
 
-struct Edge {
-    int u, v;
-    long long weight;
-};
+| 题目 | 练习点 |
+| --- | --- |
+| [洛谷 P3367 并查集](https://www.luogu.com.cn/problem/P3367) | 合并与连通性查询 |
+| [洛谷 P3366 最小生成树](https://www.luogu.com.cn/problem/P3366) | 按边权排序，用并查集跳过成环边 |
 
-// 使用上面的 DSU。n >= 1，所有端点都在 [0, n) 内。
-std::optional<long long> kruskal(int n, std::vector<Edge> edges) {
-    std::sort(edges.begin(), edges.end(), [](const Edge& a, const Edge& b) {
-        return a.weight < b.weight;
-    });
+## 7. 优点与局限性
 
-    DSU dsu(n);
-    long long total = 0;
-    int used = 0;
-    for (const auto& e : edges) {
-        if (!dsu.unite(e.u, e.v)) continue;
-        total += e.weight;
-        if (++used == n - 1) break;
-    }
-    if (used == n - 1) return total;
-    return std::nullopt;
-}
-```
-
-总时间为 $O(n + m\log(m+1) + m\alpha(n))$，主要步骤是初始化和给 $m$ 条边排序。返回空值表示原图不连通。
-
-## 5. 可维护的信息和变式
-
-- **连通块大小、最小编号和总权值。** 在根上维护统计量，仅在两个不同集合合并时合并统计结果。路径压缩只改变父指针，不改变这些集合统计量。
-- **等价关系和异或关系。** 等价关系可直接合并。若还要知道两点的相对关系，例如它们在二分图中是否同色，可用带权并查集保存相对父节点的值，并在找根时同步更新。
-- **离线删除与回滚。** 若操作只删边、查询连通性，倒序处理就能把删除改成加边。若同时有增删，常见的离线做法是按时间组织边的有效区间，用可回滚并查集撤销合并。回滚版本通常保留按大小合并，省去会批量改父指针的路径压缩。
-
-<aside class="ds-note" aria-label="适用范围">
-  <p><strong>适用范围。</strong>并查集回答无向连通性或等价关系，不能从父指针恢复原图的一条路径，也不能直接判断有向图的可达性。</p>
-</aside>
+并查集只保存集合归属，存储小，特别适合不断合并的场景。它不保存原图中的路径，删一条边也无法直接把集合拆开。仅有删边操作时，可考虑倒序转成加边；混合增删通常需要离线分治或可回滚并查集。

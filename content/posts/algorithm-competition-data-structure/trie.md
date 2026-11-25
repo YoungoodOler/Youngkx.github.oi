@@ -1,13 +1,19 @@
 ---
 title: "字典树（Trie）"
-excerpt: "讲解前缀路径、终止计数和子树计数，给出支持重复词与删除的模板。"
+excerpt: "字典树的前缀共享、单词结束标记，以及插入、整词查询和前缀查询。"
 ---
 
 [← 返回数据结构总览](../)
 
-## 1. 一条路径表示一个前缀
+## 1. 基本概念
 
-根表示空串，每条边表示一个字符。从根走出三条边 `c → a → t` 就得到路径 `cat`。`cat` 和 `car` 共用 `ca`，从下一个字符开始分叉。前缀存在只说明路径有匹配的单词。判断一个完整单词是否出现过，还要检查路径末端的终止标记或计数。
+字典树（Trie）把字符串按字符存到树上。根表示空串，每条边带一个字符。从根到某个结点的路径表示一个前缀。多串共享的前缀只保存一次。
+
+## 2. 结构与工作原理
+
+### 2.1 逐字符插入
+
+插入 `cat` 时，依次走 `c`、`a`、`t`，缺少的边就在当前位置创建。插入 `car` 时，`c` 和 `a` 已经存在，只需在 `a` 之后增加 `r`。
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 133" role="img" aria-label="单词 cat 和 car 共享前缀 ca" fill="currentColor">
@@ -35,7 +41,13 @@ excerpt: "讲解前缀路径、终止计数和子树计数，给出支持重复�
   <figcaption>两词共享 c → a，标亮的节点是单词结尾。</figcaption>
 </figure>
 
-插入 `car`、`cart`、`cat` 后，`ca` 只代表前缀，`car` 同时是单词和另一个单词的前缀。若允许重复插入，用 `terminal` 记录单词出现次数，用 `pass` 记录这个前缀下的单词总数。
+### 2.2 整词与前缀
+
+找到路径只说明前缀存在。还需要在词尾保存结束标记，才能识别整词。假如插入 `car` 和 `cart`，`car` 同时是完整词，也是另一个词的前缀。仅把叶结点当作词尾就会漏掉它。
+
+### 2.3 重复词和前缀计数
+
+若希望统计重复词，可把结束标记变成 `terminal` 计数。另给每个结点维护 `pass`，插入时把沿路经过的计数都加一。以后统计一个前缀有多少个单词，只需要读取对应结点的 `pass`。
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 145" role="img" aria-label="字典树的前缀计数和完整单词计数" fill="currentColor">
@@ -65,96 +77,101 @@ excerpt: "讲解前缀路径、终止计数和子树计数，给出支持重复�
   <figcaption>插入 car、cart、cat、car 后，car 的前缀计数为 3，完整单词计数为 2。</figcaption>
 </figure>
 
-## 2. 操作和空间
+## 3. 基本操作及时间复杂度
 
-| 操作 | 时间复杂度 | 使用的信息 |
-| --- | --- | --- |
-| 插入长度为 $L$ 的词 | $O(L)$ | 沿路创建节点并增加计数 |
-| 查询完整词次数 | $O(L)$ | 路径末端的 `terminal` |
-| 查询前缀次数 | $O(L)$ | 路径末端的 `pass` |
-| 删除一个出现的词 | $O(L)$ | 减少路径上的计数和词尾计数 |
+| 操作 | 时间复杂度 |
+| --- | --- |
+| 插入一个长为 `L` 的单词 | $O(L)$ |
+| 查询整词是否存在 | $O(L)$ |
+| 查询前缀是否存在或计数 | $O(L)$ |
+| 计数版删除一个单词 | $O(L)$，先确认单词存在 |
 
-上表假设固定字母表且每步直接访问孩子下标。对于 26 个小写英文字母，每个节点存 26 个孩子位置，$M$ 个节点需要 $O(26M)$ 空间。若字母表很大而每个节点只有少量孩子，可以用映射存存在的边，代价是每步访问孩子也要执行一次映射查找。
+设有 `m` 个结点，字母表大小为 $\sigma$。每结点开一整个孩子数组需要 $O(m\sigma)$ 空间。所有插入串的总长度是 `S` 时，最多创建 `S+1` 个结点。
 
-## 3. C++ 手写模板
+<aside class="ds-note" aria-label="字母下标">
+  <p><strong>字母下标。</strong><code>ch - 'a'</code> 只适用于小写字母的映射。扩展到数字和大小写时，要为不同字符分配不同下标。</p>
+</aside>
 
-输入限小写英文字母。根的下标为 0，新节点下标从 1 开始，所以孩子下标 0 表示这条边尚未创建。下面保留已分配节点，删除仅修改计数，预留路径以后可以复用。
+## 4. C++ 代码实现
+
+下面的字母表是 `a` 到 `z`，用长度为 26 的数组存孩子下标。结点 0 是根，孩子下标为 0 表示无边。`walk` 查不到路径时返回 `-1`，查询整词时还要检查 `end`。
 
 ```cpp
-#include <array>
-#include <string_view>
+#include <iostream>
+#include <string>
 #include <vector>
+using namespace std;
 
-class Trie {
-    struct Node {
-        std::array<int, 26> next{};
-        int terminal = 0;
-        int pass = 0;
-    };
-    std::vector<Node> nodes{Node{}};
-
-    int walk(std::string_view s) const {
-        int p = 0;
-        for (char ch : s) {
-            p = nodes[p].next[ch - 'a'];
-            if (p == 0) return -1;
-        }
-        return p;
-    }
-
-public:
-    void insert(std::string_view word) {
-        int p = 0;
-        ++nodes[p].pass;
-        for (char ch : word) {
-            int c = ch - 'a';
-            if (nodes[p].next[c] == 0) {
-                int child = static_cast<int>(nodes.size());
-                nodes.emplace_back();
-                nodes[p].next[c] = child;
-            }
-            p = nodes[p].next[c];
-            ++nodes[p].pass;
-        }
-        ++nodes[p].terminal;
-    }
-
-    int count_word(std::string_view word) const {
-        int p = walk(word);
-        return p == -1 ? 0 : nodes[p].terminal;
-    }
-
-    int count_prefix(std::string_view prefix) const {
-        int p = walk(prefix);
-        return p == -1 ? 0 : nodes[p].pass;
-    }
-
-    bool erase_one(std::string_view word) {
-        if (count_word(word) == 0) return false;
-        int p = 0;
-        --nodes[p].pass;
-        for (char ch : word) {
-            p = nodes[p].next[ch - 'a'];
-            --nodes[p].pass;
-        }
-        --nodes[p].terminal;
-        return true;
-    }
+struct Node {
+    int next[26]{};
+    bool end = false;
 };
+
+vector<Node> trie(1);
+
+void insert(const string& s) {
+    int p = 0;
+    for (char ch : s) {
+        int c = ch - 'a';
+        if (trie[p].next[c] == 0) {
+            trie.push_back({});
+            trie[p].next[c] = int(trie.size()) - 1;
+        }
+        p = trie[p].next[c];
+    }
+    trie[p].end = true;
+}
+
+int walk(const string& s) {
+    int p = 0;
+    for (char ch : s) {
+        p = trie[p].next[ch - 'a'];
+        if (p == 0) return -1;
+    }
+    return p;
+}
+
+int main() {
+    insert("cat");
+    insert("car");
+
+    int p = walk("cat");
+    cout << (p != -1 && trie[p].end) << '\n';
+
+    p = walk("ca");
+    cout << (p != -1 && trie[p].end) << '\n';
+    cout << (p != -1) << '\n';
+}
 ```
 
-保存节点下标后再扩容 `vector`，不要跨 `emplace_back()` 保存节点引用。删除后，路径仍可能存在，因此判断前缀是否还有对应单词应看 `count_prefix(prefix) > 0`。
+运行结果
 
-## 4. 应用和扩展
+```text
+1
+0
+1
+```
 
-- **词频和前缀统计。** 插入 `car、cart、cat、car`，`count_word("car")` 为 2，`count_prefix("car")` 为 3。删一次 `car` 后分别为 1 和 2。
-- **01 Trie。** 把整数按二进制位从高到低插入。求最大异或值时，在当前位优先走与询问数相反的分支，能把该位的异或设为 1。高级位优先决定整数大小。
-- **多模式串匹配。** 字典树可以组织多个模式串。要在一段长文本里同时查找这些模式，可以继续加失败指针，形成 AC 自动机。
+删除计数版单词时，确认它有出现过，再沿路径把 `pass` 以及词尾 `terminal` 各减一。可以先保留这些结点，避免同时处理内存回收。
 
-## 5. 内存与变体
+## 5. STL 中的对应容器
 
-若所有插入词的总长度为 $S$，最多创建 $S+1$ 个节点，共享的前缀会减少节点数。固定数组实现速度稳定，单个节点的存储开销却会随字母表大小增加。在大字母表或内存紧张时，可用动态存边、压缩只有单个孩子的路径，或者提前估算并预留节点池。
+STL 没有字典树容器。小字母表可用数组保存孩子，动态增加结点可以用 `vector`。字母表较大、结点分支很少时，也可以只用 `map` 或 `unordered_map` 保存实际存在的边。
 
-<aside class="ds-note" aria-label="输入范围">
-  <p><strong>字符下标。</strong>模板只接受小写英文字母。若题目给了大小写、数字或更大的字符表，先定义字符到下标的映射，再确定分支的存储方式。</p>
-</aside>
+## 6. 典型应用场景
+
+### 6.1 典型用法
+
+- 词典、词频和前缀计数。
+- 01 Trie。把整数从高位到低位存入，异或最大值优先争取高位为 1。
+- 作为 AC 自动机的基础。多条模式串先建 Trie，再建立失配跳转。
+
+### 6.2 洛谷例题
+
+| 题目 | 练习点 |
+| --- | --- |
+| [洛谷 P8306 字典树 / Trie](https://www.luogu.com.cn/problem/P8306) | 维护前缀计数，按题目字符集设计下标映射 |
+
+## 7. 优点与局限性
+
+Trie 适合大量共享前缀的查询，查找工作量与字符串长度有关。固定数组版每个结点的存储会随字母表扩大。若只做完整键的精确匹配，哈希表即可。

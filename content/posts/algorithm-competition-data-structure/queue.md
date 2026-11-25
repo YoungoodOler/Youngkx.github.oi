@@ -1,13 +1,17 @@
 ---
 title: "队列（Queue）"
-excerpt: "讲解先进先出、STL 队列与 BFS 的分层性质，并实现多源网格 BFS。"
+excerpt: "队列的先进先出、STL 接口，以及它为什么适合 BFS。"
 ---
 
 [← 返回数据结构总览](../)
 
-## 1. 先进先出和搜索层次
+## 1. 基本概念
 
-队列把新元素放到队尾，从队首取出最早加入的元素。BFS 用它控制处理顺序。若边权都为 1，从起点开始，先处理距离为 0 的顶点，然后处理距离为 1、2、3 的顶点。
+队列（Queue）是一种先进先出（FIFO）的线性结构。新元素从**队尾**进入，最早加入的元素从**队首**移除。队列能自然表示任务等待的先后顺序。
+
+## 2. 结构与工作原理
+
+### 2.1 入队和出队
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 93" role="img" aria-label="队列的入队和出队方向" fill="currentColor">
@@ -29,22 +33,15 @@ excerpt: "讲解先进先出、STL 队列与 BFS 的分层性质，并实现多�
   <figcaption>A 最早进入，先从队首离开。</figcaption>
 </figure>
 
-设起点 A 连着 B、C，B 和 C 又都连着 D。处理 A 后，B、C 依次入队。处理 B 时第一次发现 D，就记下距离 2 并将 D 入队。处理 C 时看到 D 已经有距离，就跳过它。**在入队时标记**，能让每个顶点只进队一次。
+队列为 `[A,B,C]` 时，先出队得到 A，再入队 D，结果为 `[B,C,D]`。队首和队尾的值可以直接读取，读取本身不会移除元素。
 
-## 2. 基本操作与 STL
+### 2.2 队列怎样实现分层搜索？
 
-| 操作 | `std::queue` 接口 | 默认底层容器下的时间复杂度 |
-| --- | --- | --- |
-| 从队尾加入 | `push(x)` | $O(1)$ |
-| 从队首删除 | `pop()` | $O(1)$ |
-| 读队首或队尾 | `front()`、`back()` | $O(1)$ |
-| 判空或查询长度 | `empty()`、`size()` | $O(1)$ |
+无权图的 BFS 先把起点以距离 0 入队。每次从队首取出一个结点，把尚未发现的邻居记为当前距离加 1，再加入队尾。由于下一层总接在已有结点之后，较近的结点先处理。第一次发现一个点时就标记为已访问，避免两个前驱将它都加入队列。
 
-头文件为 `<queue>`。在 `pop()` 之前先复制队首的值。若把 `front()` 存成引用，再删除该元素，引用就失效。
+### 2.3 多源 BFS
 
-## 3. 操作示例：离最近出口的步数
-
-每步可走到上下左右的相邻格，`#` 是墙，`S` 是出口。要求每个格子到最近出口的距离。先把所有出口以距离 0 入队，然后做一次 BFS。因为这里的格子边可以双向走，从出口向外走的距离等于其他格子走到出口的距离。
+可以同时把多个起点以距离 0 入队。例如要算每格到最近出口的步数，从所有出口一起向外扩张即可。对于可以双向走的网格，这与从每格找最近出口的距离相同。
 
 <figure class="ds-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 138" role="img" aria-label="双起点网格的最短距离分层" fill="currentColor">
@@ -76,56 +73,108 @@ excerpt: "讲解先进先出、STL 队列与 BFS 的分层性质，并实现多�
   <figcaption>两个出口同时作为第 0 层。墙保持不可达，其余格子得到到最近出口的步数。</figcaption>
 </figure>
 
+## 3. 基本操作及时间复杂度
+
+| 操作 | 常见复杂度 | 条件 |
+| --- | --- | --- |
+| 队尾入队 | $O(1)$ | `queue` 默认底层容器 |
+| 队首出队 | $O(1)$ | 队列非空 |
+| 读队首、队尾 | $O(1)$ | 队列非空 |
+| 判空、取长度 | $O(1)$ | 随时可用 |
+| 查找某个值 | 最坏 $O(n)$ | 直接访问接口不提供搜索 |
+
+存储 `n` 个元素需要 $O(n)$ 空间。用邻接表做 BFS 时，每个点最多入队一次，每条边只检查常数次，耗时 $O(V+E)$。
+
+<aside class="ds-note" aria-label="标记时机">
+  <p><strong>标记时机。</strong>节点第一次入队时就写入距离。等到它出队才标记，同一层的多个节点可能反复把它加入队列。</p>
+</aside>
+
+## 4. C++ 代码实现
+
+下面用 `queue` 对一个含五个点的无向图做 BFS。编号 4 的点不与其他点相连，距离保留为 `-1`。`dist` 同时记录距离和是否已经入过队。
+
 ```cpp
+#include <iostream>
 #include <queue>
-#include <string>
-#include <utility>
 #include <vector>
+using namespace std;
 
-std::vector<std::vector<int>> distance_to_exit(const std::vector<std::string>& grid) {
-    if (grid.empty()) return {};
-    int rows = static_cast<int>(grid.size());
-    int cols = static_cast<int>(grid[0].size());
-    std::vector<std::vector<int>> dist(rows, std::vector<int>(cols, -1));
-    std::queue<std::pair<int, int>> q;
+int main() {
+    vector<vector<int>> adj = {{1, 2}, {0, 3}, {0, 3}, {1, 2}, {}};
+    vector<int> dist(adj.size(), -1);
+    queue<int> q;
+    dist[0] = 0;
+    q.push(0);
 
-    for (int r = 0; r < rows; ++r) {
-        for (int c = 0; c < cols; ++c) {
-            if (grid[r][c] == 'S') {
-                dist[r][c] = 0;
-                q.emplace(r, c);
-            }
-        }
-    }
-
-    constexpr int dr[] = {-1, 1, 0, 0};
-    constexpr int dc[] = {0, 0, -1, 1};
     while (!q.empty()) {
-        auto [r, c] = q.front();
+        int u = q.front();
         q.pop();
-        for (int i = 0; i < 4; ++i) {
-            int nr = r + dr[i], nc = c + dc[i];
-            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
-            if (grid[nr][nc] == '#' || dist[nr][nc] != -1) continue;
-            dist[nr][nc] = dist[r][c] + 1;
-            q.emplace(nr, nc);
+        for (int v : adj[u]) {
+            if (dist[v] != -1) continue;
+            dist[v] = dist[u] + 1;
+            q.push(v);
         }
     }
-    return dist;
+
+    for (int x : dist) cout << x << ' ';
+    cout << '\n';
 }
 ```
 
-矩形网格有 $R\times C$ 个格子，时间和空间均为 $O(RC)$。墙和无法到达出口的格子保留为 `-1`。若题目只问第一个目标，首次发现它时可以结束并返回距离。
+运行结果
 
-## 4. 典型应用和边界
+```text
+0 1 1 2 -1
+```
 
-- 普通 BFS 求无权图最短路。用邻接表时，时间为 $O(V+E)$。
-- 树的层序遍历。需要分层输出时，进入一层前先记下当前的 `q.size()`，只处理这么多个元素。
-- 拓扑排序。把入度刚降到 0 的点加入队尾，最后比较处理数和顶点总数，能发现环。
-- 边权为 0 或 1 时可以用双端队列。存在其他非负权值时，通常用二叉堆优化 Dijkstra。
+## 5. STL 中的对应容器
 
-## 5. 记录路径、管理容量
+| `queue<T>` 接口 | 作用 |
+| --- | --- |
+| `push(x)`、`emplace(...)` | 从队尾加入 |
+| `front()`、`back()` | 查看首尾 |
+| `pop()` | 删除队首 |
+| `empty()`、`size()` | 判空、取长度 |
 
-若还要输出路径，在首次发现 `v` 时保存 `parent[v] = u`。从目标沿父节点返回，再反转顺序。多源 BFS 的父链最终停在某个距离为 0 的起点。如果有多个同距离方案，得到哪条路径取决于初始入队与邻接点访问顺序。
+头文件是 `<queue>`。要在出队后继续使用旧队首，应先复制元素。把 `front()` 存成引用后出队会让那个引用失效。
 
-固定容量的环形缓冲区用一个数组和首尾下标。每次移动下标时到达末尾就绕回 0。可以额外记录已有元素数来区分空与满，因为两种情况下首尾下标都可能相等。普通竞赛 BFS 用 STL 队列即可，需要重用预分配存储或固定容量时再考虑环形缓冲区。
+```cpp
+#include <iostream>
+#include <queue>
+using namespace std;
+
+int main() {
+    queue<int> q;
+    q.push(10);
+    q.push(20);
+
+    cout << q.front() << ' ' << q.back() << '\n';
+    q.pop();
+    cout << q.front() << '\n';
+}
+```
+
+运行结果
+
+```text
+10 20
+20
+```
+
+## 6. 典型应用场景
+
+### 6.1 典型用法
+
+- 无权图和网格最短路、多个起点同时扩张。
+- 层序遍历。要分层输出时，在每层开始先记下当前队列长度。
+- 拓扑排序。把入度刚降至 0 的点放入队尾；若最终处理的点数不足，图中存在环。
+
+### 6.2 洛谷例题
+
+| 题目 | 练习点 |
+| --- | --- |
+| [洛谷 P1443 马的遍历](https://www.luogu.com.cn/problem/P1443) | 把马的八种移动当作邻接关系，做无权图最短路 |
+
+## 7. 优点与局限性
+
+队列适合保持到达顺序，或按层推进状态。普通 BFS 要求每一步代价相同。边权只含 0 和 1 时可用双端队列，其他非负边权通常用优先队列配合 Dijkstra。
