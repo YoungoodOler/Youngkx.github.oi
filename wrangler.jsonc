@@ -6,6 +6,11 @@
   "main": "./cloudflare/worker.ts",
   "workers_dev": true,
   "preview_urls": true,
+  "vars": {
+    "COMMENT_EMAIL_FROM": "comments@notify.youngkx.cn",
+    "COMMENT_EMAIL_OWNER": "ykx756474427@gmail.com",
+  },
+  "triggers": { "crons": ["*/5 * * * *"] },
   "routes": [
     {
       "pattern": "youngkx.cn",

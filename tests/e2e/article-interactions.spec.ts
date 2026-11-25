@@ -42,6 +42,11 @@ test('访客可以点赞、自定义用户名评论并回复，刷新后仍保�
     await expect(page.locator('.article-like-count')).toHaveText(String(initial + 1));
     await page.locator('#comment-nickname').fill(username);
     await page.getByLabel('评论内容', { exact: true }).fill(text);
+    const commentEmail = page.getByRole('textbox', { name: /^邮箱/ });
+    await expect(commentEmail).toHaveJSProperty('required', true);
+    await page.getByRole('button', { name: '发布评论' }).click();
+    await expect(commentEmail).toBeFocused();
+    await commentEmail.fill('reader@example.com');
     const publication = page.waitForResponse(
       (response) =>
         response.url().includes('/api/articles/comments?') &&
@@ -72,6 +77,9 @@ test('访客可以点赞、自定义用户名评论并回复，刷新后仍保�
     await replyPage.getByRole('button', { name: `回复 ${username}`, exact: true }).click();
     const replyForm = replyPage.locator('.article-reply-form');
     await replyForm.getByLabel('用户名', { exact: false }).fill(replyName);
+    const replyEmail = replyForm.getByRole('textbox', { name: /^邮箱/ });
+    await expect(replyEmail).toHaveJSProperty('required', true);
+    await replyEmail.fill('reply@example.com');
     await replyForm.getByLabel('回复内容', { exact: true }).fill(replyText);
     await replyForm.getByRole('button', { name: '发布回复' }).click();
     await expect(replyPage.getByText('回复已发布。', { exact: true })).toBeVisible();
@@ -229,6 +237,7 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
   await page.goto(article, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('button', { name: '点赞文章', exact: true })).toBeEnabled();
   await expect(page.getByRole('button', { name: /^删除(?:评论|回复) / })).toHaveCount(0);
+  await page.locator('#comment-email').fill('reader@example.com');
   await page.locator('#comment-content').fill('最后发的评论');
   await page.getByRole('button', { name: '发布评论', exact: false }).click();
   await expect(page.locator('.article-comment-thread').last()).toHaveAttribute(
@@ -248,6 +257,7 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
   await thread.getByRole('button', { name: '查看 25 条回复', exact: true }).click();
   await expect(thread.locator('.article-reply-list > li[data-comment-id]')).toHaveCount(20);
   await thread.getByRole('button', { name: '回复 访客1', exact: true }).click();
+  await thread.getByRole('textbox', { name: /^邮箱/ }).fill('reply@example.com');
   await thread.getByLabel('回复内容', { exact: true }).fill('最后发的回复');
   await thread.getByRole('button', { name: '发布回复', exact: false }).click();
   await expect(thread.locator('.article-reply-list > li[data-comment-id]').last()).toHaveAttribute(

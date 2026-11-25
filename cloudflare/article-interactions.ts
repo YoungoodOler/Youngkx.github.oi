@@ -1,12 +1,17 @@
 import {
+  maximumCommentEmailLength,
   maximumCommentLength,
   maximumNicknameLength,
   type ArticleComment,
 } from '../lib/article-interactions';
+import { sendPendingCommentEmails } from './comment-emails';
 import { authorizeManagement, jsonResponse, readLimitedJson, type WorkerEnv } from './http';
 
 const cookieName = 'youngkx_visitor';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const emailLocalPart = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*$/i;
+const emailDomain =
+  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 const commentPageSize = 20;
 const commentColumns = `c.id, c.nickname, c.content, c.created_at AS createdAt, c.parent_id AS parentId, c.reply_to_id AS replyToId,
   (SELECT nickname FROM article_comments WHERE id = c.reply_to_id) AS replyTo,
@@ -28,6 +33,16 @@ function articlePath(value: string | null) {
   } catch {
     return null;
   }
+}
+
+function commentEmail(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const email = value.trim();
+  if (email.length > maximumCommentEmailLength || /[\s\p{Cc}]/u.test(email)) return null;
+  const [local, domain, extra] = email.split('@');
+  if (!domain || extra !== undefined || local.length > 64) return null;
+  if (!emailLocalPart.test(local) || !emailDomain.test(domain)) return null;
+  return `${local}@${domain.toLowerCase()}`;
 }
 
 function sameOrigin(request: Request, env: WorkerEnv) {
@@ -102,7 +117,13 @@ async function commentCount(db: D1Database, path: string) {
   );
 }
 
-async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitorId: string) {
+async function handleRequest(
+  request: Request,
+  env: WorkerEnv,
+  url: URL,
+  visitorId: string,
+  ctx: ExecutionContext,
+) {
   if (url.pathname === '/api/articles/admin') {
     if (request.method !== 'GET') return jsonResponse({ error: '不支持的请求方式。' }, 405);
     const denied = await authorizeManagement(request, env);
@@ -298,6 +319,8 @@ async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitor
       commentCount: await commentCount(db, path),
       parentReplyCount: await parentCount(existing.parentId),
     });
+  const email = commentEmail(body.email);
+  if (!email) return jsonResponse({ error: '请填写有效的邮箱地址。' }, 400);
   let parentId: number | null = null;
   let replyToId: number | null = null;
   let replyTo: string | null = null;
@@ -323,16 +346,17 @@ async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitor
     return rateLimitResponse(15);
   if (!(await consumeRateLimit(db, `comments:${fingerprint}`, 5, 60))) return rateLimitResponse(60);
 
-  const results = await db.batch<Record<string, unknown>>([
+  const [insert, count] = await db.batch<Record<string, unknown>>([
     db
       .prepare(
-        `INSERT INTO article_comments (article_path, visitor_id, request_id, nickname, content, created_at, parent_id, reply_to_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, nickname, content, created_at AS createdAt, parent_id AS parentId`,
+        `INSERT INTO article_comments (article_path, visitor_id, request_id, nickname, email, content, created_at, parent_id, reply_to_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, nickname, content, created_at AS createdAt, parent_id AS parentId`,
       )
       .bind(
         path,
         visitorId,
         body.requestId,
         nickname,
+        email,
         content,
         new Date().toISOString(),
         parentId,
@@ -340,20 +364,27 @@ async function handleRequest(request: Request, env: WorkerEnv, url: URL, visitor
       ),
     db.prepare('SELECT COUNT(*) AS count FROM article_comments WHERE article_path = ?').bind(path),
   ]);
+  const published = insert.results[0];
+  ctx.waitUntil(sendPendingCommentEmails(env, Number(published.id)));
   return jsonResponse(
     {
-      comment: { ...results[0].results[0], replyTo, replyToId, replyCount: 0 },
-      commentCount: results[1].results[0].count,
+      comment: { ...published, replyTo, replyToId, replyCount: 0 },
+      commentCount: count.results[0].count,
       parentReplyCount: await parentCount(parentId),
     },
     201,
   );
 }
 
-export async function handleArticleInteractionsApi(request: Request, env: WorkerEnv, url: URL) {
+export async function handleArticleInteractionsApi(
+  request: Request,
+  env: WorkerEnv,
+  url: URL,
+  ctx: ExecutionContext,
+) {
   const visitor = await visitorIdentity(request);
   try {
-    const response = await handleRequest(request, env, url, visitor.id);
+    const response = await handleRequest(request, env, url, visitor.id, ctx);
     if (visitor.cookie) response.headers.set('Set-Cookie', visitor.cookie);
     return response;
   } catch (error) {

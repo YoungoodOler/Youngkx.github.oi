@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTestHarness } from 'wrangler';
+import { sendPendingCommentEmails } from '../cloudflare/comment-emails';
 
 const article = '/2026/11/04/first/';
 const otherArticle = '/2026/11/04/second/';
@@ -39,6 +40,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await server.close();
 }, 30_000);
+afterEach(() => vi.restoreAllMocks());
 beforeEach(async () => {
   await db.batch([
     db.prepare('DELETE FROM article_comments'),
@@ -64,6 +66,7 @@ function send(route, cookie, body, selected = article, headers = {}) {
 }
 const commentInput = (content = '这篇文章很有帮助。', extra = {}) => ({
   content,
+  email: 'reader@example.com',
   requestId: randomUUID(),
   ...extra,
 });
@@ -121,9 +124,9 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
       parentId: null,
       replyCount: 0,
     });
-    expect(Object.keys(published.comment)).toEqual(
-      expect.not.arrayContaining(['visitor_id', 'request_id', 'ip']),
-    );
+    for (const field of ['visitor_id', 'request_id', 'ip', 'email']) {
+      expect(published.comment).not.toHaveProperty(field);
+    }
     const retry = await send('comments', cookie, input);
     expect(retry.status).toBe(200);
     expect((await retry.json()).comment.id).toBe(published.comment.id);
@@ -132,8 +135,72 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
     const data = await snapshot(await visitor());
     expect(data.commentCount).toBe(2);
     expect(data.comments.map((item) => item.nickname)).toEqual(['匿名访客', '自定义用户名']);
+    expect(data.comments.every((item) => !('email' in item))).toBe(true);
     expect(named.comment.nickname).toBe('自定义用户名');
     expect((await snapshot(cookie, otherArticle)).comments).toEqual([]);
+  });
+
+  it('notifies the owner and the directly replied-to address with independent retries', async () => {
+    const rootVisitor = await visitor();
+    const rootInput = commentInput('根评论', { email: 'root@example.com' });
+    const root = await post(rootVisitor, rootInput);
+    expect((await send('comments', rootVisitor, rootInput)).status).toBe(200);
+    const reply = await post(
+      await visitor(),
+      commentInput('第一条回复', { email: 'direct+tag@EXAMPLE.com', replyToId: root.comment.id }),
+    );
+    await post(await visitor(), commentInput('回复一条回复', { replyToId: reply.comment.id }));
+    const legacy = await db
+      .prepare(
+        'INSERT INTO article_comments (article_path, visitor_id, request_id, nickname, content, created_at) VALUES (?, ?, ?, ?, ?, ?) RETURNING id',
+      )
+      .bind(article, 'legacy-visitor', randomUUID(), '旧访客', '旧评论', new Date().toISOString())
+      .first();
+    await post(await visitor(), commentInput('回复没有邮箱的旧评论', { replyToId: legacy.id }));
+
+    const delivered = [];
+    const replyAttempts = [];
+    const env = {
+      ARTICLE_INTERACTIONS: db,
+      COMMENT_EMAIL_OWNER: 'owner@example.com',
+      COMMENT_EMAIL_FROM: 'comments@notify.youngkx.cn',
+      RESEND_API_KEY: 'test-key',
+    };
+    const realFetch = globalThis.fetch;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+      if (url !== 'https://api.resend.com/emails') return realFetch(url, init);
+      const message = JSON.parse(init.body);
+      expect(init.headers.Authorization).toBe('Bearer test-key');
+      if (message.to[0] === 'direct+tag@example.com') {
+        replyAttempts.push(init.headers['Idempotency-Key']);
+        if (replyAttempts.length === 1) return new Response(null, { status: 503 });
+      }
+      delivered.push(message);
+      return new Response(null, { status: 200 });
+    });
+    await Promise.all([
+      sendPendingCommentEmails(env),
+      sendPendingCommentEmails(env, reply.comment.id),
+    ]);
+    expect(delivered.flatMap(({ to }) => to).sort()).toEqual([
+      'owner@example.com',
+      'owner@example.com',
+      'owner@example.com',
+      'owner@example.com',
+      'root@example.com',
+    ]);
+    expect(
+      delivered.every(({ text }) => text.includes(`${origin}${article}#article-comments-title`)),
+    ).toBe(true);
+    expect(await db.prepare('SELECT attempts FROM article_comment_email_outbox').first()).toEqual({
+      attempts: 1,
+    });
+    await db.prepare('UPDATE article_comment_email_outbox SET ready_at = 0').run();
+    await sendPendingCommentEmails(env);
+    expect(delivered.at(-1).to).toEqual(['direct+tag@example.com']);
+    expect(replyAttempts).toHaveLength(2);
+    expect(replyAttempts[0]).toBe(replyAttempts[1]);
+    expect(await db.prepare('SELECT id FROM article_comment_email_outbox').first()).toBeNull();
   });
 
   it('groups replies and replies to replies under the original comment with their chosen names', async () => {
@@ -181,6 +248,9 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
       commentInput('test', { nickname: 'a'.repeat(33) }),
       commentInput('test', { website: 'spam.example' }),
       commentInput('test', { nickname: 'a\nb' }),
+      commentInput('test', { email: undefined }),
+      commentInput('test', { email: 'reader@example' }),
+      commentInput('test', { email: 'reader\n@example.com' }),
       { content: 'test' },
     ]) {
       expect((await send('comments', cookie, input)).status).toBe(400);

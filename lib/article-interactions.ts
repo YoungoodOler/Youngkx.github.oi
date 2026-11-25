@@ -1,5 +1,6 @@
 export const maximumCommentLength = 2000;
 export const maximumNicknameLength = 32;
+export const maximumCommentEmailLength = 254;
 
 export type ArticleComment = {
   id: number;

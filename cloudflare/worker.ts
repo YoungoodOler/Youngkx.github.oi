@@ -6,6 +6,7 @@ import {
 
 import { handleFilesApi } from './files';
 import { handleArticleInteractionsApi } from './article-interactions';
+import { sendPendingCommentEmails } from './comment-emails';
 import { authorizeManagement, jsonResponse, readLimitedJson, type WorkerEnv } from './http';
 
 const linksKey = 'directory:v1';
@@ -61,7 +62,11 @@ async function handleLinksApi(request: Request, env: WorkerEnv, url: URL) {
 }
 
 const worker = {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async scheduled(_controller: ScheduledController, env: Env) {
+    await sendPendingCommentEmails(env);
+  },
+
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.hostname === 'youngkx.cn') {
@@ -70,7 +75,7 @@ const worker = {
     }
 
     if (url.pathname.startsWith('/api/articles/')) {
-      return handleArticleInteractionsApi(request, env, url);
+      return handleArticleInteractionsApi(request, env, url, ctx);
     }
 
     if (url.pathname === '/api/files' || url.pathname.startsWith('/api/files/')) {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import {
+  maximumCommentEmailLength,
   maximumCommentLength,
   maximumNicknameLength,
   mergeCommentsInOrder,
@@ -17,6 +18,34 @@ import {
   rememberCommentManagementToken,
 } from '@/lib/article-interactions-client';
 import CommentModeration, { CommentDeleteButton } from './CommentModeration';
+
+function CommentEmailInput({
+  id,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  disabled: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <>
+      <label htmlFor={id}>
+        邮箱 <span>必填，仅用于接收回复通知</span>
+      </label>
+      <input
+        id={id}
+        name="email"
+        type="email"
+        autoComplete="email"
+        maxLength={maximumCommentEmailLength}
+        required
+        disabled={disabled}
+        onChange={onChange}
+      />
+    </>
+  );
+}
 
 function commentDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', {
@@ -122,6 +151,7 @@ function CommentThread({
   const submitReply = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!target || posting || loading || !content.trim()) return;
+    const email = new FormData(event.currentTarget).get('email');
     setPosting(true);
     setError('');
     try {
@@ -131,6 +161,7 @@ function CommentThread({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nickname,
+          email,
           content,
           website,
           requestId: requestId.current,
@@ -271,6 +302,13 @@ function CommentThread({
               requestId.current = null;
             }}
           />
+          <CommentEmailInput
+            id={`${formId}-email`}
+            disabled={posting}
+            onChange={() => {
+              requestId.current = null;
+            }}
+          />
           <label htmlFor={`${formId}-content`}>回复内容</label>
           <textarea
             id={`${formId}-content`}
@@ -408,6 +446,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
   const postComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (posting || !content.trim()) return;
+    const email = new FormData(event.currentTarget).get('email');
     setPosting(true);
     setActionError('');
     setNotice('');
@@ -416,7 +455,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
       const result = await interactionRequest<PublishedComment>(`/api/articles/comments?${query}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, content, website, requestId: requestId.current }),
+        body: JSON.stringify({ nickname, email, content, website, requestId: requestId.current }),
       });
       setData((current) =>
         current
@@ -567,6 +606,13 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
           disabled={posting}
           onChange={(event) => {
             setNickname(event.target.value);
+            requestId.current = null;
+          }}
+        />
+        <CommentEmailInput
+          id="comment-email"
+          disabled={posting}
+          onChange={() => {
             requestId.current = null;
           }}
         />
