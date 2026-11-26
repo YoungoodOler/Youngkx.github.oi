@@ -3,7 +3,9 @@ import {
   maximumCommentEmailLookupIds,
   maximumCommentLength,
   maximumNicknameLength,
+  mergeCommentsInOrder,
   type ArticleComment,
+  type ArticleCommentFocus,
 } from '../lib/article-interactions';
 import { sendPendingCommentEmails } from './comment-emails';
 import { authorizeManagement, jsonResponse, readLimitedJson, type WorkerEnv } from './http';
@@ -116,6 +118,38 @@ async function commentCount(db: D1Database, path: string) {
       .bind(path)
       .first<number>('count')) ?? 0
   );
+}
+
+async function replyPage(db: D1Database, path: string, parentId: number, cursor: number) {
+  const { results } = await db
+    .prepare(
+      `SELECT ${commentColumns} FROM article_comments c WHERE c.article_path = ? AND c.parent_id = ? AND c.id > ? ORDER BY c.id ASC LIMIT ?`,
+    )
+    .bind(path, parentId, cursor, commentPageSize + 1)
+    .all<ArticleComment>();
+  const replies = results.slice(0, commentPageSize);
+  return { replies, nextCursor: results.length > commentPageSize ? replies.at(-1)!.id : null };
+}
+
+async function commentFocus(
+  db: D1Database,
+  path: string,
+  id: number,
+): Promise<ArticleCommentFocus | null> {
+  const { results } = await db
+    .prepare(
+      `SELECT ${commentColumns} FROM article_comments c
+       WHERE c.article_path = ? AND (c.id = ? OR c.id = (SELECT parent_id FROM article_comments WHERE id = ?))`,
+    )
+    .bind(path, id, id)
+    .all<ArticleComment>();
+  const target = results.find((comment) => comment.id === id);
+  if (!target) return null;
+  if (target.parentId === null) return { root: target, replies: null };
+  const root = results.find((comment) => comment.id === target.parentId);
+  if (!root) return null;
+  const page = await replyPage(db, path, root.id, 0);
+  return { root, replies: { ...page, replies: mergeCommentsInOrder(page.replies, [target]) } };
 }
 
 async function handleRequest(
@@ -232,32 +266,30 @@ async function handleRequest(
         .bind(path, parent)
         .first();
       if (!root) return jsonResponse({ error: '这条评论不存在。' }, 404);
-      const { results: replies } = await db
-        .prepare(
-          `SELECT ${commentColumns} FROM article_comments c WHERE c.article_path = ? AND c.parent_id = ? AND c.id > ? ORDER BY c.id ASC LIMIT ?`,
-        )
-        .bind(path, parent, cursor, commentPageSize + 1)
-        .all<ArticleComment>();
-      const page = replies.slice(0, commentPageSize);
-      return jsonResponse({
-        replies: page,
-        nextCursor: replies.length > commentPageSize ? page.at(-1)!.id : null,
-      });
+      return jsonResponse(await replyPage(db, path, parent, cursor));
     }
-    const results = await db.batch<Record<string, unknown>>([
-      db
-        .prepare(
-          'SELECT COUNT(*) AS likes, COALESCE(MAX(visitor_id = ?), 0) AS liked FROM article_likes WHERE article_path = ?',
-        )
-        .bind(visitorId, path),
-      db
-        .prepare('SELECT COUNT(*) AS count FROM article_comments WHERE article_path = ?')
-        .bind(path),
-      db
-        .prepare(
-          `SELECT ${commentColumns} FROM article_comments c WHERE c.article_path = ? AND c.parent_id IS NULL AND c.id > ? ORDER BY c.id ASC LIMIT ?`,
-        )
-        .bind(path, cursor, commentPageSize + 1),
+    const rawFocus = url.searchParams.get('focus');
+    const focusId = rawFocus === null ? null : Number(rawFocus);
+    if (focusId !== null && (!Number.isSafeInteger(focusId) || focusId < 1)) {
+      return jsonResponse({ error: '评论地址无效。' }, 400);
+    }
+    const [results, focus] = await Promise.all([
+      db.batch<Record<string, unknown>>([
+        db
+          .prepare(
+            'SELECT COUNT(*) AS likes, COALESCE(MAX(visitor_id = ?), 0) AS liked FROM article_likes WHERE article_path = ?',
+          )
+          .bind(visitorId, path),
+        db
+          .prepare('SELECT COUNT(*) AS count FROM article_comments WHERE article_path = ?')
+          .bind(path),
+        db
+          .prepare(
+            `SELECT ${commentColumns} FROM article_comments c WHERE c.article_path = ? AND c.parent_id IS NULL AND c.id > ? ORDER BY c.id ASC LIMIT ?`,
+          )
+          .bind(path, cursor, commentPageSize + 1),
+      ]),
+      focusId === null ? undefined : commentFocus(db, path, focusId),
     ]);
     const comments = results[2].results as ArticleComment[];
     const page = comments.slice(0, commentPageSize);
@@ -267,6 +299,7 @@ async function handleRequest(
       commentCount: results[1].results[0].count,
       comments: page,
       nextCursor: comments.length > commentPageSize ? page.at(-1)!.id : null,
+      ...(focus !== undefined && { focus }),
     });
   }
 

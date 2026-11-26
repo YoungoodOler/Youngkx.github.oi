@@ -1,5 +1,13 @@
-#article-interactions {
+#article-interactions,
+#article-comments-title,
+.article-comment-list [id^='comment-'][data-comment-id] {
   scroll-margin-top: 86px;
+}
+
+.article-comment-list [id^='comment-'][data-comment-id]:target {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 
 .article-interactions {

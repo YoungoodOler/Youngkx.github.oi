@@ -1,36 +1,80 @@
 import { absoluteUrl } from '../lib/site';
+import { renderCommentEmail } from './comment-email-template';
 import type { WorkerEnv } from './http';
 
 type CommentEmailEnv = Pick<
   WorkerEnv,
-  'ARTICLE_INTERACTIONS' | 'RESEND_API_KEY' | 'COMMENT_EMAIL_OWNER' | 'COMMENT_EMAIL_FROM'
+  | 'ARTICLE_INTERACTIONS'
+  | 'ASSETS'
+  | 'RESEND_API_KEY'
+  | 'COMMENT_EMAIL_OWNER'
+  | 'COMMENT_EMAIL_FROM'
 >;
 
 type PendingEmail = { id: number; commentId: number; kind: 'owner' | 'reply'; attempts: number };
 
-async function sendCommentEmail(env: CommentEmailEnv, job: PendingEmail, apiKey: string) {
+async function loadArticleTitles(assets: CommentEmailEnv['ASSETS']) {
+  try {
+    const response = await assets.fetch(new Request(absoluteUrl('/article-titles.json')));
+    if (response.ok) return await response.json<Record<string, string>>();
+    await response.body?.cancel();
+  } catch {
+    // An email can still link to the article if its title is unavailable.
+  }
+  return {};
+}
+
+async function sendCommentEmail(
+  env: CommentEmailEnv,
+  job: PendingEmail,
+  apiKey: string,
+  titles: Record<string, string>,
+) {
   const db = env.ARTICLE_INTERACTIONS;
   const comment = await db
     .prepare(
-      `SELECT c.article_path AS articlePath, c.parent_id AS parentId, target.email AS replyEmail
-       FROM article_comments c LEFT JOIN article_comments target ON target.id = c.reply_to_id
+      `SELECT c.article_path AS articlePath, c.parent_id AS parentId, c.created_at AS createdAt,
+              c.nickname, c.content, c.email AS authorEmail, target.email AS replyEmail,
+              target.nickname AS originalNickname, target.content AS originalContent
+       FROM article_comments c LEFT JOIN article_comments target
+       ON target.id = c.reply_to_id AND target.article_path = c.article_path
        WHERE c.id = ?`,
     )
     .bind(job.commentId)
-    .first<{ articlePath: string; parentId: number | null; replyEmail: string | null }>();
+    .first<{
+      articlePath: string;
+      parentId: number | null;
+      createdAt: string;
+      nickname: string;
+      content: string;
+      authorEmail: string | null;
+      replyEmail: string | null;
+      originalNickname: string | null;
+      originalContent: string | null;
+    }>();
   if (comment) {
     const to = job.kind === 'owner' ? env.COMMENT_EMAIL_OWNER : comment.replyEmail;
-    if (to) {
-      const message =
-        job.kind === 'reply'
-          ? '有人回复了你在 Youngkx 博客的留言。'
-          : comment.parentId === null
-            ? '你的博客收到了一条新评论。'
-            : '你的博客收到了一条新回复。';
-      const path = comment.articlePath.split('/').map(encodeURIComponent).join('/');
-      const link = absoluteUrl(`${path}#article-comments-title`);
-      const subject =
-        job.kind === 'reply' ? 'Youngkx 博客 · 你的留言有新回复' : 'Youngkx 博客 · 新留言通知';
+    const original =
+      comment.originalNickname === null || comment.originalContent === null
+        ? null
+        : { nickname: comment.originalNickname, content: comment.originalContent };
+    const path = comment.articlePath.split('/').map(encodeURIComponent).join('/');
+    const details = {
+      articleTitle: titles[comment.articlePath] ?? comment.articlePath,
+      href: absoluteUrl(`${path}#comment-${job.commentId}`),
+      comment,
+    };
+    const email =
+      job.kind === 'owner'
+        ? renderCommentEmail({
+            ...details,
+            kind: 'owner',
+            isReply: comment.parentId !== null,
+            authorEmail: comment.authorEmail,
+            original,
+          })
+        : original && renderCommentEmail({ ...details, kind: 'reply', original });
+    if (to && email) {
       let status: number | undefined;
       let transportError: string | undefined;
       try {
@@ -45,10 +89,8 @@ async function sendCommentEmail(env: CommentEmailEnv, job: PendingEmail, apiKey:
           },
           body: JSON.stringify({
             to: [to],
-            from: `Youngkx 博客 <${env.COMMENT_EMAIL_FROM}>`,
-            subject,
-            text: `${message}\n\n查看文章评论：${link}`,
-            html: `<p>${message}</p><p><a href="${link}">查看文章评论</a></p>`,
+            from: `Youngkx Blog <${env.COMMENT_EMAIL_FROM}>`,
+            ...email,
           }),
         });
         status = response.status;
@@ -104,7 +146,9 @@ export async function sendPendingCommentEmails(env: CommentEmailEnv, commentId?:
     )
     .bind(...(commentId === undefined ? [] : [commentId]))
     .all<PendingEmail>();
+  if (results.length === 0) return;
+  const titles = await loadArticleTitles(env.ASSETS);
   for (const job of results) {
-    await sendCommentEmail(env, job, env.RESEND_API_KEY);
+    await sendCommentEmail(env, job, env.RESEND_API_KEY, titles);
   }
 }

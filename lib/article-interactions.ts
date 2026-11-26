@@ -21,6 +21,11 @@ export type ArticleReplies = {
   nextCursor: number | null;
 };
 
+export type ArticleCommentFocus = {
+  root: ArticleComment;
+  replies: ArticleReplies | null;
+};
+
 export type PublishedComment = {
   comment: ArticleComment;
   commentCount: number;
@@ -46,4 +51,5 @@ export type ArticleInteractions = {
   commentCount: number;
   comments: ArticleComment[];
   nextCursor: number | null;
+  focus?: ArticleCommentFocus | null;
 };

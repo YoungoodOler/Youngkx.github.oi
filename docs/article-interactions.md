@@ -19,6 +19,8 @@ Cloudflare D1 绑定为 `ARTICLE_INTERACTIONS`，数据库为 `youngkx-article-i
 
 评论入库时同时写入待发通知，Worker 发布后通过 Resend 尝试立即发送。Cloudflare 的定时触发器每 5 分钟检查待重试的通知，通知保留 24 小时。重试使用同一个 Resend 幂等键。发件人通过 `COMMENT_EMAIL_FROM` 配置，站长收件地址保存为 Worker secret `COMMENT_EMAIL_OWNER`。在 Resend 验证发件域，并将该域的发信密钥保存为 Worker secret `RESEND_API_KEY`。本地预览可省略发信配置，此时仅验证评论和待发通知的写入。
 
+两类邮件共用 `cloudflare/comment-email-template.ts` 的品牌头、样式和页脚，并同时提供 HTML 与纯文本版本。Worker 从 D1 读取留言和被回复者信息，从构建生成的 `/article-titles.json` 获取真实文章标题。评论者邮箱只出现在站长通知中。邮件的 `#comment-<ID>` 链接会加载对应讨论并定位到留言。
+
 文章以规范化路径关联数据，重新构建、部署或修改文章正文不会清空互动数据。修改文章的日期或 slug 会改变文章路径，需要单独迁移对应数据。接口只接受已部署且存在的文章地址，新 Markdown 文章无需手动登记。
 
 ## 本地运行与部署

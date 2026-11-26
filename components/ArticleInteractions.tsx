@@ -151,6 +151,7 @@ function CommentDetails({
 function CommentThread({
   comment,
   email,
+  focusedReplies,
   query,
   onPublished,
   adminToken,
@@ -159,15 +160,16 @@ function CommentThread({
 }: {
   comment: ArticleComment;
   email?: string | null;
+  focusedReplies?: ArticleReplies | null;
   query: string;
   onPublished: (result: PublishedComment) => void;
   adminToken: string | null;
   onDeleted: (comment: ArticleComment, result: DeletedComment) => void;
   onUnauthorized: () => void;
 }) {
-  const [replies, setReplies] = useState<ArticleComment[]>([]);
-  const [expanded, setExpanded] = useState(false);
-  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [replies, setReplies] = useState<ArticleComment[]>(focusedReplies?.replies ?? []);
+  const [expanded, setExpanded] = useState(Boolean(focusedReplies));
+  const [nextCursor, setNextCursor] = useState<number | null>(focusedReplies?.nextCursor ?? null);
   const [loading, setLoading] = useState(false);
   const [target, setTarget] = useState<ArticleComment | null>(null);
   const [nickname, setNickname] = useState('');
@@ -276,7 +278,12 @@ function CommentThread({
     setNotice('回复已删除。');
   };
   return (
-    <li className="article-comment-thread" data-comment-id={comment.id}>
+    <li
+      id={`comment-${comment.id}`}
+      className="article-comment-thread"
+      data-comment-id={comment.id}
+      tabIndex={-1}
+    >
       <div className="article-comment">
         <CommentDetails comment={comment} email={email} />
       </div>
@@ -316,7 +323,7 @@ function CommentThread({
       {expanded && replies.length > 0 && (
         <ol className="article-reply-list" aria-label={`${comment.nickname} 的评论回复`}>
           {replies.map((reply) => (
-            <li key={reply.id} data-comment-id={reply.id}>
+            <li key={reply.id} id={`comment-${reply.id}`} data-comment-id={reply.id} tabIndex={-1}>
               <div className="article-comment">
                 <CommentDetails comment={reply} reply email={replyEmails?.emails?.[reply.id]} />
               </div>
@@ -475,15 +482,24 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
       setLoading(true);
       setLoadError('');
       try {
+        const focus = /^#comment-([1-9]\d*)$/.exec(window.location.hash)?.[1];
+        const params = new URLSearchParams(query);
+        if (focus && Number.isSafeInteger(Number(focus))) params.set('focus', focus);
         const result = await interactionRequest<Interactions>(
-          `/api/articles/interactions?${query}`,
+          `/api/articles/interactions?${params}`,
           {
             signal: signal
               ? AbortSignal.any([signal, AbortSignal.timeout(15_000)])
               : AbortSignal.timeout(15_000),
           },
         );
-        if (!signal?.aborted) setData(result);
+        if (!signal?.aborted) {
+          setData(
+            result.focus
+              ? { ...result, comments: mergeCommentsInOrder(result.comments, [result.focus.root]) }
+              : result,
+          );
+        }
       } catch (error) {
         if (!signal?.aborted) setLoadError(errorMessage(error));
       } finally {
@@ -492,6 +508,19 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
     },
     [query],
   );
+
+  const focus = data?.focus;
+  useEffect(() => {
+    if (focus === undefined) return;
+    const target = focus && document.getElementById(window.location.hash.slice(1));
+    if (target) {
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({ block: 'start' });
+    } else {
+      document.getElementById('article-comments-title')?.scrollIntoView({ block: 'start' });
+      setNotice('这条留言已不存在。');
+    }
+  }, [focus]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -769,6 +798,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
               key={comment.id}
               comment={comment}
               email={commentEmails?.emails?.[comment.id]}
+              focusedReplies={focus?.root.id === comment.id ? focus.replies : undefined}
               query={query}
               adminToken={adminToken}
               onDeleted={handleDeleted}

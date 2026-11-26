@@ -4,6 +4,50 @@ import type { ArticleComment } from '../../lib/article-interactions';
 const article = '/2026/07/26/how-to-use-codex/';
 const query = new URLSearchParams({ article }).toString();
 
+test('邮件链接会展开分页之外的讨论并定位到指定回复', async ({ page }) => {
+  const first: ArticleComment = {
+    id: 1,
+    nickname: '其他读者',
+    content: '首页评论',
+    createdAt: '2026-11-04T06:00:00Z',
+    parentId: null,
+    replyToId: null,
+    replyTo: null,
+    replyCount: 0,
+  };
+  const root = { ...first, id: 60, content: '分页外的原评论', replyCount: 25 };
+  const reply = {
+    ...first,
+    id: 90,
+    content: '邮件链接中的回复',
+    parentId: root.id,
+    replyToId: root.id,
+  };
+  await page.route('**/api/articles/**', async (route) => {
+    const url = new URL(route.request().url());
+    if (!url.pathname.endsWith('/interactions')) return route.continue();
+    await route.fulfill({
+      json: {
+        likes: 0,
+        liked: false,
+        commentCount: 90,
+        comments: [first],
+        nextCursor: 1,
+        ...(url.searchParams.get('focus') === String(reply.id) && {
+          focus: { root, replies: { replies: [reply], nextCursor: 85 } },
+        }),
+      },
+    });
+  });
+  await page.goto(`${article}#comment-${reply.id}`, { waitUntil: 'domcontentloaded' });
+  const linked = page.locator(`#comment-${reply.id}`);
+  await expect(linked).toContainText(reply.content);
+  await expect(linked).toBeFocused();
+  await expect(linked).toBeInViewport();
+  await expect(page.getByRole('button', { name: '加载更多回复 ↓', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '加载更多评论 ↓', exact: true })).toBeVisible();
+});
+
 test('访客可以点赞、自定义用户名评论并回复，刷新后仍保留', async ({
   page,
   browser,

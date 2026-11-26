@@ -183,12 +183,19 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
 
   it('notifies the owner and the directly replied-to address with independent retries', async () => {
     const rootVisitor = await visitor();
-    const rootInput = commentInput('根评论', { email: 'root@example.com' });
+    const rootInput = commentInput('根评论 <img src=x onerror=alert(1)>\n还有一行', {
+      email: 'root@example.com',
+      nickname: '原作者',
+    });
     const root = await post(rootVisitor, rootInput);
     expect((await send('comments', rootVisitor, rootInput)).status).toBe(200);
     const reply = await post(
       await visitor(),
-      commentInput('第一条回复', { email: 'direct+tag@EXAMPLE.com', replyToId: root.comment.id }),
+      commentInput('第一条回复', {
+        email: 'direct+tag@EXAMPLE.com',
+        nickname: '回复者 <甲>',
+        replyToId: root.comment.id,
+      }),
     );
     await post(await visitor(), commentInput('回复一条回复', { replyToId: reply.comment.id }));
     const legacy = await db
@@ -203,6 +210,12 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
     const replyAttempts = [];
     const env = {
       ARTICLE_INTERACTIONS: db,
+      ASSETS: {
+        fetch: async (request) => {
+          expect(request.url).toBe(`${origin}/article-titles.json`);
+          return Response.json({ [article]: '第一篇 & 练习' });
+        },
+      },
       COMMENT_EMAIL_OWNER: 'owner@example.com',
       COMMENT_EMAIL_FROM: 'comments@notify.youngkx.cn',
       RESEND_API_KEY: 'test-key',
@@ -231,9 +244,33 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
       'owner@example.com',
       'root@example.com',
     ]);
-    expect(
-      delivered.every(({ text }) => text.includes(`${origin}${article}#article-comments-title`)),
-    ).toBe(true);
+    expect(delivered.every(({ text }) => text.includes(`${origin}${article}#comment-`))).toBe(true);
+    const ownerRoot = delivered.find((mail) => mail.subject === '[Youngkx Blog] 收到一条新评论');
+    expect(ownerRoot.text).toContain('root@example.com');
+    expect(ownerRoot.html).toContain('第一篇 &amp; 练习');
+    expect(ownerRoot.html).toContain('&lt;img src=x onerror=alert(1)&gt;<br>还有一行');
+    expect(ownerRoot.html).not.toContain('<img src=x');
+    expect(ownerRoot.html).not.toContain('回复给');
+    const ownerReply = delivered.find(
+      (mail) =>
+        mail.to[0] === 'owner@example.com' && mail.text.includes(`#comment-${reply.comment.id}`),
+    );
+    expect(ownerReply.subject).toBe('[Youngkx Blog] 收到一条新回复');
+    expect(ownerReply.text).toContain('direct+tag@example.com');
+    expect(ownerReply.text).toContain('回复给 原作者');
+    const readerMail = delivered.find((mail) => mail.to[0] === 'root@example.com');
+    expect(readerMail.subject).toBe('[Youngkx Blog] 你的评论收到了来自 回复者 <甲> 的回复');
+    expect(readerMail.html).toContain('原作者，你好！');
+    expect(readerMail.html).toContain('回复者 &lt;甲&gt;');
+    expect(readerMail.html).toContain(`href="${origin}${article}#comment-${reply.comment.id}"`);
+    expect(readerMail.html).toContain(`${origin}/youngkx-logo.png`);
+    for (const privateAddress of [
+      'direct+tag@example.com',
+      'root@example.com',
+      'owner@example.com',
+    ]) {
+      expect(readerMail.html + readerMail.text).not.toContain(privateAddress);
+    }
     expect(await db.prepare('SELECT attempts FROM article_comment_email_outbox').first()).toEqual({
       attempts: 1,
     });
@@ -436,6 +473,19 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
     expect(more.nextCursor).toBeNull();
     const replyIds = [...replies.replies, ...more.replies].map((item) => item.id);
     expect(replyIds).toEqual([...replyIds].sort((left, right) => left - right));
+
+    const linkedComment = second.comments[0];
+    const linkedReply = more.replies.at(-1);
+    const focusedComment = await snapshot(cookie, article, { focus: linkedComment.id });
+    expect(focusedComment.nextCursor).toBe(first.nextCursor);
+    expect(focusedComment.focus).toEqual({ root: linkedComment, replies: null });
+    const focusedReply = await snapshot(cookie, article, { focus: linkedReply.id });
+    expect(focusedReply.focus.root.id).toBe(root.comment.id);
+    expect(focusedReply.focus.replies).toEqual({
+      replies: [...replies.replies, linkedReply],
+      nextCursor: replies.nextCursor,
+    });
+    expect((await snapshot(cookie, otherArticle, { focus: linkedReply.id })).focus).toBeNull();
   });
 
   it('requires the existing admin token for moderation and preserves reply chains after deleting one reply', async () => {
