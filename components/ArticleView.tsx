@@ -348,8 +348,14 @@ export default function ArticleView({ article }: { article: ArticleRecord }) {
           <div className="modern-copyright">
             <span>作者</span>
             <strong>Youngkx</strong>
-            <span>说明</span>
-            <code>原创内容，转载请注明出处</code>
+            <span>许可</span>
+            <p className="modern-copyright-license">
+              除另有说明外，本文原创文字采用{' '}
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans">
+                CC BY-NC-SA 4.0
+              </a>{' '}
+              许可。分享时请署名 Youngkx，并附上原文链接。
+            </p>
           </div>
           <ArticleInteractions
             key={article.path.join('/')}
