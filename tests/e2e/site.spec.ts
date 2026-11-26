@@ -201,11 +201,13 @@ test('友链目录将站点渲染为长方形小卡片', async ({ page }, testIn
     'Friends',
     '友链',
   ]);
-  await expect(page.getByRole('region', { name: '站长手记' })).toContainText(
-    '这一段是站长写的手记。',
-  );
+  const note = page.locator('.friend-links-directory > .friend-links-owner-note');
+  await expect(note).toHaveText('这一段是站长写的手记。 第二段。');
+  await expect(page.getByRole('heading', { name: '站长手记' })).toHaveCount(0);
   const cards = page.locator('.friend-link-card');
   await expect(cards).toHaveCount(23);
+  const last = (await cards.last().boundingBox())!;
+  expect((await note.boundingBox())!.y).toBeGreaterThan(last.y + last.height);
   await expect(cards.first()).toHaveAttribute('href', 'https://example.com/friend-1');
   await expect(cards.first()).toContainText('记录编程与生活。');
   const first = (await cards.nth(0).boundingBox())!;
@@ -242,10 +244,17 @@ test('友链页的右侧表单将留言发布到左侧列表', async ({ page, re
   try {
     await openPage(page, '/links/');
     const contact = page.getByRole('region', { name: 'Contact Me' });
-    await expect(contact.getByRole('link', { name: 'ykx756474427@outlook.com' })).toHaveAttribute(
-      'href',
-      'mailto:ykx756474427@outlook.com',
-    );
+    const outlook = contact.getByRole('link', { name: 'ykx756474427@outlook.com' });
+    await expect(outlook).toHaveAttribute('href', 'mailto:ykx756474427@outlook.com');
+    await expect(outlook).toHaveCSS('text-decoration-line', 'none');
+    expect(
+      await outlook.evaluate((link) => {
+        const text = document.createRange();
+        text.selectNode(link.firstChild!);
+        const arrow = link.querySelector('span')!;
+        return arrow.getBoundingClientRect().left - text.getBoundingClientRect().right;
+      }),
+    ).toBeLessThan(10);
     await expect(contact.getByRole('link', { name: 'ykx756474427@gmail.com' })).toHaveAttribute(
       'href',
       'mailto:ykx756474427@gmail.com',
@@ -261,8 +270,14 @@ test('友链页的右侧表单将留言发布到左侧列表', async ({ page, re
     expect(board.width).toBeCloseTo(contactBounds.width, 1);
     expect(board.x).toBeCloseTo(contactBounds.x, 1);
     expect(messageBounds.x).toBeCloseTo(directory.x, 1);
-    if (!testInfo.project.name.startsWith('mobile'))
+    if (testInfo.project.name.startsWith('mobile')) {
+      for (const section of [contact, guestbook, messages]) {
+        await expect(section).toHaveCSS('border-top-width', '1px');
+        await expect(section).toHaveCSS('padding-top', '28px');
+      }
+    } else {
       expect(board.x).toBeGreaterThan(messageBounds.x);
+    }
     await expect(page.getByRole('button', { name: '点赞文章' })).toHaveCount(0);
     await page.getByRole('textbox', { name: /^邮箱/ }).fill('reader@example.com');
     await page.getByPlaceholder('随便写点什么吧').fill(application);
@@ -330,7 +345,9 @@ test('友链管理页能直接新增友链并保存发布', async ({ page }, tes
     ],
   });
   await page.getByRole('link', { name: '查看友链页' }).click();
-  await expect(page.getByRole('region', { name: '站长手记' })).toContainText('写给路过的朋友。');
+  await expect(page.locator('.friend-links-directory > .friend-links-owner-note')).toHaveText(
+    '写给路过的朋友。',
+  );
   await expect(
     page.getByRole('region', { name: 'Friends' }).locator('.friend-link-avatar'),
   ).toBeVisible();

@@ -114,6 +114,9 @@ export default function LinksPage() {
                   )}
                 </section>
               ))}
+              {directory.ownerNote && (
+                <p className="friend-links-owner-note">{directory.ownerNote}</p>
+              )}
               {loadError && (
                 <p className="friend-links-status" role="status">
                   暂时显示默认链接。
@@ -122,18 +125,6 @@ export default function LinksPage() {
             </div>
 
             <aside className="friend-links-sidebar">
-              {(directory.ownerNote || authorized) && (
-                <section
-                  className="friend-links-owner-note"
-                  aria-labelledby="friend-links-owner-note-title"
-                >
-                  <header className="friend-links-section-heading">
-                    <h2 id="friend-links-owner-note-title">站长手记</h2>
-                    {authorized && <Link href="/links/manage/#links-owner-note">编辑 ↗</Link>}
-                  </header>
-                  {directory.ownerNote && <p>{directory.ownerNote}</p>}
-                </section>
-              )}
               <section
                 className="friend-links-contact"
                 aria-labelledby="friend-links-contact-title"
