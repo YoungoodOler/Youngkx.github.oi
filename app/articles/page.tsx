@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import ArticlesPage from '@/components/ArticlesPage';
-import { articleSummaries } from '@/lib/articles';
+import { getArticleOpening } from '@/lib/article-opening';
+import { articleSummaries, getArticleByPath } from '@/lib/articles';
 
 export const metadata: Metadata = {
   title: 'All Articles | Youngkx',
@@ -9,5 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ArticlesPage posts={articleSummaries} />;
+  const posts = articleSummaries.map((post) => {
+    const article = getArticleByPath(post.href.split('/').filter(Boolean));
+    const opening = getArticleOpening(article?.content ?? '');
+    return { ...post, opening: opening.length ? opening : [post.excerpt] };
+  });
+  return <ArticlesPage posts={posts} />;
 }

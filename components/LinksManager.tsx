@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import {
   createEmptyUsefulLinksPayload,
   validateUsefulLinksPayload,
@@ -12,13 +12,9 @@ import {
 import SiteFooter from './SiteFooter';
 import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
-import { managementTokenKey, readStoredValue, writeStoredValue } from '@/lib/browser-storage';
+import { AdminLoginForm, useAdminSession } from './AdminSession';
 
 type Notice = { tone: 'neutral' | 'success' | 'error'; text: string };
-
-function authorizationHeaders(token: string): HeadersInit {
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 function createId(prefix: 'group' | 'link') {
   return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
@@ -34,9 +30,9 @@ function moveItem<T>(items: T[], index: number, direction: -1 | 1) {
 
 export default function LinksManager() {
   const [payload, setPayload] = useState<UsefulLinksPayload>(createEmptyUsefulLinksPayload);
-  const [token, setToken] = useState('');
-  const [authorized, setAuthorized] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const { authorized, preview, expire } = useAdminSession();
+  const canManage = authorized || preview;
+  const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice>({
     tone: 'neutral',
@@ -46,62 +42,30 @@ export default function LinksManager() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const storedToken = readStoredValue('sessionStorage', managementTokenKey) ?? '';
-    setToken(storedToken);
 
     const load = async () => {
       try {
-        const [linksResponse, authResponse] = await Promise.all([
-          fetch('/api/links', { cache: 'no-store', signal: controller.signal }),
-          fetch('/api/links/admin', {
-            cache: 'no-store',
-            headers: authorizationHeaders(storedToken),
-            signal: controller.signal,
-          }),
-        ]);
+        const linksResponse = await fetch('/api/links', {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
         const value = (await linksResponse.json()) as unknown;
         const validation = validateUsefulLinksPayload(value);
-        if (validation.ok) setPayload(validation.data);
-        setAuthorized(authResponse.ok);
-        setNotice(
-          authResponse.ok
-            ? { tone: 'neutral', text: 'Directory loaded. Changes are not live until saved.' }
-            : { tone: 'neutral', text: 'Enter the admin token to edit this directory.' },
-        );
+        if (!linksResponse.ok || !validation.ok)
+          throw new Error('Unable to load the link manager.');
+        if (controller.signal.aborted) return;
+        setPayload(validation.data);
+        setLoaded(true);
+        setNotice({ tone: 'neutral', text: 'Directory loaded. Changes are not live until saved.' });
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
         setNotice({ tone: 'error', text: 'Unable to load the link manager.' });
-      } finally {
-        if (!controller.signal.aborted) setCheckingAuth(false);
       }
     };
 
     void load();
     return () => controller.abort();
   }, []);
-
-  const unlock = async (event: FormEvent) => {
-    event.preventDefault();
-    setCheckingAuth(true);
-    try {
-      const response = await fetch('/api/links/admin', {
-        cache: 'no-store',
-        headers: authorizationHeaders(token.trim()),
-      });
-      if (!response.ok) {
-        setAuthorized(false);
-        setNotice({ tone: 'error', text: 'The admin token is not valid.' });
-        return;
-      }
-      writeStoredValue('sessionStorage', managementTokenKey, token.trim());
-      setAuthorized(true);
-      setNotice({ tone: 'success', text: 'Manager unlocked for this browser tab.' });
-    } catch {
-      setNotice({ tone: 'error', text: 'Unable to verify the admin token.' });
-    } finally {
-      setCheckingAuth(false);
-    }
-  };
 
   const setGroups = (groups: UsefulLinkGroup[]) => {
     setPayload((current) => ({ ...current, groups }));
@@ -164,14 +128,12 @@ export default function LinksManager() {
     try {
       const response = await fetch('/api/links', {
         method: 'PUT',
-        headers: {
-          ...authorizationHeaders(token.trim()),
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(validation.data),
       });
       const value = (await response.json()) as unknown;
       if (!response.ok) {
+        if (response.status === 401) expire();
         const message =
           typeof value === 'object' && value !== null && 'error' in value
             ? String(value.error)
@@ -246,7 +208,7 @@ export default function LinksManager() {
             <Link className="manager-button" href="/links/">
               View Page ↗
             </Link>
-            {authorized && (
+            {canManage && loaded && (
               <>
                 <button className="manager-button" type="button" onClick={exportJson}>
                   Export JSON
@@ -282,22 +244,17 @@ export default function LinksManager() {
           {notice.text}
         </p>
 
-        {!authorized ? (
-          <form className="manager-unlock" onSubmit={(event) => void unlock(event)}>
-            <label htmlFor="links-admin-token">Admin Token</label>
-            <input
-              id="links-admin-token"
-              type="password"
-              value={token}
-              autoComplete="current-password"
-              placeholder="Paste the production admin token"
-              onChange={(event) => setToken(event.target.value)}
+        {!canManage && (
+          <div className="manager-unlock">
+            <AdminLoginForm
+              tokenLabel="Admin Token"
+              submitLabel="Unlock Manager"
+              rememberLabel="Keep me signed in"
+              pendingLabel="Checking…"
             />
-            <button className="manager-button manager-button--primary" disabled={checkingAuth}>
-              {checkingAuth ? 'Checking…' : 'Unlock Manager'}
-            </button>
-          </form>
-        ) : (
+          </div>
+        )}
+        {canManage && loaded && (
           <div className="manager-groups">
             {payload.groups.map((group, groupIndex) => (
               <section className="manager-group" key={group.id}>

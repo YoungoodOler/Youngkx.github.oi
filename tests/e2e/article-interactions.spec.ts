@@ -166,6 +166,7 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
   test.setTimeout(60_000);
   const token = 'comment-moderation-browser-test';
   let expired = false;
+  let signedIn = false;
   let records: ArticleComment[] = Array.from({ length: 25 }, (_, index) => ({
     id: index + 1,
     nickname: `访客${index + 1}`,
@@ -199,17 +200,23 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
     const items = all.slice(0, 20).map(withCounts);
     return { items, nextCursor: all.length > 20 ? items.at(-1)!.id : null };
   };
+  await page.route('**/api/admin', (route) => {
+    const request = route.request();
+    if (request.method() === 'POST') {
+      if (request.headers().authorization !== `Bearer ${token}`) {
+        return route.fulfill({ status: 401, json: { error: '管理口令不正确，请重新输入。' } });
+      }
+      signedIn = true;
+    } else if (request.method() === 'DELETE') {
+      signedIn = false;
+    }
+    return route.fulfill({ json: { authorized: signedIn && !expired } });
+  });
   await page.route('**/api/articles/**', async (route) => {
     const req = route.request();
     const url = new URL(req.url());
-    const authorized = req.headers().authorization === `Bearer ${token}` && !expired;
-    if (url.pathname.endsWith('/admin')) {
-      await route.fulfill(
-        authorized
-          ? { json: { authorized: true } }
-          : { status: 401, json: { error: '管理口令不正确，请重新输入。' } },
-      );
-    } else if (url.pathname.endsWith('/comment-emails')) {
+    const authorized = signedIn && !expired;
+    if (url.pathname.endsWith('/comment-emails')) {
       const ids = url.searchParams.getAll('id');
       await route.fulfill(
         authorized
@@ -334,15 +341,23 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
     2000,
   ]);
 
-  await page.getByRole('button', { name: '管理评论', exact: true }).click();
-  await page.getByLabel('管理口令', { exact: true }).fill('wrong-token');
-  await page.getByRole('button', { name: '解锁管理', exact: true }).click();
-  await expect(page.locator('.comment-moderation-form')).toContainText('管理口令不正确');
+  const guestEntry = page.getByRole('button', { name: '站长登录', exact: true });
+  const ownerEntry = page.getByRole('button', { name: '站长操作', exact: true });
+  const actions = page.getByRole('dialog', { name: '站长操作' });
+  const login = page.getByRole('button', { name: '登录', exact: true });
+  const password = page.getByLabel('管理口令', { exact: true });
+  const close = page.getByRole('button', { name: '关闭', exact: true });
+  await guestEntry.click();
+  await password.fill('wrong-token');
+  await login.click();
+  await expect(page.locator('.admin-login')).toContainText('管理口令不正确');
   await expect(page.getByRole('button', { name: /^删除(?:评论|回复) / })).toHaveCount(0);
   await expect(page.locator('.article-comment-email')).toHaveCount(0);
-  await page.getByLabel('管理口令', { exact: true }).fill(token);
-  await page.getByRole('button', { name: '解锁管理', exact: true }).click();
-  await expect(page.getByRole('button', { name: '退出管理', exact: true })).toBeVisible();
+  await password.fill(token);
+  await login.click();
+  await expect(actions).toBeVisible();
+  await close.click();
+  await expect(ownerEntry).toBeVisible();
   const firstReply = thread.locator('.article-reply-list > li[data-comment-id="101"]');
   await expect(thread.locator(':scope > .article-comment .article-comment-email')).toHaveText(
     '邮箱 reader1@example.com',
@@ -367,7 +382,7 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
   await expect(page.locator('#article-comments-title')).toHaveText('评论 25');
 
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('button', { name: '退出管理', exact: true })).toBeVisible();
+  await expect(page.locator('.article-comment-identity')).toContainText('Youngkx');
   await expect(page.locator('.article-comment-thread').first()).toHaveAttribute(
     'data-comment-id',
     '2',
@@ -382,17 +397,28 @@ test('评论与回复发送和分页后保持先后顺序，管理员可确认�
     .screenshot({ path: testInfo.outputPath('delete-confirmation-light.png') });
   expired = true;
   await second.getByRole('button', { name: '确认删除', exact: true }).click();
-  await expect(
-    page.getByText('管理凭证已失效，请点击“管理评论”重新解锁。', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText('站长登录已失效，请从页脚重新登录。', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /^删除(?:评论|回复) / })).toHaveCount(0);
   expect(await page.evaluate(() => sessionStorage.getItem('youngkx-links-token'))).toBeNull();
   await expect(page.locator('.article-comment-email')).toHaveCount(0);
   expired = false;
-  await page.getByRole('button', { name: '管理评论', exact: true }).click();
-  await page.getByLabel('管理口令', { exact: true }).fill(token);
-  await page.getByRole('button', { name: '解锁管理', exact: true }).click();
-  await page.getByRole('button', { name: '退出管理', exact: true }).click();
+  await guestEntry.click();
+  await password.fill(token);
+  await login.click();
+  await expect(actions).toBeVisible();
+  await close.click();
+  await ownerEntry.click();
+  await actions.getByRole('link', { name: '友链管理' }).click();
+  await expect(page).toHaveURL(/\/links\/manage\/$/);
+  await ownerEntry.click();
+  await actions.getByRole('link', { name: 'Repo 管理' }).click();
+  await expect(page).toHaveURL(/\/repo\/manage\/$/);
+  await ownerEntry.click();
+  await actions.getByRole('button', { name: '退出登录', exact: true }).click();
+  await expect(guestEntry).toBeVisible();
+  await expect(ownerEntry).toHaveCount(0);
+  await page.goto(article, { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('.article-comment-thread').first()).toBeVisible();
   await expect(page.getByRole('button', { name: /^删除(?:评论|回复) / })).toHaveCount(0);
   await expect(page.locator('.article-comment-email')).toHaveCount(0);
 });

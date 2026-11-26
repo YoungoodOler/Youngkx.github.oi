@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { uploadRepositoryFile } from './repository-upload';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { readStoredValue, writeStoredValue } from '@/lib/browser-storage';
+import { AdminLoginForm, useAdminSession } from './AdminSession';
 import {
   defaultRepositorySettings,
   formatFileSize,
@@ -14,7 +14,6 @@ import {
   type RepositorySettings,
 } from '@/lib/file-repository';
 import {
-  authorizationHeaders,
   fileDate,
   FolderBrowser,
   FolderOptions,
@@ -24,7 +23,6 @@ import {
   RepositoryError,
   RepositoryShell,
   repositoryRequest,
-  repositoryTokenKey,
 } from './RepositoryShared';
 
 type Notice = { error?: boolean; text: string };
@@ -179,9 +177,10 @@ function FileEditor({
 }
 
 export default function FileRepositoryManager() {
-  const [token, setToken] = useState('');
-  const [authorized, setAuthorized] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const { authorized: signedIn, preview, checking, expire, signOut } = useAdminSession();
+  const canManage = signedIn || preview;
+  const [loaded, setLoaded] = useState(false);
+  const authorized = canManage && loaded;
   const [listing, setListing] = useState<RepositoryListing>({
     settings: defaultRepositorySettings(),
     files: [],
@@ -192,7 +191,7 @@ export default function FileRepositoryManager() {
   const [uploadLimitGB, setUploadLimitGB] = useState(() =>
     uploadLimitInGB(defaultRepositorySettings().maxUploadMiB),
   );
-  const [notice, setNotice] = useState<Notice>({ text: 'Checking access to the workspace.' });
+  const [notice, setNotice] = useState<Notice>({ text: 'Enter your manage token to continue.' });
   const [operation, setOperation] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState('');
@@ -222,11 +221,24 @@ export default function FileRepositoryManager() {
 
   useEffect(() => {
     mounted.current = true;
+    return () => {
+      mounted.current = false;
+      uploadRef.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!canManage) {
+      setLoaded(false);
+      uploadRef.current?.abort();
+      setNotice((current) =>
+        current.error ? current : { text: 'Enter your manage token to continue.' },
+      );
+      return;
+    }
+    setNotice({ text: 'Loading your workspace.' });
     const controller = new AbortController();
-    const storedToken = readStoredValue('sessionStorage', repositoryTokenKey) ?? '';
-    setToken(storedToken);
     repositoryRequest('/api/files/admin', {
-      headers: authorizationHeaders(storedToken),
       signal: controller.signal,
     })
       .then((value) => {
@@ -238,12 +250,12 @@ export default function FileRepositoryManager() {
         setFolderId(next.folders[0]?.id);
         setUploadFolderId(next.folders[0]?.id ?? '');
         setFolderName(next.folders[0]?.name ?? '');
-        setAuthorized(true);
+        setLoaded(true);
         setNotice({ text: 'Workspace ready. Upload files or update the collection.' });
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return;
-        if (reason instanceof RepositoryError && reason.status === 401) rememberToken('');
+        if (reason instanceof RepositoryError && reason.status === 401) expire();
         setNotice(
           reason instanceof RepositoryError && reason.status === 401
             ? { text: 'Enter your manage token to continue.' }
@@ -252,55 +264,26 @@ export default function FileRepositoryManager() {
                 text: reason instanceof Error ? reason.message : 'Unable to check access.',
               },
         );
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setChecking(false);
       });
-    return () => {
-      mounted.current = false;
-      controller.abort();
-      uploadRef.current?.abort();
-    };
-  }, []);
-
-  function rememberToken(value: string) {
-    writeStoredValue('sessionStorage', repositoryTokenKey, value || null);
-  }
+    return () => controller.abort();
+  }, [canManage, expire]);
 
   function fail(reason: unknown) {
-    if (reason instanceof RepositoryError && reason.status === 401) {
-      setAuthorized(false);
-      rememberToken('');
-    }
+    if (reason instanceof RepositoryError && reason.status === 401) expire();
     setNotice({
       error: true,
       text: reason instanceof Error ? reason.message : 'Something went wrong. Please try again.',
     });
   }
 
-  async function unlock(event: FormEvent) {
-    event.preventDefault();
-    setChecking(true);
+  async function lockWorkspace() {
     try {
-      const next = readRepositoryListing(
-        await repositoryRequest('/api/files/admin', {
-          headers: authorizationHeaders(token.trim()),
-        }),
-      );
-      setListing(next);
-      setSettings(next.settings);
-      setUploadLimitGB(uploadLimitInGB(next.settings.maxUploadMiB));
-      setFolderId(next.folders[0]?.id);
-      setUploadFolderId(next.folders[0]?.id ?? '');
-      setFolderName(next.folders[0]?.name ?? '');
-      setToken(token.trim());
-      rememberToken(token.trim());
-      setAuthorized(true);
-      setNotice({ text: 'Workspace unlocked for this browser tab.' });
+      await signOut();
+      setFile(null);
+      setDescription('');
+      setNotice({ text: 'Workspace locked. Enter your manage token to continue.' });
     } catch (reason) {
       fail(reason);
-    } finally {
-      setChecking(false);
     }
   }
 
@@ -338,7 +321,6 @@ export default function FileRepositoryManager() {
         file,
         description: description.trim(),
         folderId: selectedUploadFolderId,
-        token: token.trim(),
         signal: controller.signal,
         onProgress: (percent) => {
           if (mounted.current) setProgress(percent);
@@ -399,7 +381,7 @@ export default function FileRepositoryManager() {
       };
       const value = await repositoryRequest('/api/files/settings', {
         method: 'PUT',
-        headers: { ...authorizationHeaders(token.trim()), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(next),
       });
       const saved = readRepositoryListing({
@@ -427,7 +409,7 @@ export default function FileRepositoryManager() {
     try {
       const value = await repositoryRequest(`/api/files/${encodeURIComponent(current.id)}`, {
         method: 'PATCH',
-        headers: { ...authorizationHeaders(token.trim()), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), description: description.trim(), folderId }),
       });
       const updated = readRepositoryListing({
@@ -453,7 +435,6 @@ export default function FileRepositoryManager() {
     try {
       await repositoryRequest(`/api/files/${encodeURIComponent(file.id)}`, {
         method: 'DELETE',
-        headers: authorizationHeaders(token.trim()),
       });
       setListing((current) => ({
         ...current,
@@ -471,11 +452,7 @@ export default function FileRepositoryManager() {
     setOperation('list');
     try {
       const cursor = more && listing.cursor ? `?cursor=${encodeURIComponent(listing.cursor)}` : '';
-      const next = readRepositoryListing(
-        await repositoryRequest(`/api/files/admin${cursor}`, {
-          headers: authorizationHeaders(token.trim()),
-        }),
-      );
+      const next = readRepositoryListing(await repositoryRequest(`/api/files/admin${cursor}`, {}));
       if (more && next.cursor && next.cursor === listing.cursor)
         throw new Error('Unable to load more files. Please retry.');
       const files = more ? mergeRepositoryFiles(listing.files, next.files) : next.files;
@@ -518,7 +495,7 @@ export default function FileRepositoryManager() {
     try {
       const value = await repositoryRequest('/api/files/folders', {
         method: 'POST',
-        headers: { ...authorizationHeaders(token.trim()), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newFolderName.trim() }),
       });
       const next = readRepositoryListing({
@@ -546,7 +523,7 @@ export default function FileRepositoryManager() {
     try {
       const value = await repositoryRequest(`/api/files/folders/${encodeURIComponent(folderId)}`, {
         method: 'PATCH',
-        headers: { ...authorizationHeaders(token.trim()), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: folderName.trim() }),
       });
       const updated = readRepositoryListing({
@@ -572,7 +549,6 @@ export default function FileRepositoryManager() {
     try {
       await repositoryRequest(`/api/files/folders/${encodeURIComponent(folderId)}`, {
         method: 'DELETE',
-        headers: authorizationHeaders(token.trim()),
       });
       setListing((current) => ({
         ...current,
@@ -600,19 +576,12 @@ export default function FileRepositoryManager() {
           <Link className="repo-button" href="/repo/">
             View Repo <RepoIcon kind="arrow" />
           </Link>
-          {authorized && (
+          {signedIn && (
             <button
               type="button"
               className="repo-button"
-              disabled={busy}
-              onClick={() => {
-                rememberToken('');
-                setToken('');
-                setAuthorized(false);
-                setFile(null);
-                setDescription('');
-                setNotice({ text: 'Workspace locked. Enter your manage token to continue.' });
-              }}
+              disabled={busy || checking}
+              onClick={() => void lockWorkspace()}
             >
               Lock workspace
             </button>
@@ -625,27 +594,18 @@ export default function FileRepositoryManager() {
       >
         {notice.text}
       </div>
-      {!authorized ? (
-        <form className="repo-unlock repo-panel" onSubmit={(event) => void unlock(event)}>
+      {!canManage && (
+        <div className="repo-unlock repo-panel">
           <span className="repo-eyebrow">MANAGE ACCESS</span>
-          <label htmlFor="repo-token">Manage token</label>
-          <div>
-            <input
-              id="repo-token"
-              type="password"
-              autoComplete="off"
-              value={token}
-              disabled={checking}
-              onChange={(event) => setToken(event.target.value)}
-              placeholder="Enter manage token"
-            />
-            <button type="submit" className="repo-button repo-button--primary" disabled={checking}>
-              {checking ? 'Checking…' : 'Unlock Repo'}
-              <RepoIcon kind="arrow" />
-            </button>
-          </div>
-        </form>
-      ) : (
+          <AdminLoginForm
+            tokenLabel="Manage token"
+            submitLabel="Unlock Repo"
+            rememberLabel="Keep me signed in"
+            pendingLabel="Checking…"
+          />
+        </div>
+      )}
+      {authorized && (
         <>
           <div className="repo-workspace-grid">
             <section className="repo-panel">

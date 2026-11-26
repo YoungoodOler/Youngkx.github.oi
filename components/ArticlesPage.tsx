@@ -5,11 +5,15 @@ import SiteFooter from './SiteFooter';
 import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
 
-export default function ArticlesPage({ posts }: { posts: ArticleSummary[] }) {
+export default function ArticlesPage({
+  posts,
+}: {
+  posts: (ArticleSummary & { opening: string[] })[];
+}) {
   return (
     <main className="articles-page">
       <PageBackdrop />
-      <SiteHeader navClassName="articles-nav" articleHref="/#posts" resources />
+      <SiteHeader navClassName="articles-nav" resources />
 
       <section className="articles-hero shell">
         <div>
@@ -28,15 +32,18 @@ export default function ArticlesPage({ posts }: { posts: ArticleSummary[] }) {
             key={post.href}
             style={{ '--directory-delay': `${Math.min(index, 6) * 35}ms` } as CSSProperties}
           >
-            <span className="directory-number">{post.number}</span>
-            <span className="directory-date">{post.dateLabel}</span>
-            <span className="directory-copy">
-              <strong>{post.title}</strong>
-              <small className="directory-mobile-date">发布于 {post.dateLabel}</small>
-              <small>{post.excerpt}</small>
-            </span>
-            <span className="directory-tag">{post.tagLabel}</span>
-            <i>↗</i>
+            <div className="directory-heading">
+              <h2 className="directory-title">{post.title}</h2>
+              <span className="directory-tag">{post.tagLabel}</span>
+            </div>
+            <time className="directory-date" dateTime={post.date}>
+              发布于 {post.dateLabel}
+            </time>
+            <div className="directory-opening">
+              {post.opening.map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex}>{paragraph}</p>
+              ))}
+            </div>
           </Link>
         ))}
       </section>

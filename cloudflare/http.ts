@@ -80,19 +80,38 @@ export async function readLimitedJson(
   }
 }
 
-export async function authorizeManagement(
+export function sameOrigin(request: Request, env: WorkerEnv) {
+  const site = request.headers.get('sec-fetch-site');
+  if (site === 'cross-site') return false;
+  const origin = request.headers.get('origin');
+  if (!origin) return site !== 'same-site';
+  if (origin === new URL(request.url).origin) return true;
+  if (env.LINKS_LOCAL_PREVIEW !== 'true') return false;
+  try {
+    return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
+}
+
+export function usesLocalTokenVerification(request: Request, env: WorkerEnv) {
+  const hostname = new URL(request.url).hostname;
+  return (
+    ['localhost', '127.0.0.1', '[::1]'].includes(hostname) &&
+    env.LINKS_LOCAL_AUTH_ORIGIN === 'https://www.youngkx.cn'
+  );
+}
+
+export async function authorizeManagementToken(
   request: Request,
   env: WorkerEnv,
 ): Promise<Response | null> {
-  if (env.LINKS_LOCAL_PREVIEW === 'true') return null;
   const authorization = request.headers.get('authorization') ?? '';
   const providedToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
   if (typeof env.LINKS_ADMIN_TOKEN !== 'string' || !env.LINKS_ADMIN_TOKEN) {
-    const hostname = new URL(request.url).hostname;
-    const loopback = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
     // Only an explicit loopback preview may reuse the existing production token.
     // The origin is deliberately fixed rather than accepting an arbitrary URL.
-    if (loopback && env.LINKS_LOCAL_AUTH_ORIGIN === 'https://www.youngkx.cn') {
+    if (usesLocalTokenVerification(request, env)) {
       if (!providedToken) return jsonResponse({ error: 'Invalid manage token.' }, 401);
       try {
         const response = await fetch('https://www.youngkx.cn/api/links/admin', {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import worker from '../cloudflare/worker.ts';
-import { authorizeManagement } from '../cloudflare/http.ts';
+import { authorizeManagement } from '../cloudflare/admin.ts';
 
 const bridgeOrigin = 'https://www.youngkx.cn';
 const testToken = 'test-only-user-token';

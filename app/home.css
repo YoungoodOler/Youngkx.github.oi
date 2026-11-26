@@ -382,6 +382,26 @@
   margin-left: clamp(32px, 5vw, 72px);
   margin-right: auto;
 }
+
+.home-nav-underline {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: var(--nav-underline-width, 0px);
+  transform: translate(
+    var(--nav-underline-x, 0px),
+    calc(var(--nav-underline-y, 0px) + var(--nav-underline-offset))
+  );
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-nav-underline {
+    transition: none;
+  }
+}
+
 @media (max-width: 900px) {
   .more-posts {
     inline-size: 100%;

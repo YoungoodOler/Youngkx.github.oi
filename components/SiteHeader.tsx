@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useSiteExperience } from './SiteExperience';
 import ResourceNav from './ResourceNav';
@@ -8,13 +9,12 @@ import SiteBrand from './SiteBrand';
 
 export default function SiteHeader({
   navClassName,
-  articleHref = '/articles/',
   resources = false,
 }: {
   navClassName: string;
-  articleHref?: string;
   resources?: boolean;
 }) {
+  const section = usePathname()?.split('/')[1] ?? '';
   const { theme, toggleTheme } = useSiteExperience();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLElement>(null);
@@ -54,9 +54,15 @@ export default function SiteHeader({
         aria-label="主导航"
         onClick={() => setMenuOpen(false)}
       >
-        <Link href="/#top">Home</Link>
-        <Link href={articleHref}>Articles</Link>
-        <Link href="/categories/">Topics</Link>
+        <Link href="/#top">
+          <span className="nav-link-label">Home</span>
+        </Link>
+        <Link href="/articles/" aria-current={section === 'articles' ? 'page' : undefined}>
+          <span className="nav-link-label">Article Archive</span>
+        </Link>
+        <Link href="/categories/" aria-current={section === 'categories' ? 'page' : undefined}>
+          <span className="nav-link-label">Topic Archive</span>
+        </Link>
       </nav>
       {resources && <ResourceNav />}
       <button className="theme-toggle" onClick={toggleTheme} aria-label="切换主题">

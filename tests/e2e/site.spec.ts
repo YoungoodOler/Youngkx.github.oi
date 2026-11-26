@@ -189,6 +189,7 @@ test('常用链接目录从接口读取标题和说明', async ({ page }) => {
   });
   await openPage(page, '/links/');
 
+  await expect(page.getByRole('link', { name: 'Manage Links' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Daily Tools' })).toBeVisible();
   await expect(page.getByText('Services used every day.')).toBeVisible();
   await expect(page.getByRole('link', { name: /Cloudflare Dashboard/ })).toHaveAttribute(
@@ -264,16 +265,25 @@ test('主题切换保留粒子幕并快速应用新主题', async ({ page }) => 
   ).toHaveCount(0);
 });
 
-test('跨页面切换显示粒子幕并到达目标页面', async ({ page }) => {
+test('站内导航直接打开目标页面', async ({ page }) => {
   await useStoredTheme(page);
   await openPage(page, '/articles/');
 
   const menu = page.getByRole('button', { name: '切换菜单', exact: true });
+  const nav = page.getByRole('navigation', { name: '主导航' });
+  const articleArchive = nav.getByRole('link', { name: 'Article Archive', exact: true });
+  const topicArchive = nav.getByRole('link', { name: 'Topic Archive', exact: true });
   if (await menu.isVisible()) await menu.click();
-  await page.getByRole('link', { name: 'Topics' }).click();
-  await expect(page.locator('.site-transition--page-out')).toBeVisible();
+  await expect(articleArchive).toHaveAttribute('href', '/articles/');
+  await expect(articleArchive).toHaveAttribute('aria-current', 'page');
+  await topicArchive.click();
+  await expect(page.locator('.site-transition')).toHaveCount(0);
   await expect(page).toHaveURL(/\/categories\/$/, { timeout: 5_000 });
   await expect(page.getByRole('heading', { name: 'Topics' })).toBeVisible();
+  await expect(page.locator('.site-transition')).toHaveCount(0);
+  if (await menu.isVisible()) await menu.click();
+  await expect(topicArchive).toHaveAttribute('aria-current', 'page');
+  await expect(articleArchive).not.toHaveAttribute('aria-current', 'page');
   await expect(page.locator('.global-particle-scene, .home-ascii-background')).toHaveCount(0);
 });
 
@@ -394,6 +404,44 @@ test('首页固定为暗色，并在减少动态效果时使用静态 Logo', asy
     'transition-duration',
     '0s',
   );
+});
+
+test('首页滚动时横线跟随当前版块', async ({ page }) => {
+  await useStoredTheme(page);
+  await openPage(page, '/');
+
+  const menu = page.getByRole('button', { name: '切换菜单', exact: true });
+  if (await menu.isVisible()) await menu.click();
+  const nav = page.getByRole('navigation', { name: '主导航' });
+  const underline = nav.locator('.home-nav-underline');
+  await expect(underline).toBeVisible();
+
+  for (const [id, label] of [
+    ['top', 'Home'],
+    ['interactive-cards', 'Cards'],
+    ['posts', 'Articles'],
+    ['topics', 'Topics'],
+    ['interactive-cards', 'Cards'],
+    ['top', 'Home'],
+  ]) {
+    await page
+      .locator(`#${id}`)
+      .evaluate((section) => section.scrollIntoView({ behavior: 'instant' }));
+    const current = nav.locator('a[aria-current="location"]');
+    await expect(current).toHaveText(label);
+    await expect
+      .poll(async () => {
+        const line = await underline.boundingBox();
+        const text = await current.locator('span').boundingBox();
+        if (!line || !text) return Infinity;
+        return Math.max(
+          Math.abs(line.x - text.x),
+          Math.abs(line.y - (text.y + text.height + 6)),
+          Math.abs(line.width - text.width),
+        );
+      })
+      .toBeLessThan(2);
+  }
 });
 
 test('Cards 导航越过首屏且手机菜单保持可用', async ({ page }, testInfo) => {

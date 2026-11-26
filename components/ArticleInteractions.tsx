@@ -1,6 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { author } from '@/lib/author';
 import {
   maximumCommentEmailLength,
   maximumCommentEmailLookupIds,
@@ -18,9 +20,25 @@ import {
   InteractionError,
   interactionRequest,
   interactionErrorMessage as errorMessage,
-  rememberCommentManagementToken,
 } from '@/lib/article-interactions-client';
-import CommentModeration, { CommentDeleteButton } from './CommentModeration';
+import { useAdminSession } from './AdminSession';
+import CommentDeleteButton from './CommentModeration';
+
+function OwnerAvatar() {
+  return (
+    <Image className="article-comment-avatar" src={author.avatar} alt="" width={38} height={38} />
+  );
+}
+
+function OwnerIdentity() {
+  return (
+    <div className="article-comment-identity">
+      <OwnerAvatar />
+      <span>{author.name}</span>
+      <span className="article-comment-role">站长</span>
+    </div>
+  );
+}
 
 function CommentEmailInput({
   id,
@@ -65,32 +83,31 @@ function commentDate(value: string) {
 function useCommentEmails(
   query: string,
   comments: ArticleComment[] | undefined,
-  token: string | null,
+  isAdmin: boolean,
   onUnauthorized: () => void,
 ) {
   const [lookup, setLookup] = useState<{
     query: string;
-    token: string;
     emails?: CommentEmails;
     failed?: boolean;
   } | null>(null);
 
   useEffect(() => {
-    if (!token || !comments?.length) {
+    const guests = comments?.filter((comment) => comment.authorRole !== 'owner');
+    if (!isAdmin || !guests?.length) {
       setLookup(null);
       return;
     }
     const controller = new AbortController();
     const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]);
     const requests: Promise<{ emails: CommentEmails }>[] = [];
-    for (let index = 0; index < comments.length; index += maximumCommentEmailLookupIds) {
+    for (let index = 0; index < guests.length; index += maximumCommentEmailLookupIds) {
       const params = new URLSearchParams(query);
-      for (const { id } of comments.slice(index, index + maximumCommentEmailLookupIds)) {
+      for (const { id } of guests.slice(index, index + maximumCommentEmailLookupIds)) {
         params.append('id', String(id));
       }
       requests.push(
         interactionRequest(`/api/articles/admin/comment-emails?${params}`, {
-          headers: { Authorization: `Bearer ${token}` },
           signal,
         }),
       );
@@ -100,19 +117,18 @@ function useCommentEmails(
         if (controller.signal.aborted) return;
         setLookup({
           query,
-          token,
           emails: Object.assign({}, ...results.map(({ emails }) => emails)),
         });
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         if (error instanceof InteractionError && error.status === 401) onUnauthorized();
-        else setLookup({ query, token, failed: true });
+        else setLookup({ query, failed: true });
       });
     return () => controller.abort();
-  }, [query, comments, token, onUnauthorized]);
+  }, [query, comments, isAdmin, onUnauthorized]);
 
-  return lookup?.query === query && lookup.token === token ? lookup : null;
+  return isAdmin && lookup?.query === query ? lookup : null;
 }
 
 function CommentDetails({
@@ -124,14 +140,20 @@ function CommentDetails({
   reply?: boolean;
   email?: string | null;
 }) {
+  const isOwner = comment.authorRole === 'owner';
   return (
     <>
-      <div className="article-comment-avatar" aria-hidden="true">
-        {Array.from(comment.nickname)[0]}
-      </div>
+      {isOwner ? (
+        <OwnerAvatar />
+      ) : (
+        <div className="article-comment-avatar" aria-hidden="true">
+          {Array.from(comment.nickname)[0]}
+        </div>
+      )}
       <div className="article-comment-body">
         <header>
           <strong>{comment.nickname}</strong>
+          {isOwner && <span className="article-comment-role">站长</span>}
           <time dateTime={comment.createdAt}>{commentDate(comment.createdAt)}</time>
           {email !== undefined && (
             <span className="article-comment-email">邮箱 {email ?? '未填写'}</span>
@@ -154,7 +176,6 @@ function CommentThread({
   focusedReplies,
   query,
   onPublished,
-  adminToken,
   onDeleted,
   onUnauthorized,
 }: {
@@ -163,10 +184,10 @@ function CommentThread({
   focusedReplies?: ArticleReplies | null;
   query: string;
   onPublished: (result: PublishedComment) => void;
-  adminToken: string | null;
   onDeleted: (comment: ArticleComment, result: DeletedComment) => void;
   onUnauthorized: () => void;
 }) {
+  const { authorized: isAdmin, checking } = useAdminSession();
   const [replies, setReplies] = useState<ArticleComment[]>(focusedReplies?.replies ?? []);
   const [expanded, setExpanded] = useState(Boolean(focusedReplies));
   const [nextCursor, setNextCursor] = useState<number | null>(focusedReplies?.nextCursor ?? null);
@@ -182,7 +203,7 @@ function CommentThread({
   const replyEmails = useCommentEmails(
     query,
     expanded ? replies : undefined,
-    adminToken,
+    isAdmin,
     onUnauthorized,
   );
 
@@ -227,7 +248,7 @@ function CommentThread({
 
   const submitReply = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!target || posting || loading || !content.trim()) return;
+    if (!target || checking || posting || loading || !content.trim()) return;
     const email = new FormData(event.currentTarget).get('email');
     setPosting(true);
     setError('');
@@ -237,8 +258,7 @@ function CommentThread({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nickname,
-          email,
+          ...(isAdmin ? { asOwner: true } : { nickname, email }),
           content,
           website,
           requestId: requestId.current,
@@ -253,11 +273,12 @@ function CommentThread({
       requestId.current = null;
       setNotice('回复已发布。');
       try {
-        localStorage.setItem('youngkx-comment-nickname', nickname.trim());
+        if (!isAdmin) localStorage.setItem('youngkx-comment-nickname', nickname.trim());
       } catch {
         /* Optional browser storage. */
       }
     } catch (failure) {
+      if (failure instanceof InteractionError && failure.status === 401) onUnauthorized();
       setError(errorMessage(failure));
     } finally {
       setPosting(false);
@@ -309,7 +330,7 @@ function CommentThread({
         <CommentDeleteButton
           comment={comment}
           query={query}
-          token={adminToken}
+          isAdmin={isAdmin}
           disabled={posting}
           onDeleted={onDeleted}
           onUnauthorized={onUnauthorized}
@@ -339,7 +360,7 @@ function CommentThread({
                 <CommentDeleteButton
                   comment={reply}
                   query={query}
-                  token={adminToken}
+                  isAdmin={isAdmin}
                   disabled={posting || loading}
                   onDeleted={handleDeletedReply}
                   onUnauthorized={onUnauthorized}
@@ -373,29 +394,35 @@ function CommentThread({
               取消回复
             </button>
           </div>
-          <label htmlFor={`${formId}-nickname`}>
-            用户名 <span>选填，留空为匿名访客</span>
-          </label>
-          <input
-            id={`${formId}-nickname`}
-            name="nickname"
-            autoComplete="nickname"
-            maxLength={maximumNicknameLength}
-            placeholder="输入显示给大家的名字"
-            value={nickname}
-            disabled={posting}
-            onChange={(event) => {
-              setNickname(event.target.value);
-              requestId.current = null;
-            }}
-          />
-          <CommentEmailInput
-            id={`${formId}-email`}
-            disabled={posting}
-            onChange={() => {
-              requestId.current = null;
-            }}
-          />
+          {isAdmin ? (
+            <OwnerIdentity />
+          ) : (
+            <>
+              <label htmlFor={`${formId}-nickname`}>
+                用户名 <span>选填，留空为匿名访客</span>
+              </label>
+              <input
+                id={`${formId}-nickname`}
+                name="nickname"
+                autoComplete="nickname"
+                maxLength={maximumNicknameLength}
+                placeholder="输入显示给大家的名字"
+                value={nickname}
+                disabled={posting}
+                onChange={(event) => {
+                  setNickname(event.target.value);
+                  requestId.current = null;
+                }}
+              />
+              <CommentEmailInput
+                id={`${formId}-email`}
+                disabled={posting}
+                onChange={() => {
+                  requestId.current = null;
+                }}
+              />
+            </>
+          )}
           <label htmlFor={`${formId}-content`}>回复内容</label>
           <textarea
             id={`${formId}-content`}
@@ -432,7 +459,7 @@ function CommentThread({
             <button
               className="article-comment-submit"
               type="submit"
-              disabled={posting || loading || !content.trim()}
+              disabled={checking || posting || loading || !content.trim()}
             >
               {posting ? '正在发布…' : '发布回复'} <span aria-hidden="true">↗</span>
             </button>
@@ -464,18 +491,13 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
   const [website, setWebsite] = useState('');
   const [notice, setNotice] = useState('');
   const [actionError, setActionError] = useState('');
-  const [adminToken, setAdminToken] = useState<string | null>(null);
-  const changeManagementToken = useCallback((token: string | null) => {
-    setAdminToken(token);
-    setActionError('');
-  }, []);
+  const { authorized: isAdmin, checking, expire } = useAdminSession();
   const lockExpiredManagement = useCallback(() => {
-    setAdminToken(null);
-    rememberCommentManagementToken(null);
-    setActionError('管理凭证已失效，请点击“管理评论”重新解锁。');
-  }, []);
+    expire();
+    setActionError('站长登录已失效，请从页脚重新登录。');
+  }, [expire]);
   const requestId = useRef<string | null>(null);
-  const commentEmails = useCommentEmails(query, data?.comments, adminToken, lockExpiredManagement);
+  const commentEmails = useCommentEmails(query, data?.comments, isAdmin, lockExpiredManagement);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -560,7 +582,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
 
   const postComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (posting || !content.trim()) return;
+    if (checking || posting || !content.trim()) return;
     const email = new FormData(event.currentTarget).get('email');
     setPosting(true);
     setActionError('');
@@ -570,7 +592,12 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
       const result = await interactionRequest<PublishedComment>(`/api/articles/comments?${query}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, email, content, website, requestId: requestId.current }),
+        body: JSON.stringify({
+          ...(isAdmin ? { asOwner: true } : { nickname, email }),
+          content,
+          website,
+          requestId: requestId.current,
+        }),
       });
       setData((current) =>
         current
@@ -585,12 +612,13 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
       requestId.current = null;
       setNotice('评论已发布，感谢分享你的想法。');
       try {
-        localStorage.setItem('youngkx-comment-nickname', nickname.trim());
+        if (!isAdmin) localStorage.setItem('youngkx-comment-nickname', nickname.trim());
       } catch {
         // Remembering a nickname is optional.
       }
     } catch (error) {
-      setActionError(errorMessage(error));
+      if (error instanceof InteractionError && error.status === 401) lockExpiredManagement();
+      else setActionError(errorMessage(error));
     } finally {
       setPosting(false);
     }
@@ -682,9 +710,8 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
             评论 <span>{data?.commentCount ?? '—'}</span>
           </h2>
         </div>
-        <p>无需登录，写下你的想法就好。</p>
+        {!isAdmin && <p>无需登录，写下你的想法就好。</p>}
       </div>
-      <CommentModeration token={adminToken} onChange={changeManagementToken} />
 
       {loadError && (
         <div className="interaction-error" role="alert">
@@ -701,30 +728,36 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
       )}
 
       <form className="article-comment-form" onSubmit={postComment}>
-        <label htmlFor="comment-nickname">
-          用户名 <span>选填，留空为匿名访客</span>
-        </label>
-        <input
-          id="comment-nickname"
-          name="nickname"
-          type="text"
-          autoComplete="nickname"
-          maxLength={maximumNicknameLength}
-          placeholder="输入显示给大家的名字"
-          value={nickname}
-          disabled={posting}
-          onChange={(event) => {
-            setNickname(event.target.value);
-            requestId.current = null;
-          }}
-        />
-        <CommentEmailInput
-          id="comment-email"
-          disabled={posting}
-          onChange={() => {
-            requestId.current = null;
-          }}
-        />
+        {isAdmin ? (
+          <OwnerIdentity />
+        ) : (
+          <>
+            <label htmlFor="comment-nickname">
+              用户名 <span>选填，留空为匿名访客</span>
+            </label>
+            <input
+              id="comment-nickname"
+              name="nickname"
+              type="text"
+              autoComplete="nickname"
+              maxLength={maximumNicknameLength}
+              placeholder="输入显示给大家的名字"
+              value={nickname}
+              disabled={posting}
+              onChange={(event) => {
+                setNickname(event.target.value);
+                requestId.current = null;
+              }}
+            />
+            <CommentEmailInput
+              id="comment-email"
+              disabled={posting}
+              onChange={() => {
+                requestId.current = null;
+              }}
+            />
+          </>
+        )}
         <label htmlFor="comment-content">评论内容</label>
         <textarea
           id="comment-content"
@@ -762,7 +795,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
           <button
             className="article-comment-submit"
             type="submit"
-            disabled={!data || loading || posting || !content.trim()}
+            disabled={!data || checking || loading || posting || !content.trim()}
           >
             {posting ? '正在发布…' : '发布评论'} <span aria-hidden="true">↗</span>
           </button>
@@ -800,7 +833,6 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
               email={commentEmails?.emails?.[comment.id]}
               focusedReplies={focus?.root.id === comment.id ? focus.replies : undefined}
               query={query}
-              adminToken={adminToken}
               onDeleted={handleDeleted}
               onUnauthorized={lockExpiredManagement}
               onPublished={(result) =>

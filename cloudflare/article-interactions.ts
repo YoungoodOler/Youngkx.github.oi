@@ -7,8 +7,10 @@ import {
   type ArticleComment,
   type ArticleCommentFocus,
 } from '../lib/article-interactions';
+import { author } from '../lib/author';
+import { authorizeManagement, hasAdminSession } from './admin';
 import { sendPendingCommentEmails } from './comment-emails';
-import { authorizeManagement, jsonResponse, readLimitedJson, type WorkerEnv } from './http';
+import { jsonResponse, readLimitedJson, sameOrigin, type WorkerEnv } from './http';
 
 const cookieName = 'youngkx_visitor';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -17,6 +19,7 @@ const emailDomain =
   /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 const commentPageSize = 20;
 const commentColumns = `c.id, c.nickname, c.content, c.created_at AS createdAt, c.parent_id AS parentId, c.reply_to_id AS replyToId,
+  CASE WHEN c.is_owner = 1 THEN 'owner' END AS authorRole,
   (SELECT nickname FROM article_comments WHERE id = c.reply_to_id) AS replyTo,
   (SELECT COUNT(*) FROM article_comments WHERE parent_id = c.id) AS replyCount`;
 
@@ -46,20 +49,6 @@ function commentEmail(value: unknown) {
   if (!domain || extra !== undefined || local.length > 64) return null;
   if (!emailLocalPart.test(local) || !emailDomain.test(domain)) return null;
   return `${local}@${domain.toLowerCase()}`;
-}
-
-function sameOrigin(request: Request, env: WorkerEnv) {
-  if (request.headers.get('sec-fetch-site') === 'cross-site') return false;
-  const origin = request.headers.get('origin');
-  // Non-browser clients may omit Origin; browser JSON writes must be same-origin.
-  if (!origin) return true;
-  if (origin === new URL(request.url).origin) return true;
-  if (env.LINKS_LOCAL_PREVIEW !== 'true') return false;
-  try {
-    return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname);
-  } catch {
-    return false;
-  }
 }
 
 async function digest(value: string) {
@@ -159,20 +148,6 @@ async function handleRequest(
   visitorId: string,
   ctx: ExecutionContext,
 ) {
-  if (url.pathname === '/api/articles/admin') {
-    if (request.method !== 'GET') return jsonResponse({ error: '不支持的请求方式。' }, 405);
-    const denied = await authorizeManagement(request, env);
-    if (!denied) return jsonResponse({ authorized: true });
-    return jsonResponse(
-      {
-        error:
-          denied.status === 401
-            ? '管理口令不正确，请重新输入。'
-            : '暂时无法验证管理口令，请稍后重试。',
-      },
-      denied.status,
-    );
-  }
   const path = articlePath(url.searchParams.get('article'));
   if (!path) return jsonResponse({ error: '文章地址无效。' }, 400);
   const route = url.pathname;
@@ -332,14 +307,20 @@ async function handleRequest(
     return jsonResponse({ likes: results[1].results[0].likes, liked: body.liked });
   }
 
+  const isOwner = await hasAdminSession(request, env);
+  if (body.asOwner === true && !isOwner) {
+    return jsonResponse({ error: '管理凭证已失效，请重新解锁后再发布。' }, 401);
+  }
   if (
     typeof body.content !== 'string' ||
-    (body.nickname !== undefined && typeof body.nickname !== 'string')
+    (!isOwner && body.nickname !== undefined && typeof body.nickname !== 'string')
   ) {
     return jsonResponse({ error: '请填写评论内容，昵称可留空。' }, 400);
   }
   const content = body.content.trim();
-  const nickname = (typeof body.nickname === 'string' ? body.nickname.trim() : '') || '匿名访客';
+  const nickname = isOwner
+    ? author.name
+    : (typeof body.nickname === 'string' ? body.nickname.trim() : '') || '匿名访客';
   if (
     !content ||
     content.length > maximumCommentLength ||
@@ -377,8 +358,8 @@ async function handleRequest(
       commentCount: await commentCount(db, path),
       parentReplyCount: await parentCount(existing.parentId),
     });
-  const email = commentEmail(body.email);
-  if (!email) return jsonResponse({ error: '请填写有效的邮箱地址。' }, 400);
+  const email = isOwner ? null : commentEmail(body.email);
+  if (!isOwner && !email) return jsonResponse({ error: '请填写有效的邮箱地址。' }, 400);
   let parentId: number | null = null;
   let replyToId: number | null = null;
   let replyTo: string | null = null;
@@ -407,7 +388,8 @@ async function handleRequest(
   const [insert, count] = await db.batch<Record<string, unknown>>([
     db
       .prepare(
-        `INSERT INTO article_comments (article_path, visitor_id, request_id, nickname, email, content, created_at, parent_id, reply_to_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, nickname, content, created_at AS createdAt, parent_id AS parentId`,
+        `INSERT INTO article_comments (article_path, visitor_id, request_id, nickname, email, content, created_at, parent_id, reply_to_id, is_owner)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, nickname, content, created_at AS createdAt, parent_id AS parentId`,
       )
       .bind(
         path,
@@ -419,6 +401,7 @@ async function handleRequest(
         new Date().toISOString(),
         parentId,
         replyToId,
+        Number(isOwner),
       ),
     db.prepare('SELECT COUNT(*) AS count FROM article_comments WHERE article_path = ?').bind(path),
   ]);
@@ -426,7 +409,13 @@ async function handleRequest(
   ctx.waitUntil(sendPendingCommentEmails(env, Number(published.id)));
   return jsonResponse(
     {
-      comment: { ...published, replyTo, replyToId, replyCount: 0 },
+      comment: {
+        ...published,
+        authorRole: isOwner ? 'owner' : null,
+        replyTo,
+        replyToId,
+        replyCount: 0,
+      },
       commentCount: count.results[0].count,
       parentReplyCount: await parentCount(parentId),
     },
@@ -440,8 +429,22 @@ export async function handleArticleInteractionsApi(
   url: URL,
   ctx: ExecutionContext,
 ) {
-  const visitor = await visitorIdentity(request);
   try {
+    if (url.pathname === '/api/articles/admin') {
+      if (request.method !== 'GET') return jsonResponse({ error: '不支持的请求方式。' }, 405);
+      const denied = await authorizeManagement(request, env);
+      if (!denied) return jsonResponse({ authorized: true });
+      return jsonResponse(
+        {
+          error:
+            denied.status === 401
+              ? '管理口令不正确，请重新输入。'
+              : '暂时无法验证管理口令，请稍后重试。',
+        },
+        denied.status,
+      );
+    }
+    const visitor = await visitorIdentity(request);
     const response = await handleRequest(request, env, url, visitor.id, ctx);
     if (visitor.cookie) response.headers.set('Set-Cookie', visitor.cookie);
     return response;

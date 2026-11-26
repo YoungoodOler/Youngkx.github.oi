@@ -1,13 +1,12 @@
 'use client';
 
 import { multipartPartSizeMiB, type RepositoryUpload } from '@/lib/file-repository';
-import { authorizationHeaders, RepositoryError, repositoryRequest } from './RepositoryShared';
+import { RepositoryError, repositoryRequest } from './RepositoryShared';
 
 type UploadOptions = {
   file: File;
   description: string;
   folderId: string | null;
-  token: string;
   signal: AbortSignal;
   onProgress: (percent: number) => void;
   onPhase: (phase: 'retrying' | 'uploading' | 'finishing') => void;
@@ -48,7 +47,6 @@ function uploadBody(
     const cleanup = () => options.signal.removeEventListener('abort', canceled);
     options.signal.addEventListener('abort', canceled, { once: true });
     xhr.open(method, path);
-    if (options.token) xhr.setRequestHeader('Authorization', `Bearer ${options.token}`);
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onBytes(event.loaded);
@@ -104,7 +102,7 @@ function canRetry(reason: unknown) {
 }
 
 export async function uploadRepositoryFile(options: UploadOptions): Promise<unknown> {
-  const { file, signal, token } = options;
+  const { file, signal } = options;
   let displayedProgress = 0;
   const progress = (bytes: number) => {
     displayedProgress = Math.max(
@@ -127,7 +125,7 @@ export async function uploadRepositoryFile(options: UploadOptions): Promise<unkn
     const value = await repositoryRequest('/api/files/uploads', {
       method: 'POST',
       signal,
-      headers: { ...authorizationHeaders(token), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: file.name,
         description: options.description,
@@ -185,7 +183,7 @@ export async function uploadRepositoryFile(options: UploadOptions): Promise<unkn
         return await repositoryRequest(`${sessionPath}/complete`, {
           method: 'POST',
           signal,
-          headers: { ...authorizationHeaders(token), 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ parts }),
         });
       } catch (reason) {
@@ -200,7 +198,6 @@ export async function uploadRepositoryFile(options: UploadOptions): Promise<unkn
       try {
         await repositoryRequest(sessionPath, {
           method: 'DELETE',
-          headers: authorizationHeaders(token),
           signal: AbortSignal.timeout(10_000),
           keepalive: true,
         });

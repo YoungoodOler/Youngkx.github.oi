@@ -19,6 +19,8 @@ const server = createTestHarness({
         compatibility_flags: ['nodejs_compat'],
         vars: { LINKS_ADMIN_TOKEN: adminToken },
         assets: { directory: path.resolve('tests/fixtures/article-assets'), binding: 'ASSETS' },
+        kv_namespaces: [{ binding: 'LINKS', id: 'article-interactions-test' }],
+        r2_buckets: [{ binding: 'FILES', bucket_name: 'article-interactions-test' }],
         d1_databases: [
           {
             binding: 'ARTICLE_INTERACTIONS',
@@ -46,6 +48,7 @@ beforeEach(async () => {
     db.prepare('DELETE FROM article_comments'),
     db.prepare('DELETE FROM article_likes'),
     db.prepare('DELETE FROM article_rate_limits'),
+    db.prepare('DELETE FROM admin_sessions'),
   ]);
 });
 
@@ -84,6 +87,110 @@ async function snapshot(cookie, selected = article, extra = {}) {
 }
 
 describe('article interactions in the actual Workers and D1 runtime', () => {
+  it('shares a revocable admin session with comments, Links, and Repo and honors the remember option', async () => {
+    const login = (token, remember, requestOrigin = origin) =>
+      server.fetch(`${origin}/api/admin`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Origin: requestOrigin,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ remember }),
+      });
+    expect((await login('incorrect', true)).status).toBe(401);
+    expect((await login(adminToken, true, 'https://elsewhere.example')).status).toBe(403);
+    const temporary = await login(adminToken, false);
+    expect(temporary.status).toBe(200);
+    expect(temporary.headers.get('set-cookie')).not.toContain('Max-Age');
+    const signedIn = await login(adminToken, true);
+    expect(signedIn.status).toBe(200);
+    const cookie = signedIn.headers.get('set-cookie');
+    expect(cookie).toContain('Path=/api; Max-Age=7776000; HttpOnly; SameSite=Strict');
+    const headers = { Cookie: cookie.split(';')[0] };
+    expect((await (await server.fetch(`${origin}/api/admin`, { headers })).json()).authorized).toBe(
+      true,
+    );
+    await db
+      .prepare('UPDATE admin_sessions SET expires_at = unixepoch() + 60 WHERE persistent = 1')
+      .run();
+    const renewed = await server.fetch(`${origin}/api/admin`, { headers });
+    expect(renewed.headers.get('set-cookie')).toContain('Max-Age=7776000');
+    expect((await server.fetch(`${origin}/api/links/admin`, { headers })).status).toBe(200);
+    expect(
+      (
+        await server.fetch(`${origin}/api/links`, {
+          method: 'PUT',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: 1, updatedAt: null, groups: [] }),
+        })
+      ).status,
+    ).toBe(200);
+    expect((await server.fetch(`${origin}/api/files/admin`, { headers })).status).toBe(200);
+    const addFolder = (requestOrigin) =>
+      server.fetch(`${origin}/api/files/folders`, {
+        method: 'POST',
+        headers: { ...headers, Origin: requestOrigin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Owner upload folder' }),
+      });
+    expect((await addFolder('https://elsewhere.example')).status).toBe(403);
+    expect((await addFolder(origin)).status).toBe(201);
+
+    const impersonator = await post(await visitor(), commentInput('访客', { nickname: 'Youngkx' }));
+    expect(impersonator.comment.authorRole).toBeNull();
+    const owner = await post(`${await visitor()}; ${headers.Cookie}`, {
+      content: '站长回复',
+      nickname: '忽略这个名称',
+      requestId: randomUUID(),
+      replyToId: impersonator.comment.id,
+      asOwner: true,
+    });
+    expect(owner.comment).toMatchObject({ nickname: 'Youngkx', authorRole: 'owner' });
+    expect(owner.comment).not.toHaveProperty('email');
+    const root = await post(
+      `${await visitor()}; ${headers.Cookie}`,
+      {
+        content: '站长评论',
+        requestId: randomUUID(),
+      },
+      otherArticle,
+    );
+    expect((await snapshot(await visitor(), otherArticle)).comments).toEqual([root.comment]);
+    const focused = await snapshot(await visitor(), article, { focus: owner.comment.id });
+    expect(focused.focus.replies.replies).toEqual([owner.comment]);
+    const notifications = await db
+      .prepare('SELECT kind FROM article_comment_email_outbox WHERE comment_id = ?')
+      .bind(owner.comment.id)
+      .all();
+    expect(notifications.results).toEqual([{ kind: 'reply' }]);
+    const emails = await server.fetch(
+      endpoint('admin/comment-emails', article, { id: impersonator.comment.id }),
+      { headers },
+    );
+    expect(await emails.json()).toEqual({
+      emails: { [impersonator.comment.id]: 'reader@example.com' },
+    });
+    const deleted = await server.fetch(endpoint(`comments/${owner.comment.id}`), {
+      method: 'DELETE',
+      headers,
+    });
+    expect(deleted.status).toBe(200);
+
+    const logout = await server.fetch(`${origin}/api/admin`, { method: 'DELETE', headers });
+    expect(logout.headers.get('set-cookie')).toContain('Max-Age=0');
+    expect((await server.fetch(`${origin}/api/links/admin`, { headers })).status).toBe(401);
+    expect((await server.fetch(`${origin}/api/files/admin`, { headers })).status).toBe(401);
+    expect(
+      (
+        await send('comments', headers.Cookie, {
+          content: '不能以过期身份发布',
+          requestId: randomUUID(),
+          asOwner: true,
+        })
+      ).status,
+    ).toBe(401);
+  });
+
   it('creates an anonymous HttpOnly identity and returns uncached empty public data', async () => {
     const response = await server.fetch(endpoint('interactions'));
     expect(response.status).toBe(200);

@@ -8,9 +8,8 @@ import type { ArticleSummary } from '@/lib/articles';
 import { validateUsefulLinksPayload } from '@/lib/useful-links';
 import ArchivePass from './ArchivePass';
 import FeaturedArticleCard from './FeaturedArticleCard';
+import HomeHeader from './HomeHeader';
 import SiteFooter from './SiteFooter';
-import ResourceNav from './ResourceNav';
-import SiteBrand from './SiteBrand';
 import ElectricLogo from './ElectricLogo';
 import TopicCard, { type TopicCardCategory } from './TopicCard';
 import DotGrid from './react-bits/DotGrid';
@@ -53,7 +52,6 @@ export default function HomePage({
   categories: TopicCardCategory[];
   usefulLinkCount: number;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [compactLayout, setCompactLayout] = useState(false);
   const [backgroundReady, setBackgroundReady] = useState(false);
   const [logoReady, setLogoReady] = useState(false);
@@ -61,8 +59,6 @@ export default function HomePage({
   const onLogoReady = useCallback(() => setLogoReady(true), []);
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.001 });
-  const menuRef = useRef<HTMLElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const cardsRef = useRef<HTMLElement>(null);
   const [displayedLinkCount, setDisplayedLinkCount] = useState(usefulLinkCount);
   const cards: FlexCarouselItem[] = [
@@ -116,30 +112,6 @@ export default function HomePage({
   }, []);
 
   useEffect(() => {
-    if (!menuOpen) return;
-
-    const closeFromOutside = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (menuRef.current?.contains(target) || menuButtonRef.current?.contains(target)) return;
-      setMenuOpen(false);
-    };
-    const closeFromKeyboard = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMenuOpen(false);
-        menuButtonRef.current?.focus();
-      }
-    };
-
-    document.addEventListener('pointerdown', closeFromOutside, { passive: true });
-    document.addEventListener('keydown', closeFromKeyboard);
-    return () => {
-      document.removeEventListener('pointerdown', closeFromOutside);
-      document.removeEventListener('keydown', closeFromKeyboard);
-    };
-  }, [menuOpen]);
-
-  useEffect(() => {
     const controller = new AbortController();
     const loadCount = () =>
       fetch('/api/links', { cache: 'no-store', signal: controller.signal })
@@ -179,40 +151,7 @@ export default function HomePage({
     <main className="home-page" id="top">
       <m.div className="progress" style={{ scaleX: progress }} />
 
-      <header className="nav shell">
-        <SiteBrand href="#top" theme="dark" />
-        <nav
-          ref={menuRef}
-          id="home-mobile-menu"
-          className={menuOpen ? 'nav-links open' : 'nav-links'}
-          aria-label="主导航"
-        >
-          <a href="#top" onClick={() => setMenuOpen(false)}>
-            Home
-          </a>
-          <a href="#interactive-cards" onClick={() => setMenuOpen(false)}>
-            Cards
-          </a>
-          <a href="#posts" onClick={() => setMenuOpen(false)}>
-            Articles
-          </a>
-          <a href="#topics" onClick={() => setMenuOpen(false)}>
-            Topics
-          </a>
-        </nav>
-        <ResourceNav />
-        <button
-          ref={menuButtonRef}
-          className={menuOpen ? 'menu open' : 'menu'}
-          onClick={() => setMenuOpen((current) => !current)}
-          aria-label="切换菜单"
-          aria-expanded={menuOpen}
-          aria-controls="home-mobile-menu"
-        >
-          <span />
-          <span />
-        </button>
-      </header>
+      <HomeHeader />
 
       <section className="home-intro" aria-labelledby="home-title">
         <div className="home-ascii-background" aria-hidden="true">

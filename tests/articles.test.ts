@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import robots from '@/app/robots';
 import sitemap from '@/app/sitemap';
+import { getArticleOpening } from '@/lib/article-opening';
 import { articles, articleSummaries, categorySummaries, getArticleByPath } from '@/lib/articles';
 import { selectLatestArticle } from '@/lib/article-selection';
 import { parseFrontMatter, renderMarkdown } from '@/lib/markdown-articles';
@@ -131,6 +132,28 @@ describe('Markdown math and tables', () => {
 });
 
 describe('article index', () => {
+  it('takes readable opening paragraphs from Markdown and legacy HTML', () => {
+    const markdown = renderMarkdown(
+      '# 标题\n\n![封面](cover.webp)\n\n[目录 →](/contents/)\n\n**正文**开头。\n\n第二段。\n\n## 小节\n\n- 列表条目。',
+    );
+
+    expect(getArticleOpening(markdown)).toEqual(['正文开头。', '第二段。', '列表条目。']);
+    expect(
+      getArticleOpening('<h2>标题</h2><div><p>TCP&#x2F;IP<br> &amp; <code>C++</code></p></div>'),
+    ).toEqual(['TCP/IP & C++']);
+    expect(getArticleOpening('<pre><p>示例</p></pre><p><img src="cover.webp"></p>')).toEqual([]);
+  });
+
+  it('keeps a longer opening across blocks and trims it by character', () => {
+    const first = '正文。'.repeat(200);
+    const second = '𠮷'.repeat(60);
+
+    expect(getArticleOpening(`<p>${first}</p><p>${second}</p>`)).toEqual([
+      first,
+      `${'𠮷'.repeat(50)}…`,
+    ]);
+  });
+
   it('groups C/C++ tag aliases under the existing category and display name', () => {
     for (const tag of ['C', 'C++', 'C/C++', 'C / C++', ' c / c++ ']) {
       expect(normalizeTag(tag)).toBe('C');

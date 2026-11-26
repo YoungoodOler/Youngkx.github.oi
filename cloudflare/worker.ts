@@ -7,7 +7,8 @@ import {
 import { handleFilesApi } from './files';
 import { handleArticleInteractionsApi } from './article-interactions';
 import { sendPendingCommentEmails } from './comment-emails';
-import { authorizeManagement, jsonResponse, readLimitedJson, type WorkerEnv } from './http';
+import { authorizeManagement, handleAdmin } from './admin';
+import { jsonResponse, readLimitedJson, type WorkerEnv } from './http';
 
 const linksKey = 'directory:v1';
 
@@ -72,6 +73,17 @@ const worker = {
     if (url.hostname === 'youngkx.cn') {
       url.hostname = 'www.youngkx.cn';
       return Response.redirect(url.toString(), 308);
+    }
+
+    if (url.pathname === '/api/admin') {
+      try {
+        return await handleAdmin(request, env);
+      } catch {
+        console.error(
+          JSON.stringify({ message: 'admin session request failed', method: request.method }),
+        );
+        return jsonResponse({ error: '暂时无法访问站长登录，请稍后重试。' }, 503);
+      }
     }
 
     if (url.pathname.startsWith('/api/articles/')) {

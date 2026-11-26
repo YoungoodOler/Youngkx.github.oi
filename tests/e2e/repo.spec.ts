@@ -124,7 +124,7 @@ test('公开仓库按说明搜索、筛选、排序并下载，深浅主题均�
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
     ).toBeLessThan(2);
-    await expect(page.getByRole('link', { name: 'Manage Repo' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Manage Repo' })).toHaveCount(0);
     await page.screenshot({ path: testInfo.outputPath(`repo-${theme}.png`), fullPage: true });
   }
 });
@@ -161,6 +161,7 @@ test('分页合并去重，空仓库、暂停与故障各自提示', async ({ pa
   mode = 'empty';
   await page.reload();
   await expect(page.getByRole('heading', { name: 'No folders yet.' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Create folder' })).toHaveCount(0);
   mode = 'paused';
   await page.reload();
   await expect(page.getByRole('heading', { name: 'A little pause.' })).toBeVisible();
@@ -368,8 +369,21 @@ test('真实 R2 图片和视频可点击预览、关闭、播放和下载', asyn
 
 test('管理 token 校验、会话失效和锁定', async ({ page }) => {
   let expired = false;
+  let signedIn = false;
+  await page.route('**/api/admin', (route) => {
+    const request = route.request();
+    if (request.method() === 'POST') {
+      if (request.headers().authorization !== 'Bearer frontend-test-token') {
+        return route.fulfill({ status: 401, json: { error: 'Invalid manage token.' } });
+      }
+      signedIn = true;
+    } else if (request.method() === 'DELETE') {
+      signedIn = false;
+    }
+    return route.fulfill({ json: { authorized: signedIn && !expired } });
+  });
   await page.route('**/api/files/admin', (route) =>
-    route.request().headers().authorization === 'Bearer frontend-test-token' && !expired
+    signedIn && !expired
       ? route.fulfill({ json: fixture })
       : route.fulfill({ status: 401, json: { error: 'Invalid manage token.' } }),
   );
@@ -381,18 +395,17 @@ test('管理 token 校验、会话失效和锁定', async ({ page }) => {
   ).toHaveCount(0);
   await page.getByLabel('Manage token', { exact: true }).fill('wrong-token');
   await page.getByRole('button', { name: 'Unlock Repo' }).click();
-  await expect(page.locator('.repo-notice[role="alert"]')).toContainText('Invalid manage token.');
+  await expect(page.locator('.admin-login [role="alert"]')).toContainText('Invalid manage token.');
   await page.getByLabel('Manage token', { exact: true }).fill('frontend-test-token');
   await page.getByRole('button', { name: 'Unlock Repo' }).click();
   await expect(page.getByRole('button', { name: 'Upload file', exact: true })).toBeVisible();
-  expect(await page.evaluate(() => sessionStorage.getItem('youngkx-links-token'))).toBe(
-    'frontend-test-token',
-  );
+  expect(await page.evaluate(() => sessionStorage.getItem('youngkx-links-token'))).toBeNull();
   expired = true;
   await page.getByRole('button', { name: 'Refresh list' }).click();
   await expect(page.getByRole('button', { name: 'Unlock Repo' })).toBeVisible();
   expect(await page.evaluate(() => sessionStorage.getItem('youngkx-links-token'))).toBeNull();
   expired = false;
+  await page.getByLabel('Manage token', { exact: true }).fill('frontend-test-token');
   await page.getByRole('button', { name: 'Unlock Repo' }).click();
   await page.getByRole('button', { name: 'Lock workspace' }).click();
   await expect(page.getByRole('button', { name: 'Unlock Repo' })).toBeVisible();

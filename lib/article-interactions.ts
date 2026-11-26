@@ -8,6 +8,7 @@ export type CommentEmails = Partial<Record<number, string | null>>;
 export type ArticleComment = {
   id: number;
   nickname: string;
+  authorRole?: 'owner' | null;
   content: string;
   createdAt: string;
   parentId: number | null;

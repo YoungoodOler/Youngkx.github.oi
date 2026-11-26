@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
   defaultRepositorySettings,
@@ -138,8 +137,10 @@ export default function FileRepository() {
   return (
     <RepositoryShell>
       <section className="repo-hero" aria-labelledby="repo-title">
-        <div>
-          <h1 id="repo-title">{listing.settings.title}</h1>
+        <div className="resource-hero-enter">
+          <h1 id="repo-title" className="resource-hero-title">
+            {listing.settings.title}
+          </h1>
         </div>
         <RepoArtwork />
       </section>
@@ -172,9 +173,6 @@ export default function FileRepository() {
             <dd>{latest ? fileDate(latest) : '—'}</dd>
           </div>
         </dl>
-        <Link className="repo-text-link" href="/repo/manage/">
-          Manage Repo <RepoIcon kind="arrow" />
-        </Link>
       </div>
       <section className="repo-library" aria-labelledby="repo-files-title" aria-busy={loading}>
         <div className="repo-library-heading">
@@ -336,7 +334,7 @@ export default function FileRepository() {
               {!searchActive && currentFolder && listing.cursor && (
                 <p>Load more files to finish checking this folder.</p>
               )}
-              {query ? (
+              {query && (
                 <button
                   className="repo-button"
                   type="button"
@@ -346,11 +344,7 @@ export default function FileRepository() {
                 >
                   Clear filters
                 </button>
-              ) : !listing.cursor ? (
-                <Link className="repo-text-link" href="/repo/manage/">
-                  {currentFolder ? 'Upload file' : 'Create folder'} <RepoIcon kind="arrow" />
-                </Link>
-              ) : null}
+              )}
             </div>
           )
         )}

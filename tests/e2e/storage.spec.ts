@@ -18,10 +18,9 @@ test('浏览器禁用存储时仍可切换主题及使用链接管理', async ({
       json: { version: 1, updatedAt: null, groups: [] },
     }),
   );
-  await page.route('**/api/links/admin', (route) =>
+  await page.route('**/api/admin', (route) =>
     route.fulfill({
-      status: route.request().headers().authorization === 'Bearer fixture-token' ? 200 : 401,
-      json: {},
+      json: { authorized: route.request().headers().authorization === 'Bearer fixture-token' },
     }),
   );
   await page.goto('/links/manage/');
@@ -32,8 +31,6 @@ test('浏览器禁用存储时仍可切换主题及使用链接管理', async ({
   await page.getByLabel('Admin Token').fill('fixture-token');
   await page.getByRole('button', { name: 'Unlock Manager' }).click();
   await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
-  await expect(page.locator('.manager-notice')).toHaveText(
-    'Manager unlocked for this browser tab.',
-  );
+  await expect(page.locator('.manager-notice')).toContainText('Directory loaded.');
   expect(errors).toEqual([]);
 });

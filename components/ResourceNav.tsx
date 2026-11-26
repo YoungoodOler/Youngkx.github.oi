@@ -8,10 +8,10 @@ export default function ResourceNav() {
   return (
     <nav className="resource-nav" aria-label="资源导航">
       <Link href="/links/" aria-current={section === 'links' ? 'page' : undefined}>
-        Links
+        <span className="nav-link-label">Links</span>
       </Link>
       <Link href="/repo/" aria-current={section === 'repo' ? 'page' : undefined}>
-        Repo
+        <span className="nav-link-label">Repo</span>
       </Link>
     </nav>
   );

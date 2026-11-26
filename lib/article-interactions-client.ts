@@ -1,7 +1,3 @@
-import { managementTokenKey, writeStoredValue } from './browser-storage';
-
-export const commentManagementTokenKey = managementTokenKey;
-
 export class InteractionError extends Error {
   constructor(
     message: string,
@@ -27,8 +23,4 @@ export async function interactionRequest<T>(url: string, init?: RequestInit): Pr
 export function interactionErrorMessage(error: unknown) {
   if (error instanceof InteractionError) return error.message;
   return '暂时无法连接，请稍后重试。你的评论内容会保留在输入框中。';
-}
-
-export function rememberCommentManagementToken(value: string | null) {
-  writeStoredValue('sessionStorage', commentManagementTokenKey, value || null);
 }

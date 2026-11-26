@@ -8,7 +8,7 @@ tags:
 # card 只控制卡片样式，不是分类标签。
 # 可选：code / cs / ai / vlog / talk / web / network / timeline
 card: ai
-excerpt: "用一两句话概括文章内容，这段文字会显示在主页卡片和文章列表中。"
+excerpt: "用一两句话概括文章内容，用于主页卡片和文章简介。"
 draft: true
 ---
 

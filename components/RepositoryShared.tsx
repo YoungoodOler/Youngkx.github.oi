@@ -11,9 +11,6 @@ import {
 import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
-import { managementTokenKey } from '@/lib/browser-storage';
-
-export const repositoryTokenKey = managementTokenKey;
 
 export function fileExtension(name: string) {
   const dot = name.lastIndexOf('.');
@@ -29,10 +26,6 @@ export function fileDate(value: string) {
     day: '2-digit',
     timeZone: 'Asia/Shanghai',
   }).format(date);
-}
-
-export function authorizationHeaders(token: string): Record<string, string> {
-  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export class RepositoryError extends Error {

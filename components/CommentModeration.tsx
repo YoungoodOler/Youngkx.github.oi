@@ -1,146 +1,24 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import type { ArticleComment, DeletedComment } from '@/lib/article-interactions';
-import { readStoredValue } from '@/lib/browser-storage';
 import {
-  commentManagementTokenKey,
   InteractionError,
   interactionRequest,
   interactionErrorMessage,
-  rememberCommentManagementToken,
 } from '@/lib/article-interactions-client';
 
-export default function CommentModeration({
-  token,
-  onChange,
-}: {
-  token: string | null;
-  onChange: (token: string | null) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [input, setInput] = useState('');
-  const [checking, setChecking] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const stored = readStoredValue('sessionStorage', commentManagementTokenKey) ?? '';
-    if (stored) {
-      setInput(stored);
-      setChecking(true);
-      void interactionRequest('/api/articles/admin', {
-        headers: { Authorization: `Bearer ${stored}` },
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
-      })
-        .then(() => {
-          if (!controller.signal.aborted) onChange(stored);
-        })
-        .catch((failure: unknown) => {
-          if (
-            !controller.signal.aborted &&
-            failure instanceof InteractionError &&
-            failure.status === 401
-          ) {
-            rememberCommentManagementToken(null);
-            setInput('');
-          }
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setChecking(false);
-        });
-    }
-    return () => controller.abort();
-  }, [onChange]);
-
-  const unlock = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!input.trim() || checking) return;
-    setChecking(true);
-    setError('');
-    try {
-      const value = input.trim();
-      await interactionRequest('/api/articles/admin', {
-        headers: { Authorization: `Bearer ${value}` },
-      });
-      rememberCommentManagementToken(value);
-      onChange(value);
-      setInput('');
-      setOpen(false);
-    } catch (failure) {
-      setError(interactionErrorMessage(failure));
-    } finally {
-      setChecking(false);
-    }
-  };
-
-  return (
-    <div className="comment-moderation">
-      {token ? (
-        <div className="comment-moderation-status">
-          <span>管理员模式</span>
-          <button
-            type="button"
-            onClick={() => {
-              rememberCommentManagementToken(null);
-              onChange(null);
-              setInput('');
-            }}
-          >
-            退出管理
-          </button>
-        </div>
-      ) : (
-        <>
-          <button
-            type="button"
-            disabled={checking}
-            aria-expanded={open}
-            onClick={() => setOpen(!open)}
-          >
-            {checking ? '正在验证…' : '管理评论'}
-          </button>
-          {open && (
-            <form className="comment-moderation-form" onSubmit={unlock}>
-              <label htmlFor="comments-admin-token">管理口令</label>
-              <div>
-                <input
-                  id="comments-admin-token"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={input}
-                  disabled={checking}
-                  onChange={(event) => setInput(event.target.value)}
-                />
-                <button type="submit" disabled={checking || !input.trim()}>
-                  {checking ? '正在验证…' : '解锁管理'}
-                </button>
-              </div>
-              {error && (
-                <p className="interaction-error" role="alert">
-                  {error}
-                </p>
-              )}
-            </form>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-export function CommentDeleteButton({
+export default function CommentDeleteButton({
   comment,
   query,
-  token,
+  isAdmin,
   disabled,
   onDeleted,
   onUnauthorized,
 }: {
   comment: ArticleComment;
   query: string;
-  token: string | null;
+  isAdmin: boolean;
   disabled?: boolean;
   onDeleted: (comment: ArticleComment, result: DeletedComment) => void;
   onUnauthorized: () => void;
@@ -149,12 +27,12 @@ export function CommentDeleteButton({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   useEffect(() => {
-    if (!token) {
+    if (!isAdmin) {
       setConfirming(false);
       setError('');
     }
-  }, [token]);
-  if (!token) return null;
+  }, [isAdmin]);
+  if (!isAdmin) return null;
   const kind = comment.parentId === null ? '评论' : '回复';
   const remove = async () => {
     if (deleting || disabled) return;
@@ -163,10 +41,7 @@ export function CommentDeleteButton({
     try {
       const result = await interactionRequest<DeletedComment>(
         `/api/articles/comments/${comment.id}?${query}`,
-        {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        { method: 'DELETE' },
       );
       onDeleted(comment, result);
       setConfirming(false);

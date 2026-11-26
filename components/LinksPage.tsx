@@ -1,7 +1,6 @@
 'use client';
 
 import { m } from 'framer-motion';
-import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
   createEmptyUsefulLinksPayload,
@@ -51,17 +50,10 @@ export default function LinksPage({ groups }: { groups: UsefulLinkGroup[] }) {
       <SiteHeader navClassName="categories-nav" resources />
 
       <section className="categories-hero shell">
-        <m.div
-          initial={{ opacity: 0, y: 72, filter: 'blur(18px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{ duration: 0.92, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <h1>Useful Links</h1>
+        <div className="resource-hero-enter">
+          <h1 className="resource-hero-title">Useful Links</h1>
           <p>{linkCount} Links · A Personal Directory</p>
-          <Link className="links-manage-link" href="/links/manage/">
-            Manage Links ↗
-          </Link>
-        </m.div>
+        </div>
       </section>
 
       <section className="category-directory shell">

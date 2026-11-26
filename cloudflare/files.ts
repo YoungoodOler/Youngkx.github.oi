@@ -7,6 +7,7 @@ import {
   type RepositoryFile,
   type RepositorySettings,
 } from '../lib/file-repository';
+import { authorizeManagement } from './admin';
 import { folderExists, handleFoldersApi, isFolderId, readFolders } from './folders';
 import {
   describeFile,
@@ -18,7 +19,6 @@ import {
   validFilename,
 } from './file-records';
 import {
-  authorizeManagement,
   jsonResponse,
   readLimitedJson,
   streamFixedLength,

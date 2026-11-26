@@ -10,14 +10,12 @@ import {
   useState,
 } from 'react';
 import { LazyMotion } from 'framer-motion';
-import { usePathname, useRouter } from 'next/navigation';
-import { readStoredValue, writeStoredValue } from '@/lib/browser-storage';
+import { usePathname } from 'next/navigation';
+import { writeStoredValue } from '@/lib/browser-storage';
 
 const loadMotionFeatures = () => import('./motion-features').then((module) => module.default);
 
 type Theme = 'dark' | 'light';
-type TransitionMode = 'theme' | 'page-in' | 'page-out' | null;
-type ActiveTransitionMode = Exclude<TransitionMode, null>;
 
 const transitionWaveSize = 512;
 const transitionWaveMask = transitionWaveSize - 1;
@@ -59,19 +57,14 @@ function isCompactTransition() {
   return window.innerWidth < 700 || window.matchMedia('(pointer: coarse)').matches;
 }
 
-function getTransitionDuration(mode: ActiveTransitionMode) {
-  const compact = isCompactTransition();
-  if (mode === 'theme') return compact ? 860 : 1120;
-  if (mode === 'page-in') return compact ? 720 : 900;
-  return compact ? 760 : 900;
+function getThemeTransitionDuration() {
+  return isCompactTransition() ? 860 : 1120;
 }
 
 function ParticleTransitionCanvas({
-  mode,
   targetTheme,
   origin,
 }: {
-  mode: ActiveTransitionMode;
   targetTheme: Theme;
   origin: { x: number; y: number };
 }) {
@@ -173,7 +166,7 @@ function ParticleTransitionCanvas({
     }
     const positions = new Float32Array(count * 3);
 
-    const duration = getTransitionDuration(mode);
+    const duration = getThemeTransitionDuration();
     const startedAt = performance.now();
     let frame = 0;
 
@@ -249,19 +242,15 @@ function ParticleTransitionCanvas({
       const progress = Math.min(1, (now - startedAt) / duration);
       context.clearRect(0, 0, width, height);
 
-      if (mode === 'theme') {
-        if (progress < 0.5) drawPhase(progress * 2, true);
-        else drawPhase((progress - 0.5) * 2, false);
-      } else {
-        drawPhase(progress, mode === 'page-out');
-      }
+      if (progress < 0.5) drawPhase(progress * 2, true);
+      else drawPhase((progress - 0.5) * 2, false);
 
       if (progress < 1) frame = window.requestAnimationFrame(render);
     };
 
     frame = window.requestAnimationFrame(render);
     return () => window.cancelAnimationFrame(frame);
-  }, [mode, origin, targetTheme]);
+  }, [origin, targetTheme]);
 
   return <canvas ref={canvasRef} className="site-transition-canvas" />;
 }
@@ -274,74 +263,21 @@ export function useSiteExperience() {
 
 export default function SiteExperience({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [theme, setTheme] = useState<Theme>('dark');
-  const [transitionMode, setTransitionMode] = useState<TransitionMode>(null);
-  const [transitionTheme, setTransitionTheme] = useState<Theme>('dark');
+  const [transitionTheme, setTransitionTheme] = useState<Theme | null>(null);
   const [transitionOrigin, setTransitionOrigin] = useState({ x: 0.86, y: 0.12 });
   const timers = useRef<number[]>([]);
-  const transitionModeRef = useRef<TransitionMode>(null);
   const lastPointerOrigin = useRef({ x: 0.86, y: 0.12 });
-  const pendingNavigation = useRef(false);
-  const previousPathname = useRef(pathname);
-
-  const clearTimers = useCallback(() => {
-    timers.current.forEach((timer) => window.clearTimeout(timer));
-    timers.current = [];
-  }, []);
-
-  const setMode = useCallback((mode: TransitionMode) => {
-    transitionModeRef.current = mode;
-    setTransitionMode(mode);
-  }, []);
 
   useEffect(() => {
-    const initial = resolveInitialTheme();
-    setTheme(initial);
-    setTransitionTheme(initial);
-
-    if (readStoredValue('sessionStorage', 'youngkx-page-transition') === '1') {
-      const savedOrigin = readStoredValue('sessionStorage', 'youngkx-transition-origin');
-      if (savedOrigin) {
-        const [x, y] = savedOrigin.split(',').map(Number);
-        if (Number.isFinite(x) && Number.isFinite(y)) setTransitionOrigin({ x, y });
-      }
-      writeStoredValue('sessionStorage', 'youngkx-page-transition', null);
-      writeStoredValue('sessionStorage', 'youngkx-transition-origin', null);
-      setMode('page-in');
-      const pageInDuration = getTransitionDuration('page-in');
-      timers.current.push(
-        window.setTimeout(() => {
-          document.documentElement.classList.remove('page-entering');
-        }, 50),
-      );
-      timers.current.push(window.setTimeout(() => setMode(null), pageInDuration + 40));
-    }
+    setTheme(resolveInitialTheme());
 
     return () => {
-      clearTimers();
-      document.documentElement.classList.remove('theme-changing', 'site-leaving');
+      timers.current.forEach((timer) => window.clearTimeout(timer));
+      timers.current = [];
+      document.documentElement.classList.remove('theme-changing');
     };
-  }, [clearTimers, setMode]);
-
-  useEffect(() => {
-    if (previousPathname.current === pathname) return;
-    previousPathname.current = pathname;
-    if (!pendingNavigation.current) return;
-
-    pendingNavigation.current = false;
-    clearTimers();
-    document.documentElement.classList.remove('site-leaving');
-    document.documentElement.classList.add('page-entering');
-    setMode('page-in');
-    const pageInDuration = getTransitionDuration('page-in');
-    timers.current.push(
-      window.setTimeout(() => {
-        document.documentElement.classList.remove('page-entering');
-      }, 50),
-    );
-    timers.current.push(window.setTimeout(() => setMode(null), pageInDuration + 40));
-  }, [clearTimers, pathname, setMode]);
+  }, []);
 
   useEffect(() => {
     const rememberPointer = (event: PointerEvent) => {
@@ -355,13 +291,12 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    if (pathname === '/' || transitionModeRef.current) return;
+    if (pathname === '/' || timers.current.length) return;
     const next = theme === 'dark' ? 'light' : 'dark';
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (reduceMotion) {
       setTheme(next);
-      setTransitionTheme(next);
       document.documentElement.dataset.theme = next;
       writeStoredValue('localStorage', 'youngkx-theme', next);
       return;
@@ -369,9 +304,8 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
 
     setTransitionTheme(next);
     setTransitionOrigin(lastPointerOrigin.current);
-    setMode('theme');
     document.documentElement.classList.add('theme-changing');
-    const themeDuration = getTransitionDuration('theme');
+    const themeDuration = getThemeTransitionDuration();
 
     timers.current.push(
       window.setTimeout(
@@ -387,90 +321,22 @@ export default function SiteExperience({ children }: { children: ReactNode }) {
     timers.current.push(
       window.setTimeout(() => {
         document.documentElement.classList.remove('theme-changing');
-        setMode(null);
+        timers.current = [];
+        setTransitionTheme(null);
       }, themeDuration + 40),
     );
-  }, [pathname, setMode, theme]);
-
-  useEffect(() => {
-    const navigateWithTransition = (event: MouseEvent) => {
-      if (
-        pathname === '/' ||
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey ||
-        transitionModeRef.current
-      )
-        return;
-
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const anchor = target.closest('a');
-      if (
-        !anchor ||
-        anchor.target === '_blank' ||
-        anchor.hasAttribute('download') ||
-        anchor.dataset.transition === 'off'
-      )
-        return;
-
-      const destination = new URL(anchor.href, window.location.href);
-      if (destination.origin !== window.location.origin || destination.pathname === '/') return;
-
-      const sameDocument =
-        destination.pathname === window.location.pathname &&
-        destination.search === window.location.search;
-      if (sameDocument) return;
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-      event.preventDefault();
-      clearTimers();
-      const origin =
-        event.detail === 0
-          ? lastPointerOrigin.current
-          : {
-              x: event.clientX / Math.max(1, window.innerWidth),
-              y: event.clientY / Math.max(1, window.innerHeight),
-            };
-      lastPointerOrigin.current = origin;
-      setTransitionOrigin(origin);
-      setTransitionTheme(theme);
-      setMode('page-out');
-      document.documentElement.classList.add('site-leaving');
-      pendingNavigation.current = true;
-
-      const href = `${destination.pathname}${destination.search}${destination.hash}`;
-      router.prefetch(href);
-      const pageOutDuration = getTransitionDuration('page-out');
-
-      timers.current.push(
-        window.setTimeout(() => {
-          router.push(href);
-        }, pageOutDuration - 30),
-      );
-    };
-
-    document.addEventListener('click', navigateWithTransition, true);
-    return () => document.removeEventListener('click', navigateWithTransition, true);
-  }, [clearTimers, pathname, router, setMode, theme]);
+  }, [pathname, theme]);
 
   return (
     <SiteExperienceContext.Provider value={{ theme, toggleTheme }}>
       <LazyMotion features={loadMotionFeatures} strict>
         {children}
-        {transitionMode && (
+        {transitionTheme && (
           <div
-            className={`site-transition site-transition--${transitionMode} site-transition--to-${transitionTheme}`}
+            className={`site-transition site-transition--theme site-transition--to-${transitionTheme}`}
             aria-hidden="true"
           >
-            <ParticleTransitionCanvas
-              mode={transitionMode}
-              targetTheme={transitionTheme}
-              origin={transitionOrigin}
-            />
+            <ParticleTransitionCanvas targetTheme={transitionTheme} origin={transitionOrigin} />
           </div>
         )}
       </LazyMotion>

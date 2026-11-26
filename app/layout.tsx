@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { Archivo_Black, DM_Mono } from 'next/font/google';
 import './globals.css';
+import './admin-session.css';
 import SiteExperience from '@/components/SiteExperience';
+import { AdminSessionProvider } from '@/components/AdminSession';
 import { siteOrigin } from '@/lib/site';
 
 const monoFont = DM_Mono({
@@ -45,12 +47,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('youngkx-theme');if(!t)t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t;if(sessionStorage.getItem('youngkx-page-transition')==='1')document.documentElement.classList.add('page-entering')}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('youngkx-theme');if(!t)t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t}catch(e){}})()`,
           }}
         />
       </head>
       <body>
-        <SiteExperience>{children}</SiteExperience>
+        <SiteExperience>
+          <AdminSessionProvider>{children}</AdminSessionProvider>
+        </SiteExperience>
       </body>
     </html>
   );
