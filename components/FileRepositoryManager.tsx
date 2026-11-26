@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { uploadRepositoryFile } from './repository-upload';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { AdminLoginForm, useAdminSession } from './AdminSession';
+import { useAdminSession } from './AdminSession';
 import {
   defaultRepositorySettings,
   formatFileSize,
@@ -177,7 +177,7 @@ function FileEditor({
 }
 
 export default function FileRepositoryManager() {
-  const { authorized: signedIn, preview, checking, expire, signOut } = useAdminSession();
+  const { authorized: signedIn, preview, checking, expire } = useAdminSession();
   const canManage = signedIn || preview;
   const [loaded, setLoaded] = useState(false);
   const authorized = canManage && loaded;
@@ -191,7 +191,7 @@ export default function FileRepositoryManager() {
   const [uploadLimitGB, setUploadLimitGB] = useState(() =>
     uploadLimitInGB(defaultRepositorySettings().maxUploadMiB),
   );
-  const [notice, setNotice] = useState<Notice>({ text: 'Enter your manage token to continue.' });
+  const [notice, setNotice] = useState<Notice>({ text: '' });
   const [operation, setOperation] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState('');
@@ -231,9 +231,7 @@ export default function FileRepositoryManager() {
     if (!canManage) {
       setLoaded(false);
       uploadRef.current?.abort();
-      setNotice((current) =>
-        current.error ? current : { text: 'Enter your manage token to continue.' },
-      );
+      setNotice((current) => (current.error ? current : { text: '' }));
       return;
     }
     setNotice({ text: 'Loading your workspace.' });
@@ -258,7 +256,7 @@ export default function FileRepositoryManager() {
         if (reason instanceof RepositoryError && reason.status === 401) expire();
         setNotice(
           reason instanceof RepositoryError && reason.status === 401
-            ? { text: 'Enter your manage token to continue.' }
+            ? { text: '' }
             : {
                 error: true,
                 text: reason instanceof Error ? reason.message : 'Unable to check access.',
@@ -269,22 +267,15 @@ export default function FileRepositoryManager() {
   }, [canManage, expire]);
 
   function fail(reason: unknown) {
-    if (reason instanceof RepositoryError && reason.status === 401) expire();
+    if (reason instanceof RepositoryError && reason.status === 401) {
+      expire();
+      setNotice({ text: '' });
+      return;
+    }
     setNotice({
       error: true,
       text: reason instanceof Error ? reason.message : 'Something went wrong. Please try again.',
     });
-  }
-
-  async function lockWorkspace() {
-    try {
-      await signOut();
-      setFile(null);
-      setDescription('');
-      setNotice({ text: 'Workspace locked. Enter your manage token to continue.' });
-    } catch (reason) {
-      fail(reason);
-    }
   }
 
   function selectFile(selected: File | null) {
@@ -576,35 +567,14 @@ export default function FileRepositoryManager() {
           <Link className="repo-button" href="/repo/">
             View Repo <RepoIcon kind="arrow" />
           </Link>
-          {signedIn && (
-            <button
-              type="button"
-              className="repo-button"
-              disabled={busy || checking}
-              onClick={() => void lockWorkspace()}
-            >
-              Lock workspace
-            </button>
-          )}
         </div>
       </section>
       <div
         className={`repo-notice${notice.error ? ' repo-notice--error' : ''}`}
         role={notice.error ? 'alert' : 'status'}
       >
-        {notice.text}
+        {notice.text || (!canManage && !checking ? '请从页脚的站长入口登录。' : '')}
       </div>
-      {!canManage && (
-        <div className="repo-unlock repo-panel">
-          <span className="repo-eyebrow">MANAGE ACCESS</span>
-          <AdminLoginForm
-            tokenLabel="Manage token"
-            submitLabel="Unlock Repo"
-            rememberLabel="Keep me signed in"
-            pendingLabel="Checking…"
-          />
-        </div>
-      )}
       {authorized && (
         <>
           <div className="repo-workspace-grid">

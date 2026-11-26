@@ -1,9 +1,16 @@
+import { author, githubProfileUrl } from './author';
+
+export const friendLinksPath = '/links/';
+export const friendLinksTitle = 'Links 友链';
+export const maximumOwnerNoteLength = 2000;
+
 export type UsefulLink = {
   id: string;
   title: string;
   href: string;
   label: string;
   description: string;
+  avatar?: string;
 };
 
 export type UsefulLinkGroup = {
@@ -13,9 +20,39 @@ export type UsefulLinkGroup = {
   links: UsefulLink[];
 };
 
+export const friendLinkTiers = [
+  { id: 'youngkx', title: 'Youngkx' },
+  { id: 'friends', title: 'Friends' },
+  { id: 'friend-links', title: '友链' },
+] as const;
+
+export function organizeFriendLinks(groups: UsefulLinkGroup[]): UsefulLinkGroup[] {
+  const organized = friendLinkTiers.map<UsefulLinkGroup>((tier) => ({
+    ...tier,
+    description: '',
+    links: [],
+  }));
+  const [ownLinks, , generalLinks] = organized;
+  for (const group of groups) {
+    const currentTier = organized.find(
+      (tier) => group.id === tier.id && group.title === tier.title,
+    );
+    if (currentTier) {
+      currentTier.links.push(...group.links);
+      continue;
+    }
+    for (const link of group.links) {
+      const tier = link.href === githubProfileUrl ? ownLinks : generalLinks;
+      tier.links.push(link);
+    }
+  }
+  return organized;
+}
+
 export type UsefulLinksPayload = {
   version: 1;
   updatedAt: string | null;
+  ownerNote?: string;
   groups: UsefulLinkGroup[];
 };
 
@@ -42,6 +79,12 @@ function validUrl(value: unknown): value is string {
   }
 }
 
+function validAvatar(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length > 2_048) return false;
+  if (/^\/(?!\/)[^\\\p{Cc}]+$/u.test(value)) return true;
+  return validUrl(value) && new URL(value).protocol === 'https:';
+}
+
 export function createEmptyUsefulLinksPayload(): UsefulLinksPayload {
   return { version: 1, updatedAt: null, groups: [] };
 }
@@ -56,6 +99,13 @@ export function validateUsefulLinksPayload(value: unknown): UsefulLinksValidatio
   if (value.updatedAt !== null && typeof value.updatedAt !== 'string') {
     return { ok: false, error: 'The update timestamp is invalid.' };
   }
+  if (
+    value.ownerNote !== undefined &&
+    (typeof value.ownerNote !== 'string' || value.ownerNote.length > maximumOwnerNoteLength)
+  ) {
+    return { ok: false, error: `站长手记最多 ${maximumOwnerNoteLength} 字。` };
+  }
+  const ownerNote = value.ownerNote?.trim();
 
   const groupIds = new Set<string>();
   const linkIds = new Set<string>();
@@ -71,9 +121,10 @@ export function validateUsefulLinksPayload(value: unknown): UsefulLinksValidatio
       !identifierPattern.test(group.id) ||
       groupIds.has(group.id) ||
       !validText(group.title, 80) ||
-      !validText(group.description, 240)
+      typeof group.description !== 'string' ||
+      group.description.length > 240
     ) {
-      return { ok: false, error: 'Each group needs a unique id, title, and description.' };
+      return { ok: false, error: 'Each group needs a unique id and a title.' };
     }
     groupIds.add(group.id);
     linkCount += group.links.length;
@@ -96,6 +147,10 @@ export function validateUsefulLinksPayload(value: unknown): UsefulLinksValidatio
           error: 'Each link needs a unique id, title, URL, label, and description.',
         };
       }
+      const avatar = typeof link.avatar === 'string' ? link.avatar.trim() : link.avatar;
+      if (avatar !== undefined && avatar !== '' && !validAvatar(avatar)) {
+        return { ok: false, error: `「${link.title}」的头像需要使用 HTTPS 网址或站内图片路径。` };
+      }
       linkIds.add(link.id);
       links.push({
         id: link.id,
@@ -103,6 +158,7 @@ export function validateUsefulLinksPayload(value: unknown): UsefulLinksValidatio
         href: link.href,
         label: link.label,
         description: link.description,
+        ...(avatar && { avatar }),
       });
     }
     groups.push({
@@ -118,15 +174,36 @@ export function validateUsefulLinksPayload(value: unknown): UsefulLinksValidatio
     data: {
       version: 1,
       updatedAt: value.updatedAt,
+      ...(ownerNote && { ownerNote }),
       groups,
     },
   };
 }
 
-// Build-time fallback. Live data is loaded from /api/links after hydration.
-export const usefulLinkGroups: UsefulLinkGroup[] = [];
+export function createDefaultFriendLinksPayload(): UsefulLinksPayload {
+  return {
+    ...createEmptyUsefulLinksPayload(),
+    groups: organizeFriendLinks([
+      {
+        id: 'youngkx',
+        title: 'Youngkx',
+        description: '',
+        links: [
+          {
+            id: 'youngkx-github',
+            title: 'GitHub',
+            href: githubProfileUrl,
+            label: '代码与项目',
+            description: '@YoungoodOler',
+            avatar: author.avatar,
+          },
+        ],
+      },
+    ]),
+  };
+}
 
-export const usefulLinkCount = usefulLinkGroups.reduce(
+export const usefulLinkCount = createDefaultFriendLinksPayload().groups.reduce(
   (total, group) => total + group.links.length,
   0,
 );

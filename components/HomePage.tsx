@@ -90,9 +90,9 @@ export default function HomePage({
     {
       cover: linksCover,
       href: '/links/',
-      title: 'Useful Links',
-      subtitle: `${displayedLinkCount} 个常用链接`,
-      label: '打开常用链接',
+      title: '友链',
+      subtitle: `${displayedLinkCount} 个朋友的网站`,
+      label: '打开友链',
     },
     {
       cover: repositoryCover,
@@ -128,7 +128,7 @@ export default function HomePage({
         })
         .catch((error: unknown) => {
           if (error instanceof DOMException && error.name === 'AbortError') return;
-          console.error('Unable to load useful link count.', error);
+          console.error('Unable to load friend link count.', error);
         });
     const cards = cardsRef.current;
     if (!cards || typeof IntersectionObserver === 'undefined') {

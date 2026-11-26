@@ -26,9 +26,11 @@ function getRuntime() {
 export default function SiteFooter({
   backHref,
   backLabel,
+  hideSignOut = false,
 }: {
   backHref: string;
   backLabel: string;
+  hideSignOut?: boolean;
 }) {
   const [runtime, setRuntime] = useState('计算中');
   const [error, setError] = useState('');
@@ -94,14 +96,16 @@ export default function SiteFooter({
               <Link href="/repo/manage/" onClick={() => dialog.current?.close()}>
                 Repo 管理 ↗
               </Link>
-              <button
-                className="admin-action"
-                type="button"
-                disabled={checking}
-                onClick={() => void logout()}
-              >
-                退出登录
-              </button>
+              {!hideSignOut && (
+                <button
+                  className="admin-action"
+                  type="button"
+                  disabled={checking}
+                  onClick={() => void logout()}
+                >
+                  退出登录
+                </button>
+              )}
             </div>
             {error && (
               <p className="admin-error" role="alert">

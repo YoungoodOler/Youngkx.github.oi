@@ -1,4 +1,5 @@
 import {
+  createDefaultFriendLinksPayload,
   createEmptyUsefulLinksPayload,
   validateUsefulLinksPayload,
   type UsefulLinksPayload,
@@ -10,11 +11,11 @@ import { sendPendingCommentEmails } from './comment-emails';
 import { authorizeManagement, handleAdmin } from './admin';
 import { jsonResponse, readLimitedJson, type WorkerEnv } from './http';
 
-const linksKey = 'directory:v1';
+const linksKey = 'friend-links:v1';
 
 async function readLinks(env: Env): Promise<UsefulLinksPayload> {
   const stored = await env.LINKS.get<unknown>(linksKey, 'json');
-  if (stored === null) return createEmptyUsefulLinksPayload();
+  if (stored === null) return createDefaultFriendLinksPayload();
   const validation = validateUsefulLinksPayload(stored);
   if (!validation.ok) {
     console.error(JSON.stringify({ message: 'invalid links data in KV', error: validation.error }));

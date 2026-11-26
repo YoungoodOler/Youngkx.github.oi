@@ -4,21 +4,20 @@ import Link from 'next/link';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import {
   createEmptyUsefulLinksPayload,
+  friendLinkTiers,
+  maximumOwnerNoteLength,
+  organizeFriendLinks,
   validateUsefulLinksPayload,
   type UsefulLink,
   type UsefulLinkGroup,
   type UsefulLinksPayload,
 } from '@/lib/useful-links';
-import SiteFooter from './SiteFooter';
+import { useAdminSession } from './AdminSession';
 import PageBackdrop from './PageBackdrop';
+import SiteFooter from './SiteFooter';
 import SiteHeader from './SiteHeader';
-import { AdminLoginForm, useAdminSession } from './AdminSession';
 
 type Notice = { tone: 'neutral' | 'success' | 'error'; text: string };
-
-function createId(prefix: 'group' | 'link') {
-  return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
-}
 
 function moveItem<T>(items: T[], index: number, direction: -1 | 1) {
   const target = index + direction;
@@ -29,58 +28,54 @@ function moveItem<T>(items: T[], index: number, direction: -1 | 1) {
 }
 
 export default function LinksManager() {
-  const [payload, setPayload] = useState<UsefulLinksPayload>(createEmptyUsefulLinksPayload);
-  const { authorized, preview, expire } = useAdminSession();
+  const { authorized, preview, checking, expire } = useAdminSession();
   const canManage = authorized || preview;
+  const [payload, setPayload] = useState<UsefulLinksPayload>(createEmptyUsefulLinksPayload);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<Notice>({
-    tone: 'neutral',
-    text: 'Loading the current directory.',
-  });
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice>({ tone: 'neutral', text: '正在加载友链…' });
   const importRef = useRef<HTMLInputElement>(null);
+  const editingTitle = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (!canManage) return;
     const controller = new AbortController();
-
     const load = async () => {
       try {
-        const linksResponse = await fetch('/api/links', {
+        const response = await fetch('/api/links', {
           cache: 'no-store',
           signal: controller.signal,
         });
-        const value = (await linksResponse.json()) as unknown;
-        const validation = validateUsefulLinksPayload(value);
-        if (!linksResponse.ok || !validation.ok)
-          throw new Error('Unable to load the link manager.');
+        const validation = validateUsefulLinksPayload(await response.json());
+        if (!response.ok || !validation.ok) throw new Error('Unable to load friend links.');
         if (controller.signal.aborted) return;
-        setPayload(validation.data);
+        setPayload({ ...validation.data, groups: organizeFriendLinks(validation.data.groups) });
         setLoaded(true);
-        setNotice({ tone: 'neutral', text: 'Directory loaded. Changes are not live until saved.' });
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-        setNotice({ tone: 'error', text: 'Unable to load the link manager.' });
+        setNotice({ tone: 'neutral', text: '' });
+      } catch {
+        if (!controller.signal.aborted) {
+          setNotice({ tone: 'error', text: '友链加载失败，请刷新后重试。' });
+        }
       }
     };
 
     void load();
     return () => controller.abort();
-  }, []);
+  }, [canManage]);
+
+  useEffect(() => {
+    if (editingLinkId) editingTitle.current?.focus();
+  }, [editingLinkId]);
+
+  useEffect(() => {
+    if (canManage && loaded && window.location.hash === '#links-owner-note') {
+      document.getElementById('links-owner-note')?.scrollIntoView({ block: 'start' });
+    }
+  }, [canManage, loaded]);
 
   const setGroups = (groups: UsefulLinkGroup[]) => {
     setPayload((current) => ({ ...current, groups }));
-  };
-
-  const addGroup = () => {
-    setGroups([
-      ...payload.groups,
-      {
-        id: createId('group'),
-        title: 'New Collection',
-        description: 'A collection of useful links.',
-        links: [],
-      },
-    ]);
   };
 
   const updateGroup = (groupId: string, patch: Partial<UsefulLinkGroup>) => {
@@ -91,10 +86,10 @@ export default function LinksManager() {
 
   const addLink = (groupId: string) => {
     const link: UsefulLink = {
-      id: createId('link'),
+      id: crypto.randomUUID(),
       title: '',
       href: '',
-      label: 'Website',
+      label: '博客',
       description: '',
     };
     setGroups(
@@ -102,19 +97,26 @@ export default function LinksManager() {
         group.id === groupId ? { ...group, links: [...group.links, link] } : group,
       ),
     );
+    setEditingLinkId(link.id);
   };
 
-  const updateLink = (groupId: string, linkId: string, patch: Partial<UsefulLink>) => {
+  const changeTier = (source: UsefulLinkGroup, link: UsefulLink, targetId: string) => {
+    if (source.id === targetId) return;
     setGroups(
-      payload.groups.map((group) =>
-        group.id === groupId
-          ? {
-              ...group,
-              links: group.links.map((link) => (link.id === linkId ? { ...link, ...patch } : link)),
-            }
-          : group,
-      ),
+      payload.groups.map((group) => {
+        if (group.id === source.id) {
+          return { ...group, links: group.links.filter((item) => item.id !== link.id) };
+        }
+        if (group.id === targetId) return { ...group, links: [...group.links, link] };
+        return group;
+      }),
     );
+  };
+
+  const updateLink = (group: UsefulLinkGroup, linkId: string, patch: Partial<UsefulLink>) => {
+    updateGroup(group.id, {
+      links: group.links.map((link) => (link.id === linkId ? { ...link, ...patch } : link)),
+    });
   };
 
   const save = async () => {
@@ -124,7 +126,7 @@ export default function LinksManager() {
       return;
     }
     setSaving(true);
-    setNotice({ tone: 'neutral', text: 'Saving changes.' });
+    setNotice({ tone: 'neutral', text: '正在保存…' });
     try {
       const response = await fetch('/api/links', {
         method: 'PUT',
@@ -134,18 +136,21 @@ export default function LinksManager() {
       const value = (await response.json()) as unknown;
       if (!response.ok) {
         if (response.status === 401) expire();
-        const message =
+        throw new Error(
           typeof value === 'object' && value !== null && 'error' in value
             ? String(value.error)
-            : 'Unable to save changes.';
-        setNotice({ tone: 'error', text: message });
-        return;
+            : '保存失败，请重试。',
+        );
       }
       const saved = validateUsefulLinksPayload(value);
-      if (saved.ok) setPayload(saved.data);
-      setNotice({ tone: 'success', text: 'Saved. The public Links page is now updated.' });
-    } catch {
-      setNotice({ tone: 'error', text: 'Unable to save changes.' });
+      if (!saved.ok) throw new Error(saved.error);
+      setPayload(saved.data);
+      setNotice({ tone: 'success', text: '已保存更改。' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        text: error instanceof Error ? error.message : '保存失败，请重试。',
+      });
     } finally {
       setSaving(false);
     }
@@ -154,22 +159,22 @@ export default function LinksManager() {
   const importJson = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file) return;
+    if (!file || saving) return;
     if (file.size > 256 * 1024) {
-      setNotice({ tone: 'error', text: 'The JSON file must be smaller than 256 KiB.' });
+      setNotice({ tone: 'error', text: 'JSON 文件不能超过 256 KiB。' });
       return;
     }
     try {
-      const value = JSON.parse(await file.text()) as unknown;
-      const validation = validateUsefulLinksPayload(value);
+      const validation = validateUsefulLinksPayload(JSON.parse(await file.text()));
       if (!validation.ok) {
         setNotice({ tone: 'error', text: validation.error });
         return;
       }
-      setPayload(validation.data);
-      setNotice({ tone: 'success', text: 'JSON imported. Review it, then select Save Changes.' });
+      setPayload({ ...validation.data, groups: organizeFriendLinks(validation.data.groups) });
+      setEditingLinkId(null);
+      setNotice({ tone: 'success', text: '已导入，检查后点击保存。' });
     } catch {
-      setNotice({ tone: 'error', text: 'The selected file is not valid JSON.' });
+      setNotice({ tone: 'error', text: '所选文件不是有效的 JSON。' });
     }
   };
 
@@ -178,10 +183,10 @@ export default function LinksManager() {
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = href;
-    anchor.download = 'youngkx-links.json';
+    anchor.download = 'youngkx-friend-links.json';
     anchor.click();
     URL.revokeObjectURL(href);
-    setNotice({ tone: 'success', text: 'A JSON backup has been downloaded.' });
+    setNotice({ tone: 'success', text: '已下载 JSON 备份。' });
   };
 
   return (
@@ -190,234 +195,245 @@ export default function LinksManager() {
       <SiteHeader navClassName="categories-nav" resources />
 
       <section className="categories-hero shell links-manager-hero">
-        <div>
-          <h1>Link Manager</h1>
-          <p>Add, Describe, Reorder, Import, And Publish</p>
-        </div>
+        <h1>友链管理</h1>
       </section>
 
-      <section className="links-manager shell">
-        <header className="links-manager-toolbar">
-          <div>
-            <span>Private Workspace</span>
-            <strong>
-              {payload.groups.reduce((total, group) => total + group.links.length, 0)} Links
-            </strong>
-          </div>
-          <div>
-            <Link className="manager-button" href="/links/">
-              View Page ↗
-            </Link>
-            {canManage && loaded && (
-              <>
-                <button className="manager-button" type="button" onClick={exportJson}>
-                  Export JSON
-                </button>
-                <button
-                  className="manager-button"
-                  type="button"
-                  onClick={() => importRef.current?.click()}
-                >
-                  Import JSON
-                </button>
-                <button
-                  className="manager-button manager-button--primary"
-                  type="button"
-                  disabled={saving}
-                  onClick={() => void save()}
-                >
-                  {saving ? 'Saving…' : 'Save Changes'}
-                </button>
-              </>
-            )}
-          </div>
+      <section className="links-editor shell" aria-label="友链编辑器">
+        <header className="links-editor-toolbar">
+          {canManage && loaded && (
+            <>
+              <button
+                className="manager-button manager-button--primary"
+                type="button"
+                disabled={saving}
+                onClick={() => addLink('friend-links')}
+              >
+                + 新增站点
+              </button>
+              <button
+                className="manager-button"
+                type="button"
+                disabled={saving}
+                onClick={() => void save()}
+              >
+                {saving ? '正在保存…' : '保存更改'}
+              </button>
+              <details className="links-editor-backup">
+                <summary>备份</summary>
+                <div>
+                  <button
+                    className="manager-button"
+                    type="button"
+                    disabled={saving}
+                    onClick={exportJson}
+                  >
+                    导出 JSON
+                  </button>
+                  <button
+                    className="manager-button"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => importRef.current?.click()}
+                  >
+                    导入 JSON
+                  </button>
+                </div>
+              </details>
+            </>
+          )}
+          <Link className="links-editor-view" href="/links/">
+            查看友链页 ↗
+          </Link>
           <input
             ref={importRef}
-            className="manager-file-input"
             type="file"
             accept="application/json,.json"
             onChange={(event) => void importJson(event)}
+            hidden
           />
         </header>
 
-        <p className={`manager-notice manager-notice--${notice.tone}`} aria-live="polite">
-          {notice.text}
-        </p>
-
-        {!canManage && (
-          <div className="manager-unlock">
-            <AdminLoginForm
-              tokenLabel="Admin Token"
-              submitLabel="Unlock Manager"
-              rememberLabel="Keep me signed in"
-              pendingLabel="Checking…"
-            />
-          </div>
+        {!canManage && !checking && <p className="links-editor-status">请从页脚的站长入口登录。</p>}
+        {canManage && (
+          <p className={`links-editor-status links-editor-status--${notice.tone}`} role="status">
+            {notice.text}
+          </p>
         )}
-        {canManage && loaded && (
-          <div className="manager-groups">
-            {payload.groups.map((group, groupIndex) => (
-              <section className="manager-group" key={group.id}>
-                <header>
-                  <span>{String(groupIndex + 1).padStart(2, '0')}</span>
-                  <div className="manager-fields manager-fields--group">
-                    <label>
-                      Group Title
-                      <input
-                        value={group.title}
-                        maxLength={80}
-                        onChange={(event) => updateGroup(group.id, { title: event.target.value })}
-                      />
-                    </label>
-                    <label>
-                      Group Description
-                      <input
-                        value={group.description}
-                        maxLength={240}
-                        onChange={(event) =>
-                          updateGroup(group.id, { description: event.target.value })
-                        }
-                      />
-                    </label>
-                  </div>
-                  <div className="manager-row-actions">
-                    <button
-                      type="button"
-                      aria-label="Move group up"
-                      disabled={groupIndex === 0}
-                      onClick={() => setGroups(moveItem(payload.groups, groupIndex, -1))}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Move group down"
-                      disabled={groupIndex === payload.groups.length - 1}
-                      onClick={() => setGroups(moveItem(payload.groups, groupIndex, 1))}
-                    >
-                      ↓
-                    </button>
-                    <button
-                      className="manager-danger"
-                      type="button"
-                      onClick={() =>
-                        setGroups(payload.groups.filter((item) => item.id !== group.id))
-                      }
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </header>
 
-                <div className="manager-links">
+        {canManage && loaded && (
+          <fieldset className="links-editor-content" aria-label="编辑友链和手记" disabled={saving}>
+            <section className="links-editor-sites" aria-labelledby="links-editor-sites-title">
+              <header className="friend-links-section-heading">
+                <h2 id="links-editor-sites-title">站点</h2>
+              </header>
+              {payload.groups.map((group) => (
+                <section className="links-editor-group" key={group.id}>
+                  <header>
+                    <h3>{group.title || '未命名分组'}</h3>
+                    <button
+                      className="links-editor-text-button"
+                      type="button"
+                      onClick={() => addLink(group.id)}
+                    >
+                      + 新增
+                    </button>
+                  </header>
+
                   {group.links.map((link, linkIndex) => (
-                    <article className="manager-link" key={link.id}>
-                      <span>{String(linkIndex + 1).padStart(2, '0')}</span>
-                      <div className="manager-fields">
-                        <label>
-                          Title
-                          <input
-                            value={link.title}
-                            maxLength={120}
-                            placeholder="Cloudflare Dashboard"
-                            onChange={(event) =>
-                              updateLink(group.id, link.id, { title: event.target.value })
-                            }
-                          />
-                        </label>
-                        <label>
-                          URL
-                          <input
-                            value={link.href}
-                            inputMode="url"
-                            placeholder="https://example.com"
-                            onChange={(event) =>
-                              updateLink(group.id, link.id, { href: event.target.value })
-                            }
-                          />
-                        </label>
-                        <label>
-                          Short Label
-                          <input
-                            value={link.label}
-                            maxLength={40}
-                            placeholder="Tool"
-                            onChange={(event) =>
-                              updateLink(group.id, link.id, { label: event.target.value })
-                            }
-                          />
-                        </label>
-                        <label className="manager-field-wide">
-                          Description
-                          <textarea
-                            value={link.description}
-                            maxLength={320}
-                            rows={2}
-                            placeholder="What this link is useful for."
-                            onChange={(event) =>
-                              updateLink(group.id, link.id, { description: event.target.value })
-                            }
-                          />
-                        </label>
-                      </div>
-                      <div className="manager-row-actions">
-                        <button
-                          type="button"
-                          aria-label="Move link up"
-                          disabled={linkIndex === 0}
-                          onClick={() =>
-                            updateGroup(group.id, { links: moveItem(group.links, linkIndex, -1) })
-                          }
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Move link down"
-                          disabled={linkIndex === group.links.length - 1}
-                          onClick={() =>
-                            updateGroup(group.id, { links: moveItem(group.links, linkIndex, 1) })
-                          }
-                        >
-                          ↓
-                        </button>
-                        <button
-                          className="manager-danger"
-                          type="button"
-                          onClick={() =>
-                            updateGroup(group.id, {
-                              links: group.links.filter((item) => item.id !== link.id),
-                            })
-                          }
-                        >
-                          Delete
-                        </button>
-                      </div>
+                    <article className="links-editor-site" key={link.id}>
+                      <button
+                        className="links-editor-site-toggle"
+                        type="button"
+                        aria-expanded={editingLinkId === link.id}
+                        onClick={() => setEditingLinkId(editingLinkId === link.id ? null : link.id)}
+                      >
+                        <span>
+                          <strong>{link.title || '新站点'}</strong>
+                          {link.href && <small>{link.href}</small>}
+                        </span>
+                        <span>{editingLinkId === link.id ? '收起' : '编辑'}</span>
+                      </button>
+                      {editingLinkId === link.id && (
+                        <div className="links-editor-site-fields">
+                          <div className="manager-fields">
+                            <label>
+                              站点名称
+                              <input
+                                ref={editingTitle}
+                                value={link.title}
+                                maxLength={120}
+                                onChange={(event) =>
+                                  updateLink(group, link.id, { title: event.target.value })
+                                }
+                              />
+                            </label>
+                            <label>
+                              站点网址
+                              <input
+                                value={link.href}
+                                inputMode="url"
+                                placeholder="https://example.com/"
+                                onChange={(event) =>
+                                  updateLink(group, link.id, { href: event.target.value })
+                                }
+                              />
+                            </label>
+                            <label>
+                              头像网址（选填）
+                              <input
+                                value={link.avatar ?? ''}
+                                inputMode="url"
+                                placeholder="https://example.com/avatar.png"
+                                maxLength={2048}
+                                onChange={(event) =>
+                                  updateLink(group, link.id, { avatar: event.target.value })
+                                }
+                              />
+                            </label>
+                            <label>
+                              标签
+                              <input
+                                value={link.label}
+                                maxLength={40}
+                                onChange={(event) =>
+                                  updateLink(group, link.id, { label: event.target.value })
+                                }
+                              />
+                            </label>
+                            <label>
+                              分组
+                              <select
+                                aria-label="分组"
+                                value={group.id}
+                                onChange={(event) => changeTier(group, link, event.target.value)}
+                              >
+                                {friendLinkTiers.map((tier) => (
+                                  <option key={tier.id} value={tier.id}>
+                                    {tier.title}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="manager-field-wide">
+                              站点简介
+                              <textarea
+                                value={link.description}
+                                maxLength={320}
+                                rows={2}
+                                onChange={(event) =>
+                                  updateLink(group, link.id, { description: event.target.value })
+                                }
+                              />
+                            </label>
+                          </div>
+                          <div className="links-editor-row-actions">
+                            <button
+                              type="button"
+                              aria-label="向上移动友链"
+                              disabled={linkIndex === 0}
+                              onClick={() =>
+                                updateGroup(group.id, {
+                                  links: moveItem(group.links, linkIndex, -1),
+                                })
+                              }
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="向下移动友链"
+                              disabled={linkIndex === group.links.length - 1}
+                              onClick={() =>
+                                updateGroup(group.id, {
+                                  links: moveItem(group.links, linkIndex, 1),
+                                })
+                              }
+                            >
+                              ↓
+                            </button>
+                            <button
+                              className="manager-danger"
+                              type="button"
+                              onClick={() =>
+                                updateGroup(group.id, {
+                                  links: group.links.filter((item) => item.id !== link.id),
+                                })
+                              }
+                            >
+                              删除站点
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </article>
                   ))}
-                  <button
-                    className="manager-add-link"
-                    type="button"
-                    onClick={() => addLink(group.id)}
-                  >
-                    + Add Link To {group.title}
-                  </button>
-                </div>
-              </section>
-            ))}
+                </section>
+              ))}
+            </section>
 
-            <button className="manager-add-group" type="button" onClick={addGroup}>
-              <span>+</span>
-              <strong>
-                {payload.groups.length ? 'Add Another Group' : 'Create Your First Group'}
-              </strong>
-              <small>Use groups for tools, reading, services, or anything else.</small>
-            </button>
-          </div>
+            <section className="links-manager-note" id="links-owner-note">
+              <div className="manager-fields">
+                <label className="manager-field-wide">
+                  站长手记
+                  <textarea
+                    value={payload.ownerNote ?? ''}
+                    maxLength={maximumOwnerNoteLength}
+                    placeholder="写几句想留在友链页的话。"
+                    rows={6}
+                    onChange={(event) => {
+                      const ownerNote = event.currentTarget.value;
+                      setPayload((current) => ({ ...current, ownerNote }));
+                    }}
+                  />
+                </label>
+              </div>
+              <p>留空时公开页面隐藏手记。</p>
+            </section>
+          </fieldset>
         )}
       </section>
 
-      <SiteFooter backHref="/links/" backLabel="返回链接页 ↗" />
+      <SiteFooter backHref="/links/" backLabel="返回友链页 ↗" hideSignOut />
     </main>
   );
 }

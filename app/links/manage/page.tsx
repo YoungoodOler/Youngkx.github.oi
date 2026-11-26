@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import LinksManager from '@/components/LinksManager';
+import '../links.css';
 
 export const metadata: Metadata = {
-  title: 'Link Manager | Youngkx',
-  description: 'Private workspace for managing the Youngkx useful links directory.',
+  title: '友链管理 | Youngkx',
+  description: '站长可以在这里新增、编辑和发布友链。',
   robots: { index: false, follow: false },
 };
 

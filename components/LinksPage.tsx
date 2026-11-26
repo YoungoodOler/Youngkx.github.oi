@@ -1,27 +1,29 @@
 'use client';
 
-import { m } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import {
-  createEmptyUsefulLinksPayload,
+  createDefaultFriendLinksPayload,
+  friendLinksPath,
+  friendLinksTitle,
+  organizeFriendLinks,
   validateUsefulLinksPayload,
-  type UsefulLinkGroup,
   type UsefulLinksPayload,
 } from '@/lib/useful-links';
+import { useAdminSession } from './AdminSession';
+import ArticleInteractions from './ArticleInteractions';
 import SiteFooter from './SiteFooter';
 import PageBackdrop from './PageBackdrop';
 import SiteHeader from './SiteHeader';
 
-export default function LinksPage({ groups }: { groups: UsefulLinkGroup[] }) {
-  const [directory, setDirectory] = useState<UsefulLinksPayload>({
-    ...createEmptyUsefulLinksPayload(),
-    groups,
-  });
-  const [loading, setLoading] = useState(true);
-  const linkCount = useMemo(
-    () => directory.groups.reduce((total, group) => total + group.links.length, 0),
-    [directory.groups],
-  );
+const contactEmails = ['ykx756474427@outlook.com', 'ykx756474427@gmail.com'];
+
+export default function LinksPage() {
+  const { authorized } = useAdminSession();
+  const [directory, setDirectory] = useState<UsefulLinksPayload>(createDefaultFriendLinksPayload);
+  const [loadError, setLoadError] = useState(false);
+  const groups = organizeFriendLinks(directory.groups);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -32,14 +34,12 @@ export default function LinksPage({ groups }: { groups: UsefulLinkGroup[] }) {
       })
       .then((value) => {
         const validation = validateUsefulLinksPayload(value);
-        if (validation.ok) setDirectory(validation.data);
+        if (!validation.ok) throw new Error(validation.error);
+        setDirectory(validation.data);
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
-        console.error('Unable to load links directory.', error);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        setLoadError(true);
       });
     return () => controller.abort();
   }, []);
@@ -51,71 +51,109 @@ export default function LinksPage({ groups }: { groups: UsefulLinkGroup[] }) {
 
       <section className="categories-hero shell">
         <div className="resource-hero-enter">
-          <h1 className="resource-hero-title">Useful Links</h1>
-          <p>{linkCount} Links · A Personal Directory</p>
+          <h1 className="resource-hero-title">{friendLinksTitle}</h1>
         </div>
       </section>
 
-      <section className="category-directory shell">
-        {directory.groups.length === 0 ? (
-          <m.section
-            className="category-group"
-            initial={{ opacity: 0, y: 68, filter: 'blur(15px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 0.82, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <header>
-              <span>00</span>
-              <div>
-                <h2>Ready For Your Links</h2>
-                <p>
-                  {loading
-                    ? 'Loading your personal directory.'
-                    : 'Add the tools, references, and places you return to most.'}
+      <ArticleInteractions
+        articlePath={friendLinksPath}
+        layout={(guestbook, messages) => (
+          <div className="friend-links-sheet shell">
+            <div className="friend-links-directory">
+              {groups.map((group) => (
+                <section
+                  className="friend-links-group"
+                  key={group.id}
+                  aria-labelledby={`links-tier-${group.id}`}
+                >
+                  <header className="friend-links-section-heading">
+                    <h2 id={`links-tier-${group.id}`}>{group.title}</h2>
+                    {authorized && group.id === 'youngkx' && (
+                      <Link href="/links/manage/">管理友链 ↗</Link>
+                    )}
+                  </header>
+                  {group.links.length === 0 ? (
+                    <p>暂无链接。</p>
+                  ) : (
+                    <ul className="friend-links-grid" role="list">
+                      {group.links.map((link) => (
+                        <li key={link.id}>
+                          <a
+                            className="friend-link-card"
+                            href={link.href}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <span className="friend-link-copy">
+                              <strong>{link.title}</strong>
+                              <span>{link.description}</span>
+                              <small>{link.label}</small>
+                            </span>
+                            {link.avatar && (
+                              <Image
+                                className="friend-link-avatar"
+                                key={link.avatar}
+                                src={link.avatar}
+                                width={48}
+                                height={48}
+                                alt=""
+                                unoptimized
+                                referrerPolicy="no-referrer"
+                                onError={(event) => {
+                                  event.currentTarget.hidden = true;
+                                }}
+                              />
+                            )}
+                            <span className="friend-link-arrow" aria-hidden="true">
+                              ↗
+                            </span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              ))}
+              {loadError && (
+                <p className="friend-links-status" role="status">
+                  暂时显示默认链接。
                 </p>
-              </div>
-              <b>0 Links</b>
-            </header>
-          </m.section>
-        ) : (
-          directory.groups.map((group, groupIndex) => (
-            <m.section
-              className="category-group"
-              id={group.id}
-              key={group.id}
-              initial={{ opacity: 0, y: 68, filter: 'blur(15px)' }}
-              whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              viewport={{ once: true, margin: '-70px' }}
-              transition={{
-                duration: 0.82,
-                delay: groupIndex * 0.05,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-            >
-              <header>
-                <span>{String(groupIndex + 1).padStart(2, '0')}</span>
-                <div>
-                  <h2>{group.title}</h2>
-                  <p>{group.description}</p>
-                </div>
-                <b>{group.links.length} Links</b>
-              </header>
-              <div className="category-posts">
-                {group.links.map((link) => (
-                  <a href={link.href} key={link.id} target="_blank" rel="noreferrer">
-                    <span>{link.label}</span>
-                    <span className="useful-link-copy">
-                      <strong>{link.title}</strong>
-                      <small>{link.description}</small>
-                    </span>
-                    <i>↗</i>
-                  </a>
-                ))}
-              </div>
-            </m.section>
-          ))
+              )}
+            </div>
+
+            <aside className="friend-links-sidebar">
+              {(directory.ownerNote || authorized) && (
+                <section
+                  className="friend-links-owner-note"
+                  aria-labelledby="friend-links-owner-note-title"
+                >
+                  <header className="friend-links-section-heading">
+                    <h2 id="friend-links-owner-note-title">站长手记</h2>
+                    {authorized && <Link href="/links/manage/#links-owner-note">编辑 ↗</Link>}
+                  </header>
+                  {directory.ownerNote && <p>{directory.ownerNote}</p>}
+                </section>
+              )}
+              <section
+                className="friend-links-contact"
+                aria-labelledby="friend-links-contact-title"
+              >
+                <h2 id="friend-links-contact-title">Contact Me</h2>
+                <address>
+                  {contactEmails.map((email) => (
+                    <a key={email} href={`mailto:${email}`}>
+                      {email}
+                      <span aria-hidden="true">↗</span>
+                    </a>
+                  ))}
+                </address>
+              </section>
+              {guestbook}
+            </aside>
+            {messages}
+          </div>
         )}
-      </section>
+      />
 
       <SiteFooter backHref="/#top" backLabel="返回首页 ↗" />
     </main>

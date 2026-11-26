@@ -2,7 +2,7 @@
 
 这是我的个人博客。我在这里写 OI、C/C++ 和 Web 学习笔记，也把一些想弄明白的东西做成可以动手试的网页实验。
 
-[博客首页](https://www.youngkx.cn/) · [全部文章](https://www.youngkx.cn/articles/) · [文章分类](https://www.youngkx.cn/categories/) · [常用链接](https://www.youngkx.cn/links/) · [文件仓库](https://www.youngkx.cn/repo/)
+[博客首页](https://www.youngkx.cn/) · [全部文章](https://www.youngkx.cn/articles/) · [文章分类](https://www.youngkx.cn/categories/) · [友链](https://www.youngkx.cn/links/) · [文件仓库](https://www.youngkx.cn/repo/)
 
 ## 可以从这几篇读起
 
@@ -12,7 +12,7 @@
 
 ## 网站怎么搭的
 
-文章用 Markdown 写，Next.js 和 React 在构建时生成页面，输出到 `out/`。Cloudflare Worker 提供静态页面和 API。文章的点赞、评论和回复存进 D1，回复邮件通过 Resend 发送。常用链接存进 KV，文件放在 R2。
+文章用 Markdown 写，Next.js 和 React 在构建时生成页面，输出到 `out/`。Cloudflare Worker 提供静态页面和 API。文章互动与友链留言存进 D1，评论通知通过 Resend 发送。站长手动收录的友链存进 KV，文件放在 R2。
 
 ## 本地运行
 
@@ -25,7 +25,7 @@ npm run dev
 
 打开 `http://localhost:3000` 即可预览页面。文章源码在 [`content/posts/`](content/posts/)，新文章可以从 [`_template.md`](content/posts/_template.md) 开始写。
 
-`npm run validate` 会运行类型检查、Lint、单元测试、生产构建和性能预算检查。评论、常用链接和文件下载的 API 由 Worker 提供，本地联调需要启动 Worker 预览。
+`npm run validate` 会运行类型检查、Lint、单元测试、生产构建和性能预算检查。评论、友链和文件下载的 API 由 Worker 提供，本地联调需要启动 Worker 预览。
 
 - 发布文章、本地预览与部署见[操作维护指南](操作维护指南.md)。
 - 评论和邮件通知见[文章互动文档](docs/article-interactions.md)，文件存储和下载见[文件仓库 API](docs/file-repository-api.md)。

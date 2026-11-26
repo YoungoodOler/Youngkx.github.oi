@@ -245,6 +245,7 @@ export function RepositoryShell({
         {children}
       </div>
       <SiteFooter
+        hideSignOut={manage}
         backHref={manage ? '/repo/' : '/#interactive-cards'}
         backLabel={manage ? 'Back to Repo ↗' : 'Back to Cards ↗'}
       />

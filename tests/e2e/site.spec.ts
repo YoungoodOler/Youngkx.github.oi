@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { createDefaultFriendLinksPayload } from '../../lib/useful-links';
 
 async function useStoredTheme(page: Page, theme: 'dark' | 'light' = 'dark') {
   await page.addInitScript((storedTheme) => {
@@ -137,11 +138,11 @@ test('主页 Cards 使用 Liquid 轮播并显示最新文章标题', async ({ pa
   await expect(latest).toHaveAttribute('href', latestHref);
 });
 
-test('常用链接卡片进入独立目录页', async ({ page }) => {
+test('首页友链卡片进入独立目录页', async ({ page }) => {
   await useStoredTheme(page);
   await page.route('**/api/links', async (route) => {
     await route.fulfill({
-      json: { version: 1, updatedAt: null, groups: [] },
+      json: createDefaultFriendLinksPayload(),
       headers: { 'Cache-Control': 'no-store' },
     });
   });
@@ -150,38 +151,43 @@ test('常用链接卡片进入独立目录页', async ({ page }) => {
   const carousel = page.getByRole('region', { name: '站点入口' });
   await carousel.press('End');
   await carousel.press('ArrowLeft');
-  const linksCard = page.getByRole('link', { name: '打开常用链接' });
+  const linksCard = page.getByRole('link', { name: '打开友链' });
   await expect(linksCard).toHaveAttribute('href', '/links/');
   await expect(linksCard).toBeInViewport({ ratio: 0.9 });
   await linksCard.click();
 
   await expect(page).toHaveURL(/\/links\/$/, { timeout: 5_000 });
-  await expect(page.getByRole('heading', { name: 'Useful Links' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Ready For Your Links' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Links 友链', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: /GitHub/ })).toHaveAttribute(
+    'href',
+    'https://github.com/YoungoodOler',
+  );
+  await expect(page.getByText('朋友们的网站与博客。')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '申请友链' })).toHaveCount(0);
   await expect(page.locator('.global-particle-scene, .home-ascii-background')).toHaveCount(0);
 });
 
-test('常用链接目录从接口读取标题和说明', async ({ page }) => {
+test('友链目录将站点渲染为长方形小卡片', async ({ page }, testInfo) => {
   await useStoredTheme(page);
   await page.route('**/api/links', async (route) => {
     await route.fulfill({
       json: {
         version: 1,
         updatedAt: '2026-08-14T00:00:00.000Z',
+        ownerNote: '这一段是站长写的手记。\n\n第二段。',
         groups: [
           {
-            id: 'daily-tools',
-            title: 'Daily Tools',
-            description: 'Services used every day.',
-            links: [
-              {
-                id: 'cloudflare',
-                title: 'Cloudflare Dashboard',
-                href: 'https://dash.cloudflare.com/',
-                label: 'Service',
-                description: 'Manage domains and Workers.',
-              },
-            ],
+            id: 'friends',
+            title: 'Friends',
+            description: '',
+            links: Array.from({ length: 23 }, (_, index) => index + 1).map((index) => ({
+              id: `friend-${index}`,
+              title: `朋友 ${index} 的博客`,
+              href: `https://example.com/friend-${index}`,
+              label: '博客',
+              description: '记录编程与生活。',
+              ...(index === 1 && { avatar: '/avatar.webp' }),
+            })),
           },
         ],
       },
@@ -189,66 +195,145 @@ test('常用链接目录从接口读取标题和说明', async ({ page }) => {
   });
   await openPage(page, '/links/');
 
-  await expect(page.getByRole('link', { name: 'Manage Links' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Daily Tools' })).toBeVisible();
-  await expect(page.getByText('Services used every day.')).toBeVisible();
-  await expect(page.getByRole('link', { name: /Cloudflare Dashboard/ })).toHaveAttribute(
-    'href',
-    'https://dash.cloudflare.com/',
+  await expect(page.getByRole('link', { name: /管理友链/ })).toHaveCount(0);
+  await expect(page.locator('.friend-links-directory h2')).toHaveText([
+    'Youngkx',
+    'Friends',
+    '友链',
+  ]);
+  await expect(page.getByRole('region', { name: '站长手记' })).toContainText(
+    '这一段是站长写的手记。',
   );
-  await expect(page.getByText('Manage domains and Workers.')).toBeVisible();
+  const cards = page.locator('.friend-link-card');
+  await expect(cards).toHaveCount(23);
+  await expect(cards.first()).toHaveAttribute('href', 'https://example.com/friend-1');
+  await expect(cards.first()).toContainText('记录编程与生活。');
+  const first = (await cards.nth(0).boundingBox())!;
+  const second = (await cards.nth(1).boundingBox())!;
+  const third = (await cards.nth(2).boundingBox())!;
+  expect(first.width).toBeGreaterThan(first.height);
+  if (testInfo.project.name.startsWith('mobile')) {
+    expect(second.x).toBe(first.x);
+    expect(second.y).toBeGreaterThan(first.y);
+    expect(third.y).toBeGreaterThan(second.y);
+  } else {
+    expect(second.x).toBeGreaterThan(first.x);
+    expect(second.y).toBe(first.y);
+    expect(third.y).toBeGreaterThan(first.y);
+  }
+  const avatar = cards.first().locator('.friend-link-avatar');
+  await expect(avatar).toBeVisible();
+  expect((await avatar.boundingBox())!.x).toBeGreaterThan(first.x + first.width / 2);
+  await expect(cards.nth(1).locator('img')).toHaveCount(0);
+  if (!testInfo.project.name.startsWith('mobile')) {
+    const sidebar = page.locator('.friend-links-sidebar');
+    for (const top of [580, 660]) {
+      await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top);
+      await expect.poll(async () => (await sidebar.boundingBox())?.y ?? 0).toBeCloseTo(114, 0);
+    }
+  }
 });
 
-test('链接管理页能够直接新增说明并保存发布', async ({ page }, testInfo) => {
+test('友链页的右侧表单将留言发布到左侧列表', async ({ page, request }, testInfo) => {
+  const query = new URLSearchParams({ article: '/links/' }).toString();
+  const title = `访客博客 ${Date.now()}`;
+  const application = `站点名称：${title}\n网址：https://example.com/\n简介：记录学习。`;
+  let commentId: number | undefined;
+  try {
+    await openPage(page, '/links/');
+    const contact = page.getByRole('region', { name: 'Contact Me' });
+    await expect(contact.getByRole('link', { name: 'ykx756474427@outlook.com' })).toHaveAttribute(
+      'href',
+      'mailto:ykx756474427@outlook.com',
+    );
+    await expect(contact.getByRole('link', { name: 'ykx756474427@gmail.com' })).toHaveAttribute(
+      'href',
+      'mailto:ykx756474427@gmail.com',
+    );
+    const guestbook = page.getByRole('region', { name: /^留言板/ });
+    await expect(guestbook).toBeVisible();
+    const board = (await guestbook.boundingBox())!;
+    const contactBounds = (await contact.boundingBox())!;
+    const directory = (await page.locator('.friend-links-directory').boundingBox())!;
+    const messages = page.locator('.friend-links-messages');
+    const messageBounds = (await messages.boundingBox())!;
+    expect(board.y).toBeGreaterThanOrEqual(contactBounds.y + contactBounds.height);
+    expect(board.width).toBeCloseTo(contactBounds.width, 1);
+    expect(board.x).toBeCloseTo(contactBounds.x, 1);
+    expect(messageBounds.x).toBeCloseTo(directory.x, 1);
+    if (!testInfo.project.name.startsWith('mobile'))
+      expect(board.x).toBeGreaterThan(messageBounds.x);
+    await expect(page.getByRole('button', { name: '点赞文章' })).toHaveCount(0);
+    await page.getByRole('textbox', { name: /^邮箱/ }).fill('reader@example.com');
+    await page.getByPlaceholder('随便写点什么吧').fill(application);
+    const pending = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/articles/comments?') &&
+        response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: '发布留言' }).click();
+    const response = await pending;
+    expect(response.status()).toBe(201);
+    commentId = (await response.json()).comment.id;
+    await expect(page.getByText('留言已发布。')).toBeVisible();
+    await expect(messages.getByText(/访客博客/).filter({ hasText: title })).toBeVisible();
+    await page.goto(`/links/#comment-${commentId}`, { waitUntil: 'domcontentloaded' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    const published = page.locator(`#comment-${commentId}`);
+    await expect(published).toContainText('https://example.com/');
+    await expect(published).toBeFocused();
+    await expect(page.locator('.friend-link-card').filter({ hasText: title })).toHaveCount(0);
+  } finally {
+    if (commentId) await request.delete(`/api/articles/comments/${commentId}?${query}`);
+  }
+});
+
+test('友链管理页能直接新增友链并保存发布', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name.startsWith('mobile'), '桌面视口验证完整编辑流程');
   await useStoredTheme(page);
-  let savedPayload: unknown = null;
-  await page.route(/\/api\/links(?:\/admin)?$/, async (route) => {
-    const request = route.request();
-    const pathname = new URL(request.url()).pathname;
-    if (pathname === '/api/links/admin') {
-      await route.fulfill({ json: { authorized: true } });
-      return;
-    }
-    if (request.method() === 'PUT') {
-      savedPayload = request.postDataJSON();
-      await route.fulfill({
-        json: { ...(savedPayload as object), updatedAt: '2026-08-14T00:00:00.000Z' },
-      });
-      return;
-    }
-    await route.fulfill({ json: { version: 1, updatedAt: null, groups: [] } });
+  let savedPayload = { version: 1, updatedAt: null, groups: [] };
+  await page.route('**/api/admin', (route) => route.fulfill({ json: { authorized: true } }));
+  await page.route('**/api/links', async (route) => {
+    if (route.request().method() === 'PUT') savedPayload = route.request().postDataJSON();
+    await route.fulfill({ json: savedPayload });
   });
   await openPage(page, '/links/manage/');
 
-  await page.getByRole('button', { name: /Create Your First Group/ }).click();
-  await page.getByRole('button', { name: /Add Link To New Collection/ }).click();
-  await page.getByLabel('Group Title').fill('Daily Tools');
-  await page.getByLabel('Group Description').fill('Services used every day.');
-  await page.getByLabel('Title', { exact: true }).fill('Cloudflare Dashboard');
-  await page.getByLabel('URL', { exact: true }).fill('https://dash.cloudflare.com/');
-  await page.getByLabel('Short Label').fill('Service');
-  await page.getByLabel('Description', { exact: true }).fill('Manage domains and Workers.');
-  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await page.getByRole('button', { name: /新增站点/ }).click();
+  await page.getByLabel('站点名称').fill('朋友的博客');
+  await page.getByLabel('站点网址').fill('https://example.com/');
+  await page.getByLabel('头像网址').fill('/avatar.webp');
+  await page.getByLabel('站点简介').fill('记录学习和生活。');
+  await page.getByLabel('分组', { exact: true }).selectOption('friends');
+  await page.getByLabel('站长手记').fill('写给路过的朋友。');
+  await page.getByRole('button', { name: '保存更改' }).click();
 
-  await expect(page.getByText('Saved. The public Links page is now updated.')).toBeVisible();
+  await expect(page.getByText('已保存更改。')).toBeVisible();
   expect(savedPayload).toMatchObject({
     version: 1,
+    ownerNote: '写给路过的朋友。',
     groups: [
+      { title: 'Youngkx', links: [] },
       {
-        title: 'Daily Tools',
-        description: 'Services used every day.',
+        title: 'Friends',
         links: [
           {
-            title: 'Cloudflare Dashboard',
-            href: 'https://dash.cloudflare.com/',
-            label: 'Service',
-            description: 'Manage domains and Workers.',
+            title: '朋友的博客',
+            href: 'https://example.com/',
+            label: '博客',
+            description: '记录学习和生活。',
+            avatar: '/avatar.webp',
           },
         ],
       },
+      { title: '友链', links: [] },
     ],
   });
+  await page.getByRole('link', { name: '查看友链页' }).click();
+  await expect(page.getByRole('region', { name: '站长手记' })).toContainText('写给路过的朋友。');
+  await expect(
+    page.getByRole('region', { name: 'Friends' }).locator('.friend-link-avatar'),
+  ).toBeVisible();
 });
 
 test('主题切换保留粒子幕并快速应用新主题', async ({ page }) => {

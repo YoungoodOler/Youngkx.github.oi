@@ -7,12 +7,12 @@ function createAssets() {
   };
 }
 
-function createKv(initialValue = null) {
-  let value = initialValue;
+function createKv(initialValues = {}) {
+  const values = new Map(Object.entries(initialValues));
   return {
-    get: vi.fn(async () => value),
-    put: vi.fn(async (_key, nextValue) => {
-      value = JSON.parse(nextValue);
+    get: vi.fn(async (key) => values.get(key) ?? null),
+    put: vi.fn(async (key, nextValue) => {
+      values.set(key, JSON.parse(nextValue));
     }),
   };
 }
@@ -79,13 +79,16 @@ describe('Cloudflare Worker', () => {
     expect(await response.text()).toBe('asset response');
   });
 
-  it('returns an empty public directory when KV has not been initialized', async () => {
-    const env = createEnv();
+  it('starts the friend links directory with the GitHub profile when only legacy useful links exist', async () => {
+    const env = createEnv({ links: createKv({ 'directory:v1': validDirectory }) });
     const response = await worker.fetch(new Request('https://www.youngkx.cn/api/links'), env);
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
-    expect(await response.json()).toEqual({ version: 1, updatedAt: null, groups: [] });
+    const directory = await response.json();
+    expect(directory.groups.flatMap((group) => group.links)).toEqual([
+      expect.objectContaining({ title: 'GitHub', href: 'https://github.com/YoungoodOler' }),
+    ]);
   });
 
   it('requires the production admin token before saving', async () => {
@@ -122,6 +125,7 @@ describe('Cloudflare Worker', () => {
     expect(saved.groups).toEqual(validDirectory.groups);
     expect(saved.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(env.LINKS.put).toHaveBeenCalledOnce();
+    expect(env.LINKS.put).toHaveBeenCalledWith('friend-links:v1', JSON.stringify(saved));
   });
 
   it('rejects unsafe link protocols before writing to KV', async () => {

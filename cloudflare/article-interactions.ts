@@ -8,6 +8,7 @@ import {
   type ArticleCommentFocus,
 } from '../lib/article-interactions';
 import { author } from '../lib/author';
+import { friendLinksPath } from '../lib/useful-links';
 import { authorizeManagement, hasAdminSession } from './admin';
 import { sendPendingCommentEmails } from './comment-emails';
 import { jsonResponse, readLimitedJson, sameOrigin, type WorkerEnv } from './http';
@@ -25,6 +26,7 @@ const commentColumns = `c.id, c.nickname, c.content, c.created_at AS createdAt, 
 
 function articlePath(value: string | null) {
   if (!value || value.length > 1024 || !value.startsWith('/')) return null;
+  if (value === '/links' || value === friendLinksPath) return friendLinksPath;
   try {
     const segments = value.replace(/^\/|\/$/g, '').split('/');
     if (!/^\d{4}$/.test(segments[0]) || segments.length < 2) return null;
@@ -149,20 +151,20 @@ async function handleRequest(
   ctx: ExecutionContext,
 ) {
   const path = articlePath(url.searchParams.get('article'));
-  if (!path) return jsonResponse({ error: '文章地址无效。' }, 400);
+  if (!path) return jsonResponse({ error: '页面地址无效。' }, 400);
   const route = url.pathname;
   const emailLookup = route === '/api/articles/admin/comment-emails';
   const deletion = /^\/api\/articles\/comments\/([1-9]\d*)$/.exec(route);
   const allowed =
     (route === '/api/articles/interactions' && request.method === 'GET') ||
     (route === '/api/articles/replies' && request.method === 'GET') ||
-    (route === '/api/articles/like' && request.method === 'PUT') ||
+    (route === '/api/articles/like' && request.method === 'PUT' && path !== friendLinksPath) ||
     (route === '/api/articles/comments' && request.method === 'POST') ||
     (emailLookup && request.method === 'GET') ||
     (deletion && request.method === 'DELETE');
   if (!allowed) return jsonResponse({ error: '不支持的请求方式或地址。' }, 405);
   if (request.method !== 'GET' && !sameOrigin(request, env)) {
-    return jsonResponse({ error: '请在本站文章页操作。' }, 403);
+    return jsonResponse({ error: '请在本站页面操作。' }, 403);
   }
   if (!env.ARTICLE_INTERACTIONS)
     return jsonResponse({ error: '互动服务暂时不可用，请稍后再试。' }, 503);
@@ -215,13 +217,13 @@ async function handleRequest(
       : jsonResponse({ error: '这条评论不存在。' }, 404);
   }
 
-  // Validate against deployed article assets, including newly published Markdown posts.
+  // Validate against deployed assets, including newly published Markdown posts.
   const assetPath = path.split('/').map(encodeURIComponent).join('/');
   const article = await env.ASSETS.fetch(
     new Request(new URL(assetPath, url.origin), { method: 'HEAD' }),
   );
   if (article.status !== 200 || !article.headers.get('content-type')?.includes('text/html')) {
-    return jsonResponse({ error: '文章不存在。' }, 404);
+    return jsonResponse({ error: '页面不存在。' }, 404);
   }
 
   if (request.method === 'GET') {

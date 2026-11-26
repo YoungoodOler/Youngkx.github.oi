@@ -136,7 +136,7 @@ export function renderCommentEmail(input: CommentEmail) {
     const fields = [
       ['评论者', comment.nickname],
       ['邮箱', input.authorEmail ?? '未填写'],
-      ['文章', articleTitle],
+      ['页面', articleTitle],
       ['发表时间', time],
     ];
     const originalContent = input.isReply

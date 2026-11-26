@@ -6,11 +6,13 @@ export type AuthorLink = {
   href: string;
 };
 
+export const githubProfileUrl = 'https://github.com/YoungoodOler';
+
 export const author = {
   name: 'Youngkx',
   avatar: '/avatar.webp',
   links: [
-    { kind: 'github', label: 'GitHub', href: 'https://github.com/YoungoodOler' },
+    { kind: 'github', label: 'GitHub', href: githubProfileUrl },
     {
       kind: 'linkedin',
       label: 'LinkedIn',

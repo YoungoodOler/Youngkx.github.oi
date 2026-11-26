@@ -367,7 +367,7 @@ test('真实 R2 图片和视频可点击预览、关闭、播放和下载', asyn
   }
 });
 
-test('管理 token 校验、会话失效和锁定', async ({ page }) => {
+test('Repo 管理通过页脚登录并在会话失效时关闭编辑', async ({ page }) => {
   let expired = false;
   let signedIn = false;
   await page.route('**/api/admin', (route) => {
@@ -388,27 +388,24 @@ test('管理 token 校验、会话失效和锁定', async ({ page }) => {
       : route.fulfill({ status: 401, json: { error: 'Invalid manage token.' } }),
   );
   await page.goto('/repo/manage/');
-  await expect(page.getByRole('button', { name: 'Unlock Repo' })).toBeEnabled();
-  await expect(page.getByRole('heading', { name: 'Your collection, your key.' })).toHaveCount(0);
-  await expect(
-    page.getByText('It is remembered only for this browser tab.', { exact: false }),
-  ).toHaveCount(0);
-  await page.getByLabel('Manage token', { exact: true }).fill('wrong-token');
-  await page.getByRole('button', { name: 'Unlock Repo' }).click();
-  await expect(page.locator('.admin-login [role="alert"]')).toContainText('Invalid manage token.');
-  await page.getByLabel('Manage token', { exact: true }).fill('frontend-test-token');
-  await page.getByRole('button', { name: 'Unlock Repo' }).click();
+  await expect(page.getByRole('button', { name: 'Unlock Repo' })).toHaveCount(0);
+  await page.getByRole('button', { name: '站长登录' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('管理口令', { exact: true }).fill('wrong-token');
+  await dialog.getByRole('button', { name: '登录', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Invalid manage token.');
+  await dialog.getByLabel('管理口令', { exact: true }).fill('frontend-test-token');
+  await dialog.getByRole('button', { name: '登录', exact: true }).click();
+  await expect(dialog.getByRole('link', { name: /Repo 管理/ })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: '退出登录' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: '关闭' }).click();
   await expect(page.getByRole('button', { name: 'Upload file', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Lock workspace' })).toHaveCount(0);
   expect(await page.evaluate(() => sessionStorage.getItem('youngkx-links-token'))).toBeNull();
   expired = true;
   await page.getByRole('button', { name: 'Refresh list' }).click();
-  await expect(page.getByRole('button', { name: 'Unlock Repo' })).toBeVisible();
-  expect(await page.evaluate(() => sessionStorage.getItem('youngkx-links-token'))).toBeNull();
-  expired = false;
-  await page.getByLabel('Manage token', { exact: true }).fill('frontend-test-token');
-  await page.getByRole('button', { name: 'Unlock Repo' }).click();
-  await page.getByRole('button', { name: 'Lock workspace' }).click();
-  await expect(page.getByRole('button', { name: 'Unlock Repo' })).toBeVisible();
+  await expect(page.getByText('请从页脚的站长入口登录。')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Upload file', exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => sessionStorage.getItem('youngkx-links-token'))).toBeNull();
 });
 
@@ -531,7 +528,7 @@ test('本地 R2 完整操作：自建文件夹、上传、改名说明、下载�
   }
 });
 
-test('首页右侧 Links 和 Repo 入口可直接跳转', async ({ page }, testInfo) => {
+test('首页右侧友链和 Repo 入口可直接跳转', async ({ page }, testInfo) => {
   await page.goto('/');
   const resources = page.getByRole('navigation', { name: '资源导航' });
   await expect(resources.getByRole('link')).toHaveText(['Links', 'Repo']);
@@ -551,7 +548,7 @@ test('首页右侧 Links 和 Repo 入口可直接跳转', async ({ page }, testI
   await expect(page).toHaveURL(/\/repo\/$/);
 });
 
-test('Links、Repo及管理页顶栏都有相互跳转入口', async ({ page }, testInfo) => {
+test('友链、Repo 及管理页顶栏都有相互跳转入口', async ({ page }, testInfo) => {
   for (const pathname of ['/links/', '/repo/', '/links/manage/', '/repo/manage/']) {
     await page.goto(pathname);
     const nav = page.getByRole('navigation', { name: '资源导航' });

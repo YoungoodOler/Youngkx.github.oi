@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
 import LinksPage from '@/components/LinksPage';
-import { usefulLinkGroups } from '@/lib/useful-links';
+import { friendLinksPath, friendLinksTitle } from '@/lib/useful-links';
+import '../[year]/[...slug]/article-interactions.css';
+import './links.css';
 
 export const metadata: Metadata = {
-  title: 'Useful Links | Youngkx',
-  description: 'A personal directory of useful tools, references, and frequently visited links.',
-  alternates: { canonical: '/links/' },
+  title: `${friendLinksTitle} | Youngkx`,
+  description: 'Youngkx 的友链、联系方式和留言板。',
+  alternates: { canonical: friendLinksPath },
 };
 
 export default function Page() {
-  return <LinksPage groups={usefulLinkGroups} />;
+  return <LinksPage />;
 }

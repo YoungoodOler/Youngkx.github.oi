@@ -1,8 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { author } from '@/lib/author';
+import { friendLinksPath } from '@/lib/useful-links';
 import {
   maximumCommentEmailLength,
   maximumCommentEmailLookupIds,
@@ -478,7 +479,14 @@ function CommentThread({
   );
 }
 
-export default function ArticleInteractions({ articlePath }: { articlePath: string }) {
+export default function ArticleInteractions({
+  articlePath,
+  layout,
+}: {
+  articlePath: string;
+  layout?: (guestbook: ReactNode, messages: ReactNode) => ReactNode;
+}) {
+  const isFriendLinks = articlePath === friendLinksPath;
   const query = new URLSearchParams({ article: articlePath }).toString();
   const [data, setData] = useState<Interactions | null>(null);
   const [loading, setLoading] = useState(true);
@@ -539,10 +547,12 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
       target.focus({ preventScroll: true });
       target.scrollIntoView({ block: 'start' });
     } else {
-      document.getElementById('article-comments-title')?.scrollIntoView({ block: 'start' });
+      document
+        .getElementById(isFriendLinks ? 'friend-links-messages-title' : 'article-comments-title')
+        ?.scrollIntoView({ block: 'start' });
       setNotice('这条留言已不存在。');
     }
-  }, [focus]);
+  }, [focus, isFriendLinks]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -610,7 +620,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
       );
       setContent('');
       requestId.current = null;
-      setNotice('评论已发布，感谢分享你的想法。');
+      setNotice(isFriendLinks ? '留言已发布。' : '评论已发布，感谢分享你的想法。');
       try {
         if (!isAdmin) localStorage.setItem('youngkx-comment-nickname', nickname.trim());
       } catch {
@@ -669,53 +679,51 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
     setNotice(result.parentId === null ? '评论及其回复已删除。' : '回复已删除。');
   };
 
-  return (
-    <section
-      id="article-interactions"
-      className="article-interactions"
-      aria-labelledby="article-comments-title"
-      aria-busy={loading}
-    >
-      <div className="article-appreciation">
-        <div>
-          <span className="interaction-eyebrow">THANKS FOR READING</span>
-          <p>读到这里，留下一个共鸣。</p>
-        </div>
-        <button
-          type="button"
-          className={`article-like${data?.liked ? ' is-liked' : ''}`}
-          aria-label={data?.liked ? '取消点赞' : '点赞文章'}
-          aria-pressed={data?.liked ?? false}
-          disabled={!data || loading || liking}
-          onClick={toggleLike}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            aria-hidden="true"
-          >
-            <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
-          </svg>
-          <span>{liking ? '正在保存' : data?.liked ? '已点赞' : '点赞'}</span>
-          <span className="article-like-count">{data?.likes ?? '—'}</span>
-        </button>
+  const appreciation = !isFriendLinks && (
+    <div className="article-appreciation">
+      <div>
+        <span className="interaction-eyebrow">THANKS FOR READING</span>
+        <p>读到这里，留下一个共鸣。</p>
       </div>
+      <button
+        type="button"
+        className={`article-like${data?.liked ? ' is-liked' : ''}`}
+        aria-label={data?.liked ? '取消点赞' : '点赞文章'}
+        aria-pressed={data?.liked ?? false}
+        disabled={!data || loading || liking}
+        onClick={toggleLike}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          aria-hidden="true"
+        >
+          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
+        </svg>
+        <span>{liking ? '正在保存' : data?.liked ? '已点赞' : '点赞'}</span>
+        <span className="article-like-count">{data?.likes ?? '—'}</span>
+      </button>
+    </div>
+  );
 
+  const guestbook = (
+    <>
       <div className="article-comments-heading">
         <div>
-          <span className="interaction-eyebrow">CONVERSATION</span>
+          {!isFriendLinks && <span className="interaction-eyebrow">CONVERSATION</span>}
           <h2 id="article-comments-title">
-            评论 <span>{data?.commentCount ?? '—'}</span>
+            {isFriendLinks ? '留言板' : '评论'}
+            {!isFriendLinks && <span>{data?.commentCount ?? '—'}</span>}
           </h2>
         </div>
-        {!isAdmin && <p>无需登录，写下你的想法就好。</p>}
+        {!isFriendLinks && !isAdmin && <p>无需登录，写下你的想法就好。</p>}
       </div>
 
       {loadError && (
         <div className="interaction-error" role="alert">
-          <span>评论加载失败。{loadError}</span>
+          <span>{isFriendLinks ? '留言暂时无法加载。' : `评论加载失败。${loadError}`}</span>
           <button
             type="button"
             className="interaction-retry"
@@ -758,13 +766,13 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
             />
           </>
         )}
-        <label htmlFor="comment-content">评论内容</label>
+        <label htmlFor="comment-content">{isFriendLinks ? '留言内容' : '评论内容'}</label>
         <textarea
           id="comment-content"
           name="content"
-          rows={5}
+          rows={isFriendLinks ? 4 : 5}
           maxLength={maximumCommentLength}
-          placeholder="分享你的看法，或留下一个问题……"
+          placeholder={isFriendLinks ? '随便写点什么吧' : '分享你的看法，或留下一个问题……'}
           required
           value={content}
           disabled={posting}
@@ -787,7 +795,7 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
         </div>
         <div className="article-comment-form-footer">
           <p id="comment-guidance">
-            友善交流，评论公开展示。
+            {isFriendLinks ? '留言公开展示。' : '友善交流，评论公开展示。'}
             <span>
               {content.length} / {maximumCommentLength}
             </span>
@@ -797,7 +805,8 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
             type="submit"
             disabled={!data || checking || loading || posting || !content.trim()}
           >
-            {posting ? '正在发布…' : '发布评论'} <span aria-hidden="true">↗</span>
+            {posting ? '正在发布…' : isFriendLinks ? '发布留言' : '发布评论'}{' '}
+            <span aria-hidden="true">↗</span>
           </button>
         </div>
       </form>
@@ -810,6 +819,11 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
           {actionError}
         </p>
       )}
+    </>
+  );
+
+  const messages = (
+    <>
       {commentEmails?.failed && (
         <p className="interaction-error" role="alert">
           暂时无法读取评论邮箱，请刷新页面后重试。
@@ -818,14 +832,16 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
 
       {loading && !data && (
         <p className="article-comments-empty" role="status">
-          正在加载评论…
+          {isFriendLinks ? '正在加载留言…' : '正在加载评论…'}
         </p>
       )}
       {!loading && data?.commentCount === 0 && (
-        <p className="article-comments-empty">还没有评论，来留下第一条想法吧。</p>
+        <p className="article-comments-empty">
+          {isFriendLinks ? '还没有留言。' : '还没有评论，来留下第一条想法吧。'}
+        </p>
       )}
       {data && data.comments.length > 0 && (
-        <ol className="article-comment-list" aria-label="文章评论">
+        <ol className="article-comment-list" aria-label={isFriendLinks ? '留言' : '文章评论'}>
           {data.comments.map((comment) => (
             <CommentThread
               key={comment.id}
@@ -861,9 +877,40 @@ export default function ArticleInteractions({ articlePath }: { articlePath: stri
           disabled={loadingMore}
           onClick={loadMore}
         >
-          {loadingMore ? '正在加载…' : '加载更多评论 ↓'}
+          {loadingMore ? '正在加载…' : isFriendLinks ? '加载更多留言 ↓' : '加载更多评论 ↓'}
         </button>
       )}
+    </>
+  );
+
+  const interactionSection = {
+    id: 'article-interactions',
+    'aria-labelledby': 'article-comments-title',
+    'aria-busy': loading,
+  };
+  if (layout) {
+    return layout(
+      <section {...interactionSection} className="article-interactions friend-links-guestbook">
+        {guestbook}
+      </section>,
+      <section
+        className="friend-links-messages"
+        aria-labelledby="friend-links-messages-title"
+        aria-busy={loading}
+      >
+        <div className="article-comments-heading">
+          <h2 id="friend-links-messages-title">留言{data && <span>{data.commentCount}</span>}</h2>
+        </div>
+        {messages}
+      </section>,
+    );
+  }
+
+  return (
+    <section {...interactionSection} className="article-interactions">
+      {appreciation}
+      {guestbook}
+      {messages}
     </section>
   );
 }
