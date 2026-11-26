@@ -263,7 +263,8 @@ describe('article interactions in the actual Workers and D1 runtime', () => {
     expect(readerMail.html).toContain('原作者，你好！');
     expect(readerMail.html).toContain('回复者 &lt;甲&gt;');
     expect(readerMail.html).toContain(`href="${origin}${article}#comment-${reply.comment.id}"`);
-    expect(readerMail.html).toContain(`${origin}/youngkx-logo.png`);
+    expect(readerMail.html).toContain(`${origin}/youngkx-logo.png?v=2`);
+    expect(readerMail.html).toContain(`${origin}/youngkx-logo-white.png`);
     for (const privateAddress of [
       'direct+tag@example.com',
       'root@example.com',

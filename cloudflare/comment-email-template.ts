@@ -7,7 +7,8 @@ type CommentEmail = { articleTitle: string; href: string; comment: Comment } & (
   | { kind: 'reply'; original: Original }
 );
 
-const logo = absoluteUrl('/youngkx-logo.png');
+const blackLogo = absoluteUrl('/youngkx-logo.png?v=2');
+const whiteLogo = absoluteUrl('/youngkx-logo-white.png');
 const font =
   "-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',Arial,sans-serif";
 const emailDate = new Intl.DateTimeFormat('zh-CN', {
@@ -81,6 +82,8 @@ function emailLayout(
       .mail-rule { border-color:#3a3a40 !important; }
       .mail-button { background-color:#e9e9ec !important; }
       .mail-button a { color:#18181b !important; }
+      .mail-logo-black { display:none !important; }
+      .mail-logo-white { display:block !important; max-height:none !important; }
     }
   </style>
 </head>
@@ -91,7 +94,10 @@ function emailLayout(
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="mail-card" bgcolor="#ffffff" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #dedee1;border-radius:12px;border-spacing:0;">
         <tr><td class="mail-pad mail-rule" style="padding:22px 32px;border-bottom:1px solid #e5e5e7;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td width="36" height="36" valign="middle"><img src="${logo}" alt="Youngkx Blog Logo" width="36" height="36" style="display:block;width:36px;height:36px;border:0;border-radius:7px;color:#ffffff;background:#18181b;font-size:9px;line-height:12px;"></td>
+            <td width="31" height="31" valign="middle">
+              <img class="mail-logo-black" src="${blackLogo}" alt="Youngkx Blog Logo" width="31" height="24" style="display:block;width:31px;height:24px;border:0;color:#19191b;font-size:8px;line-height:11px;">
+              <!--[if !mso]><!--><img class="mail-logo-white" src="${whiteLogo}" alt="Youngkx Blog Logo" width="31" height="24" style="display:none;max-height:0;overflow:hidden;mso-hide:all;width:31px;height:24px;border:0;color:#ffffff;font-size:8px;line-height:11px;"><!--<![endif]-->
+            </td>
             <td valign="middle" style="padding-left:12px;"><a href="${siteOrigin}/" class="mail-title" style="color:#19191b;text-decoration:none;font-family:${font};font-size:16px;font-weight:700;line-height:1.4;">Youngkx Blog</a></td>
           </tr></table>
         </td></tr>
