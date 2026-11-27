@@ -89,7 +89,6 @@ export default function LinksManager() {
       id: crypto.randomUUID(),
       title: '',
       href: '',
-      label: '博客',
       description: '',
     };
     setGroups(
@@ -327,16 +326,6 @@ export default function LinksManager() {
                                 maxLength={2048}
                                 onChange={(event) =>
                                   updateLink(group, link.id, { avatar: event.target.value })
-                                }
-                              />
-                            </label>
-                            <label>
-                              标签
-                              <input
-                                value={link.label}
-                                maxLength={40}
-                                onChange={(event) =>
-                                  updateLink(group, link.id, { label: event.target.value })
                                 }
                               />
                             </label>

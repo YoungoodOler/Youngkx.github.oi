@@ -184,7 +184,7 @@ test('友链目录将站点渲染为长方形小卡片', async ({ page }, testIn
               id: `friend-${index}`,
               title: `朋友 ${index} 的博客`,
               href: `https://example.com/friend-${index}`,
-              label: '博客',
+              label: '旧版标签',
               description: '记录编程与生活。',
               ...(index === 1 && { avatar: '/avatar.webp' }),
             })),
@@ -210,6 +210,7 @@ test('友链目录将站点渲染为长方形小卡片', async ({ page }, testIn
   expect((await note.boundingBox())!.y).toBeGreaterThan(last.y + last.height);
   await expect(cards.first()).toHaveAttribute('href', 'https://example.com/friend-1');
   await expect(cards.first()).toContainText('记录编程与生活。');
+  await expect(cards.first()).not.toContainText(/旧版标签|↗/);
   const first = (await cards.nth(0).boundingBox())!;
   const second = (await cards.nth(1).boundingBox())!;
   const third = (await cards.nth(2).boundingBox())!;
@@ -225,6 +226,7 @@ test('友链目录将站点渲染为长方形小卡片', async ({ page }, testIn
   }
   const avatar = cards.first().locator('.friend-link-avatar');
   await expect(avatar).toBeVisible();
+  await expect(avatar).toHaveCSS('width', '64px');
   expect((await avatar.boundingBox())!.x).toBeGreaterThan(first.x + first.width / 2);
   await expect(cards.nth(1).locator('img')).toHaveCount(0);
   if (!testInfo.project.name.startsWith('mobile')) {
@@ -335,7 +337,6 @@ test('友链管理页能直接新增友链并保存发布', async ({ page }, tes
           {
             title: '朋友的博客',
             href: 'https://example.com/',
-            label: '博客',
             description: '记录学习和生活。',
             avatar: '/avatar.webp',
           },

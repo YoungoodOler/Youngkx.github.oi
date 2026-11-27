@@ -18,7 +18,6 @@ const directory = {
           id: 'example',
           title: 'Example',
           href: 'https://example.com/',
-          label: 'Website',
           description: 'A safe example link.',
         },
       ],
@@ -47,7 +46,7 @@ describe('useful links validation', () => {
 
     expect(result).toEqual({
       ok: false,
-      error: 'Each link needs a unique id, title, URL, label, and description.',
+      error: 'Each link needs a unique id, title, URL, and description.',
     });
   });
 

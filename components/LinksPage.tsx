@@ -87,15 +87,14 @@ export default function LinksPage() {
                             <span className="friend-link-copy">
                               <strong>{link.title}</strong>
                               <span>{link.description}</span>
-                              <small>{link.label}</small>
                             </span>
                             {link.avatar && (
                               <Image
                                 className="friend-link-avatar"
                                 key={link.avatar}
                                 src={link.avatar}
-                                width={48}
-                                height={48}
+                                width={64}
+                                height={64}
                                 alt=""
                                 unoptimized
                                 referrerPolicy="no-referrer"
@@ -104,9 +103,6 @@ export default function LinksPage() {
                                 }}
                               />
                             )}
-                            <span className="friend-link-arrow" aria-hidden="true">
-                              ↗
-                            </span>
                           </a>
                         </li>
                       ))}

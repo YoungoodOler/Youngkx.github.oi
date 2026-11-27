@@ -39,7 +39,6 @@ const validDirectory = {
           id: 'cloudflare',
           title: 'Cloudflare Dashboard',
           href: 'https://dash.cloudflare.com/',
-          label: 'Service',
           description: 'Manage domains and Workers.',
         },
       ],

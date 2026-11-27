@@ -112,24 +112,11 @@
   font: 400 13px/1.5 var(--sans);
 }
 
-.friend-link-copy small {
-  color: var(--muted);
-  font: 400 11px/1.4 var(--sans);
-}
-
 .friend-link-avatar {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
   border: 1px solid var(--line);
   border-radius: 10px;
   object-fit: cover;
-}
-
-.friend-link-arrow {
-  align-self: flex-start;
-  color: var(--accent);
-  line-height: 1.2;
 }
 
 .friend-links-sidebar {

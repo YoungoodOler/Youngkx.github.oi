@@ -8,7 +8,6 @@ export type UsefulLink = {
   id: string;
   title: string;
   href: string;
-  label: string;
   description: string;
   avatar?: string;
 };
@@ -139,12 +138,11 @@ export function validateUsefulLinksPayload(value: unknown): UsefulLinksValidatio
         linkIds.has(link.id) ||
         !validText(link.title, 120) ||
         !validUrl(link.href) ||
-        !validText(link.label, 40) ||
         !validText(link.description, 320)
       ) {
         return {
           ok: false,
-          error: 'Each link needs a unique id, title, URL, label, and description.',
+          error: 'Each link needs a unique id, title, URL, and description.',
         };
       }
       const avatar = typeof link.avatar === 'string' ? link.avatar.trim() : link.avatar;
@@ -156,7 +154,6 @@ export function validateUsefulLinksPayload(value: unknown): UsefulLinksValidatio
         id: link.id,
         title: link.title,
         href: link.href,
-        label: link.label,
         description: link.description,
         ...(avatar && { avatar }),
       });
@@ -193,7 +190,6 @@ export function createDefaultFriendLinksPayload(): UsefulLinksPayload {
             id: 'youngkx-github',
             title: 'GitHub',
             href: githubProfileUrl,
-            label: '代码与项目',
             description: '@YoungoodOler',
             avatar: author.avatar,
           },
