@@ -150,6 +150,7 @@
 .writing-background {
   --cards-articles-overlap: clamp(76px, 11vw, 160px);
   container-type: inline-size;
+  isolation: isolate;
   position: relative;
   margin-top: calc(-1 * var(--cards-articles-overlap));
   padding-top: var(--cards-articles-overlap);

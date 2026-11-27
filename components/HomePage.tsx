@@ -12,7 +12,7 @@ import HomeHeader from './HomeHeader';
 import SiteFooter from './SiteFooter';
 import ElectricLogo from './ElectricLogo';
 import TopicCard, { type TopicCardCategory } from './TopicCard';
-import DotGrid from './react-bits/DotGrid';
+import ArticlesDotGrid from './react-bits/ArticlesDotGrid';
 import TechText from './react-bits/TechText';
 import ScrollStack from './react-bits/ScrollStack';
 import FlexCarousel, { type FlexCarouselItem } from './react-bits/FlexCarousel';
@@ -211,20 +211,7 @@ export default function HomePage({
       </section>
 
       <div className="writing-background">
-        <DotGrid
-          baseColor="#2b3145"
-          activeColor="#c9d4ff"
-          {...(compactLayout && {
-            dotSize: 2.6,
-            proximity: 92,
-            shockRadius: 180,
-            shockStrength: 3,
-            swell: 0.15,
-            stretch: 0.07,
-            glow: 0.1,
-            opacity: 0.7,
-          })}
-        />
+        <ArticlesDotGrid />
         <section className="writing shell section" id="posts">
           <ScrollStack
             heading={
@@ -261,7 +248,7 @@ export default function HomePage({
             ))}
           </ScrollStack>
           <div className="more-posts">
-            <Magnet padding={100} magnetStrength={3} wrapperClassName="more-posts__magnet">
+            <Magnet padding={45} magnetStrength={3} wrapperClassName="more-posts__magnet">
               <Link href="/articles/" className="more-posts__link">
                 更多文章
               </Link>
