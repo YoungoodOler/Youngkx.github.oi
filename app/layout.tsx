@@ -1,5 +1,5 @@
-import type { Metadata } from 'next';
-import { Archivo_Black, DM_Mono } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Archivo_Black, DM_Mono, Noto_Sans_SC, Noto_Serif_SC } from 'next/font/google';
 import './globals.css';
 import './admin-session.css';
 import SiteExperience from '@/components/SiteExperience';
@@ -11,7 +11,6 @@ const monoFont = DM_Mono({
   weight: ['300', '400', '500'],
   subsets: ['latin'],
   display: 'swap',
-  fallback: ['ui-monospace', 'monospace'],
 });
 
 const interfaceFont = Archivo_Black({
@@ -19,8 +18,27 @@ const interfaceFont = Archivo_Black({
   weight: '400',
   subsets: ['latin'],
   display: 'swap',
-  fallback: ['Arial Black', 'Arial', 'sans-serif'],
 });
+
+const chineseSans = Noto_Sans_SC({
+  variable: '--font-noto-sans-sc',
+  display: 'swap',
+  preload: false,
+  adjustFontFallback: false,
+});
+
+const chineseSerif = Noto_Serif_SC({
+  variable: '--font-noto-serif-sc',
+  display: 'swap',
+  preload: false,
+  adjustFontFallback: false,
+});
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
@@ -41,7 +59,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="zh-CN"
-      className={`${monoFont.variable} ${interfaceFont.variable}`}
+      className={`${monoFont.variable} ${interfaceFont.variable} ${chineseSans.variable} ${chineseSerif.variable}`}
       suppressHydrationWarning
     >
       <head>

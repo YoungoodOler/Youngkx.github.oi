@@ -135,10 +135,10 @@
 .friend-links-sidebar {
   grid-area: sidebar;
   position: sticky;
-  top: 114px;
+  top: calc(114px + var(--safe-top));
   display: grid;
   min-width: 0;
-  max-height: calc(100dvh - 130px);
+  max-height: calc(100dvh - 130px - var(--safe-top));
   gap: 22px;
   padding-left: clamp(18px, 2.6vw, 32px);
   border-left: 1px solid var(--line);
@@ -268,7 +268,7 @@
 .links-editor-toolbar {
   position: sticky;
   z-index: 2;
-  top: 82px;
+  top: calc(82px + var(--safe-top));
   display: flex;
   flex-wrap: wrap;
   align-items: center;

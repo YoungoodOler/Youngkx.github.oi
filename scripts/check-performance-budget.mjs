@@ -10,6 +10,9 @@ const limits = {
   cssRaw: 64 * 1024,
   cssBrotli: 16 * 1024,
   fonts: 64 * 1024,
+  chineseCssRaw: 192 * 1024,
+  chineseCssBrotli: 40 * 1024,
+  chineseFonts: 11 * 1024 * 1024,
 };
 
 if (!existsSync(outputDirectory)) {
@@ -45,6 +48,33 @@ function assetSize(filePath) {
   return bytes;
 }
 
+// Keep the existing page budgets and measure on-demand CJK assets separately.
+const chineseFace =
+  /@font-face\s*\{(?=[^}]*font-family:\s*["']?Noto (?:Sans|Serif) SC["']?\s*[;}])[^}]*\}/gi;
+const chineseFontFiles = new Set();
+const stylesheetSizes = new Map();
+function stylesheetSize(filePath) {
+  let bytes = stylesheetSizes.get(filePath);
+  if (!bytes) {
+    const source = readFileSync(filePath, 'utf8');
+    const chineseRules = [...source.matchAll(chineseFace)].map(([rule]) => rule);
+    for (const rule of chineseRules) {
+      const font = /url\(["']?([^"')]+\.woff2)["']?\)/.exec(rule)?.[1];
+      if (font) chineseFontFiles.add(assetPath(font));
+    }
+    const otherStyles = source.replace(chineseFace, '');
+    const chineseStyles = chineseRules.join('');
+    bytes = {
+      raw: Buffer.byteLength(otherStyles),
+      brotli: otherStyles ? brotliCompressSync(otherStyles).length : 0,
+      chineseRaw: Buffer.byteLength(chineseStyles),
+      chineseBrotli: chineseStyles ? brotliCompressSync(chineseStyles).length : 0,
+    };
+    stylesheetSizes.set(filePath, bytes);
+  }
+  return bytes;
+}
+
 function routeAssetSize(relativeHtmlPath, kind = 'script') {
   const htmlPath = path.join(outputDirectory, relativeHtmlPath);
   const html = readFileSync(htmlPath, 'utf8');
@@ -75,14 +105,18 @@ function routeAssetSize(relativeHtmlPath, kind = 'script') {
       const filePath = assetPath(source);
       if (!existsSync(filePath))
         throw new Error(`${relativeHtmlPath} 引用了不存在的脚本：${source}`);
-      const bytes = assetSize(filePath);
+      const bytes = kind === 'style' ? stylesheetSize(filePath) : assetSize(filePath);
       total.raw += bytes.raw;
       total.brotli += bytes.brotli;
+      total.chineseRaw += bytes.chineseRaw ?? 0;
+      total.chineseBrotli += bytes.chineseBrotli ?? 0;
       return total;
     },
     {
       raw: inlineBytes.length,
       brotli: inlineBytes.length ? brotliCompressSync(inlineBytes).length : 0,
+      chineseRaw: 0,
+      chineseBrotli: 0,
     },
   );
 }
@@ -93,7 +127,11 @@ const fontFiles = files.filter((file) => /\.(?:woff2?|ttf|otf)$/i.test(file));
 const textFiles = files.filter((file) => /\.(?:css|html|js|txt|xml)$/i.test(file));
 const cssRaw = cssFiles.reduce((total, file) => total + statSync(file).size, 0);
 const cssBrotli = cssFiles.reduce((total, file) => total + assetSize(file).brotli, 0);
-const fonts = fontFiles.reduce((total, file) => total + statSync(file).size, 0);
+cssFiles.forEach(stylesheetSize);
+const fonts = fontFiles
+  .filter((file) => !chineseFontFiles.has(file))
+  .reduce((total, file) => total + statSync(file).size, 0);
+const chineseFonts = [...chineseFontFiles].reduce((total, file) => total + statSync(file).size, 0);
 const routes = [
   ['首页', 'index.html'],
   ['文章列表', path.join('articles', 'index.html')],
@@ -118,7 +156,8 @@ for (const [label, relativePath] of routes) {
 }
 
 console.log(`全部路由 CSS 资源：${formatBytes(cssRaw)} raw，${formatBytes(cssBrotli)} Brotli`);
-console.log(`字体：${fontFiles.length} 个，${formatBytes(fonts)}`);
+console.log(`其他字体：${formatBytes(fonts)}`);
+console.log(`按需加载的中文字体：${chineseFontFiles.size} 个子集，${formatBytes(chineseFonts)}`);
 
 // Route-specific styles are independent downloads. Enforce the original CSS
 // limits on every exported page, including pages outside the script sample.
@@ -127,8 +166,20 @@ for (const file of files.filter((file) => file.endsWith('.html'))) {
   const css = routeAssetSize(relativePath, 'style');
   if (css.raw > limits.cssRaw) failures.push(`${relativePath} CSS 原始体积超过预算`);
   if (css.brotli > limits.cssBrotli) failures.push(`${relativePath} CSS Brotli 体积超过预算`);
+  if (css.chineseRaw > limits.chineseCssRaw || css.chineseBrotli > limits.chineseCssBrotli) {
+    failures.push(`${relativePath} 中文字体 CSS 体积超过预算`);
+  }
+  const html = readFileSync(file, 'utf8');
+  for (const [tag] of html.matchAll(/<link\b[^>]*>/g)) {
+    if (!/\brel=["']preload["']/.test(tag) || !/\bas=["']font["']/.test(tag)) continue;
+    const href = /\bhref=["']([^"']+)["']/.exec(tag)?.[1];
+    if (href && chineseFontFiles.has(assetPath(href))) {
+      failures.push(`${relativePath} 预加载了按需分发的中文字体`);
+    }
+  }
 }
-if (fonts > limits.fonts) failures.push('字体总体积超过预算');
+if (fonts > limits.fonts) failures.push('其他字体总体积超过预算');
+if (chineseFonts > limits.chineseFonts) failures.push('中文字体总体积超过预算');
 
 const remoteFontReference = textFiles.find((file) => {
   const source = readFileSync(file, 'utf8');

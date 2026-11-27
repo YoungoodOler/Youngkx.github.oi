@@ -490,11 +490,11 @@
   }
   .article-sidebar-inner {
     position: sticky;
-    top: 108px;
+    top: calc(108px + var(--safe-top));
     display: flex;
     flex-direction: column;
     gap: 16px;
-    max-height: calc(100vh - 132px);
+    max-height: calc(100vh - 132px - var(--safe-top));
   }
   .article-author {
     display: flex;

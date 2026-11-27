@@ -83,7 +83,7 @@
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  font-family: var(--mono), ui-monospace, monospace;
+  font-family: var(--mono);
   background: radial-gradient(ellipse at 50% 0%, #202d632e, transparent 68%);
 }
 
@@ -96,7 +96,7 @@
 }
 
 .home-page :is(#posts, #topics) {
-  scroll-margin-top: var(--home-nav-height);
+  scroll-margin-top: var(--nav-row-height);
 }
 
 .signal-deck {
