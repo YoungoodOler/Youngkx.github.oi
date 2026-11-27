@@ -70,6 +70,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
       </head>
       <body>
+        <div className="status-bar-background" aria-hidden="true" />
         <SiteExperience>
           <AdminSessionProvider>{children}</AdminSessionProvider>
         </SiteExperience>
