@@ -11,8 +11,6 @@ on:
         description: Rebuild and deploy even if the snapshot is already live
         type: boolean
         default: false
-  schedule:
-    - cron: '7,22,37,52 * * * *'
 
 concurrency:
   group: publish-friend-links
@@ -80,7 +78,7 @@ jobs:
           fi
           remote_head="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
           if [[ "$(git rev-parse HEAD)" != "$remote_head" ]]; then
-            echo "::error::main advanced during the build. The next run will build the latest commit."
+            echo "::error::main advanced during the build. Re-run the workflow to build the latest commit."
             exit 1
           fi
           version_tag="friend-links-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
