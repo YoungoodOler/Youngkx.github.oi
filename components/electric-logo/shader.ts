@@ -180,6 +180,14 @@ void addArc(vec2 p, vec4 ends, vec4 info, float t, inout vec3 light, inout float
 
 void main() {
   vec2 p = vec2(vUv.x, 1.0 - vUv.y) * uResolution;
+  // Anchor the glow to the original silhouette even while a ripple displaces the strands.
+  float contour = shape(p);
+  float contourFade = 1.0 - smoothstep(3.0 * uUnit, 10.0 * uUnit, contour);
+  if (contourFade <= 0.0) {
+    fragColor = vec4(0.0);
+    return;
+  }
+
   float t = uTime;
   vec3 light = vec3(0.0);
   float energy = 0.0;
@@ -187,7 +195,7 @@ void main() {
 
   float surge;
   vec2 pr = p - ripple(p, surge);
-  float base = shape(pr);
+  float base = uPulse.w > 0.0 ? shape(pr) : contour;
 
   vec2 toHover = p - uHover.xy;
   float heat = min(uHover.z * exp(-dot(toHover, toHover) / (uHoverRadius * uHoverRadius)) + surge * 1.4, 2.0);
@@ -250,11 +258,8 @@ void main() {
   float tint = (1.0 - exp(-body * gain * 1.2)) * grow * grow * (1.0 - ink * 0.82);
   color += uGlowColor * tint * (1.0 - alpha);
   alpha += tint * (1.0 - alpha);
-  float grain = (fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) - 0.5) / 255.0;
+  float grain = (fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) - 0.5) * min(alpha, 1.0 / 255.0);
   alpha = clamp(alpha + grain, 0.0, 1.0);
-  vec2 edgeDistance = min(p, uResolution - p);
-  float feather = max(6.0, 0.13 * min(uResolution.x, uResolution.y));
-  float edgeFade = smoothstep(0.0, feather, min(edgeDistance.x, edgeDistance.y));
-  fragColor = vec4(clamp(color + grain, 0.0, alpha), alpha) * edgeFade;
+  fragColor = vec4(clamp(color + grain, 0.0, alpha), alpha) * contourFade;
 }
 `;
