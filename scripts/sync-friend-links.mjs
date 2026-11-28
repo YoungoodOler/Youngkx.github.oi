@@ -55,6 +55,9 @@ if (latest !== local) {
 }
 
 if (process.env.GITHUB_OUTPUT) {
-  const shouldDeploy = Boolean(latest.updatedAt && latest.updatedAt !== deployedAt);
+  const forceDeploy = process.env.LINKS_FORCE_DEPLOY === 'true';
+  const shouldDeploy = Boolean(
+    latest.updatedAt && (forceDeploy || latest.updatedAt !== deployedAt),
+  );
   await appendFile(process.env.GITHUB_OUTPUT, `deploy=${shouldDeploy}\n`);
 }

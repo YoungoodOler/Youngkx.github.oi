@@ -7,6 +7,10 @@ on:
         description: Wait for this saved revision to reach the public API
         type: string
         required: false
+      force_deploy:
+        description: Rebuild and deploy even if the snapshot is already live
+        type: boolean
+        default: false
   schedule:
     - cron: '7,22,37,52 * * * *'
 
@@ -38,10 +42,10 @@ jobs:
         id: snapshot
         env:
           LINKS_UPDATED_AT: ${{ inputs.updated_at }}
+          LINKS_FORCE_DEPLOY: ${{ inputs.force_deploy }}
         run: node --experimental-strip-types scripts/sync-friend-links.mjs
 
       - name: Commit the source snapshot
-        if: steps.snapshot.outputs.deploy == 'true'
         run: |
           git add -- content/friend-links.json
           if git diff --cached --quiet; then
@@ -79,4 +83,18 @@ jobs:
             echo "::error::main advanced during the build. The next run will build the latest commit."
             exit 1
           fi
-          npm run deploy
+          version_tag="friend-links-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          upload_log="$RUNNER_TEMP/friend-links-upload.log"
+          upload_status=0
+          npm exec wrangler -- versions upload --tag "$version_tag" > "$upload_log" 2>&1 ||
+            upload_status=$?
+          cat "$upload_log"
+          if (( upload_status != 0 )); then
+            # An individual Worker token can upload versions without viewing the account's preview hostname.
+            if ! grep -Fq 'Worker Version ID:' "$upload_log" ||
+               ! grep -Fq '/workers/subdomain) failed.' "$upload_log" ||
+               ! grep -Fq 'Authentication error [code: 10000]' "$upload_log"; then
+              exit "$upload_status"
+            fi
+          fi
+          npm exec wrangler -- versions deploy --version-tag "$version_tag" --yes
