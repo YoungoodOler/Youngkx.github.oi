@@ -53,7 +53,7 @@ export default function LinksPage() {
   return (
     <main className="categories-page links-page">
       <PageBackdrop />
-      <SiteHeader navClassName="categories-nav" resources />
+      <SiteHeader />
 
       <section className="categories-hero shell">
         <div className="resource-hero-enter">

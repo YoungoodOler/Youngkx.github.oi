@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AdminLoginForm, useAdminSession } from './AdminSession';
+import { useSiteExperience } from './SiteExperience';
 
 const launchedAt = new Date('2023-10-23T00:00:00+08:00').getTime();
 const siteBuiltAt = process.env.NEXT_PUBLIC_SITE_BUILT_AT;
@@ -27,15 +28,18 @@ export default function SiteFooter({
   backHref,
   backLabel,
   hideSignOut = false,
+  showThemeToggle = true,
 }: {
   backHref: string;
   backLabel: string;
   hideSignOut?: boolean;
+  showThemeToggle?: boolean;
 }) {
   const [runtime, setRuntime] = useState('计算中');
   const [error, setError] = useState('');
   const dialog = useRef<HTMLDialogElement>(null);
   const { authorized, checking, signOut } = useAdminSession();
+  const { theme, toggleTheme } = useSiteExperience();
 
   const logout = async () => {
     setError('');
@@ -79,7 +83,22 @@ export default function SiteFooter({
           </span>
         )}
       </div>
-      <Link href={backHref}>{backLabel}</Link>
+      <div className="site-footer-actions">
+        {showThemeToggle && (
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label="切换主题"
+          >
+            <span className="theme-icon" aria-hidden="true">
+              {theme === 'dark' ? '☼' : '◐'}
+            </span>
+            <span className="theme-label">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
+        )}
+        <Link href={backHref}>{backLabel}</Link>
+      </div>
       <dialog ref={dialog} className="site-admin-dialog" aria-labelledby="site-admin-title">
         <header>
           <h2 id="site-admin-title">{authorized ? '站长操作' : '站长登录'}</h2>

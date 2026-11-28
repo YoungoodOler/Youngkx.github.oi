@@ -49,10 +49,6 @@ export const metadata: Metadata = {
     locale: 'zh_CN',
     siteName: 'Youngkx',
   },
-  icons: {
-    icon: '/icon.png',
-    apple: '/apple-icon.png',
-  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

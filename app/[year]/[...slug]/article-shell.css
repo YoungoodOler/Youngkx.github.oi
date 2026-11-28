@@ -716,15 +716,6 @@ html[data-theme='light'] .modern-article-tools button.active {
 }
 
 @media (max-width: 900px) {
-  .modern-article-page .article-nav-links {
-    position: static;
-    visibility: visible;
-    opacity: 1;
-    flex-direction: row;
-    gap: 18px;
-    background: transparent;
-    font-size: 9px;
-  }
   .modern-article-hero {
     min-height: 500px;
     padding: 130px 0 58px;

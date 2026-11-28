@@ -310,7 +310,7 @@ export default function HomePage({
         </div>
       </section>
 
-      <SiteFooter backHref="#top" backLabel="返回顶部 ↑" />
+      <SiteFooter backHref="#top" backLabel="返回顶部 ↑" showThemeToggle={false} />
     </main>
   );
 }

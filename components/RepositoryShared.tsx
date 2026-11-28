@@ -233,7 +233,7 @@ export function RepositoryShell({
   return (
     <main className="repo-page categories-page">
       <PageBackdrop />
-      <SiteHeader navClassName="categories-nav" resources />
+      <SiteHeader />
       <div className="repo-body shell">
         {manage && (
           <div className="repo-breadcrumb">

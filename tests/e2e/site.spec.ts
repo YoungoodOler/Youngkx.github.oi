@@ -376,11 +376,11 @@ test('主题切换保留粒子幕并快速应用新主题', async ({ page }) => 
   await useStoredTheme(page);
   await openPage(page, '/articles/');
 
-  await page.locator('.theme-toggle').click();
+  await page.locator('footer').getByRole('button', { name: '切换主题' }).click();
   await expect(page.locator('.site-transition--theme')).toBeVisible();
   await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('light');
   await expect(page.locator('.site-transition')).toHaveCount(0, { timeout: 1_300 });
-  await expect(page.getByRole('heading', { name: 'All Articles' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Article Archive' })).toBeVisible();
   await expect(
     page.locator('.global-particle-scene, .home-ascii-background, .dot-grid'),
   ).toHaveCount(0);
@@ -388,21 +388,42 @@ test('主题切换保留粒子幕并快速应用新主题', async ({ page }) => 
 
 test('站内导航直接打开目标页面', async ({ page }) => {
   await useStoredTheme(page);
-  await openPage(page, '/articles/');
+  await openPage(page, '/');
 
-  const menu = page.getByRole('button', { name: '切换菜单', exact: true });
-  const nav = page.getByRole('navigation', { name: '主导航' });
-  const articleArchive = nav.getByRole('link', { name: 'Article Archive', exact: true });
-  const topicArchive = nav.getByRole('link', { name: 'Topic Archive', exact: true });
-  if (await menu.isVisible()) await menu.click();
-  await expect(articleArchive).toHaveAttribute('href', '/articles/');
+  const mainNav = page.getByRole('navigation', { name: '主导航' });
+  const resourceNav = page.getByRole('navigation', { name: '资源导航' });
+  const articleArchive = resourceNav.getByRole('link', { name: 'Article Archive', exact: true });
+  const topicArchive = resourceNav.getByRole('link', { name: 'Topic Archive', exact: true });
+  const expectResourceNav = async () => {
+    await expect(resourceNav.getByRole('link')).toHaveText([
+      'Article Archive',
+      'Topic Archive',
+      'Links',
+      'Repo',
+    ]);
+    for (const link of await resourceNav.getByRole('link').all()) {
+      await expect(link).toBeInViewport({ ratio: 1 });
+    }
+  };
+
+  await expectResourceNav();
+  await articleArchive.click();
+  await expect(page).toHaveURL(/\/articles\/$/);
+  await expect(page).toHaveTitle('Article Archive | Youngkx');
+  await expect(page.getByRole('heading', { level: 1, name: 'Article Archive' })).toBeVisible();
+  await expect(mainNav.getByRole('link')).toHaveText(['Home']);
+  await expect(mainNav.getByRole('link', { name: 'Home', exact: true })).toBeVisible();
+  await expectResourceNav();
   await expect(articleArchive).toHaveAttribute('aria-current', 'page');
+
   await topicArchive.click();
   await expect(page.locator('.site-transition')).toHaveCount(0);
   await expect(page).toHaveURL(/\/categories\/$/, { timeout: 5_000 });
-  await expect(page.getByRole('heading', { name: 'Topics' })).toBeVisible();
+  await expect(page).toHaveTitle('Topic Archive | Youngkx');
+  await expect(page.getByRole('heading', { level: 1, name: 'Topic Archive' })).toBeVisible();
   await expect(page.locator('.site-transition')).toHaveCount(0);
-  if (await menu.isVisible()) await menu.click();
+  await expectResourceNav();
+  await expect(mainNav.getByRole('link')).toHaveText(['Home']);
   await expect(topicArchive).toHaveAttribute('aria-current', 'page');
   await expect(articleArchive).not.toHaveAttribute('aria-current', 'page');
   await expect(page.locator('.global-particle-scene, .home-ascii-background')).toHaveCount(0);

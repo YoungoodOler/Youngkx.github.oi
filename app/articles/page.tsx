@@ -4,7 +4,7 @@ import { getArticleOpening } from '@/lib/article-opening';
 import { articleSummaries, getArticleByPath } from '@/lib/articles';
 
 export const metadata: Metadata = {
-  title: 'All Articles | Youngkx',
+  title: 'Article Archive | Youngkx',
   description: 'The complete Youngkx Blog archive.',
   alternates: { canonical: '/articles/' },
 };

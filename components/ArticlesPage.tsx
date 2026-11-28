@@ -13,11 +13,11 @@ export default function ArticlesPage({
   return (
     <main className="articles-page">
       <PageBackdrop />
-      <SiteHeader navClassName="articles-nav" resources />
+      <SiteHeader />
 
       <section className="articles-hero shell">
         <div>
-          <h1>All Articles</h1>
+          <h1>Article Archive</h1>
           <p>{posts.length} Entries In The Archive</p>
         </div>
         <div className="articles-hero-number">{String(posts.length).padStart(2, '0')}</div>

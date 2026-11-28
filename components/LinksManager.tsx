@@ -198,7 +198,7 @@ export default function LinksManager() {
   return (
     <main className="categories-page links-manager-page">
       <PageBackdrop />
-      <SiteHeader navClassName="categories-nav" resources />
+      <SiteHeader />
 
       <section className="categories-hero shell links-manager-hero">
         <h1>友链管理</h1>

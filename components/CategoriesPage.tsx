@@ -17,7 +17,7 @@ export default function CategoriesPage({
   return (
     <main className="categories-page">
       <PageBackdrop />
-      <SiteHeader navClassName="categories-nav" resources />
+      <SiteHeader />
 
       <section className="categories-hero shell">
         <m.div
@@ -25,7 +25,7 @@ export default function CategoriesPage({
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ duration: 0.92, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h1>Topics</h1>
+          <h1>Topic Archive</h1>
           <p>
             {categories.length} Topics · {articleCount} Articles
           </p>

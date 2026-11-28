@@ -3,7 +3,7 @@ import CategoriesPage from '@/components/CategoriesPage';
 import { articleSummaries, categorySummaries } from '@/lib/articles';
 
 export const metadata: Metadata = {
-  title: 'Topics | Youngkx',
+  title: 'Topic Archive | Youngkx',
   description: 'Browse the Youngkx Blog archive by topic.',
   alternates: { canonical: '/categories/' },
 };
