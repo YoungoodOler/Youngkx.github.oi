@@ -156,29 +156,20 @@ export function traceLogo(image: HTMLImageElement) {
   const glowPad = Math.ceil((size * 0.7) / glowCellSize);
   const glowWidth = Math.ceil(logoWidth / glowCellSize) + glowPad * 2;
   const glowHeight = Math.ceil(logoHeight / glowCellSize) + glowPad * 2;
-  const tight = new Float32Array(glowWidth * glowHeight);
+  const glow = new Float32Array(glowWidth * glowHeight);
   for (let y = 0; y < height; y++) {
     const gy = Math.floor((y - pad) / glowCellSize) + glowPad;
     for (let x = 0; x < width; x++) {
       const gx = Math.floor((x - pad) / glowCellSize) + glowPad;
-      tight[gy * glowWidth + gx] +=
+      glow[gy * glowWidth + gx] +=
         Math.exp(-Math.abs(field[y * width + x]) / 1.5) / (glowCellSize * glowCellSize);
     }
   }
-  const wide = tight.slice();
-  const tightRadius = Math.max(1, Math.round((size * 0.035) / glowCellSize));
-  const wideRadius = Math.max(2, Math.round((size * 0.13) / glowCellSize));
-  blurGrid(tight, glowWidth, glowHeight, tightRadius);
-  blurGrid(wide, glowWidth, glowHeight, wideRadius);
-  const tightNorm =
-    (Math.sqrt(2 * Math.PI * (tightRadius * tightRadius + tightRadius)) * glowCellSize) / 3;
-  const wideNorm =
-    (Math.sqrt(2 * Math.PI * (wideRadius * wideRadius + wideRadius)) * glowCellSize) / 3;
-  const glow = new Float32Array(glowWidth * glowHeight * 2);
-  for (let i = 0; i < glowWidth * glowHeight; i++) {
-    glow[i * 2] = tight[i] * tightNorm;
-    glow[i * 2 + 1] = wide[i] * wideNorm;
-  }
+  const glowRadius = Math.max(1, Math.round((size * 0.035) / glowCellSize));
+  blurGrid(glow, glowWidth, glowHeight, glowRadius);
+  const glowNorm =
+    (Math.sqrt(2 * Math.PI * (glowRadius * glowRadius + glowRadius)) * glowCellSize) / 3;
+  for (let i = 0; i < glow.length; i++) glow[i] *= glowNorm;
 
   return {
     field,

@@ -22,7 +22,9 @@ uniform sampler2D tGlow;
 uniform vec4 uMap;
 uniform vec4 uSize;
 uniform vec2 uResolution;
+uniform vec2 uCanvasOffset;
 uniform float uUnit;
+uniform float uHaloRadius;
 uniform float uTime;
 uniform float uPresence;
 uniform vec3 uHover;
@@ -62,9 +64,9 @@ float shape(vec2 p) {
   return (textureLod(tField, c / uSize.xy, 0.0).r + length(f - c)) * uMap.z;
 }
 
-vec2 aura(vec2 p) {
+float aura(vec2 p) {
   vec2 f = (p - uMap.xy) / uMap.z - uMap.w;
-  return textureLod(tGlow, f / (uSize.zw * ${glowCellSize}.0), 0.0).rg;
+  return textureLod(tGlow, f / (uSize.zw * ${glowCellSize}.0), 0.0).r;
 }
 
 vec4 corner(ivec2 c, uint seed) {
@@ -179,12 +181,17 @@ void addArc(vec2 p, vec4 ends, vec4 info, float t, inout vec3 light, inout float
 }
 
 void main() {
-  vec2 p = vec2(vUv.x, 1.0 - vUv.y) * uResolution;
-  // Anchor the glow to the original silhouette even while a ripple displaces the strands.
+  vec2 p = vec2(vUv.x, 1.0 - vUv.y) * uResolution - uCanvasOffset;
+  // Keep the outer halo linear in premultiplied color and alpha, even during ripples.
   float contour = shape(p);
-  float contourFade = 1.0 - smoothstep(3.0 * uUnit, 10.0 * uUnit, contour);
-  if (contourFade <= 0.0) {
-    fragColor = vec4(0.0);
+  float grow = uPresence;
+  float ink = uInk;
+  float haloFade = 1.0 - clamp(contour / uHaloRadius, 0.0, 1.0);
+  float haloAlpha = haloFade * 0.19 * grow * grow * (1.0 - ink * 0.65);
+  vec4 outerHalo = vec4(uGlowColor, 1.0) * haloAlpha;
+  float coreFade = 1.0 - clamp((contour / uUnit - 3.0) / 7.0, 0.0, 1.0);
+  if (coreFade <= 0.0) {
+    fragColor = outerHalo;
     return;
   }
 
@@ -201,13 +208,11 @@ void main() {
   float heat = min(uHover.z * exp(-dot(toHover, toHover) / (uHoverRadius * uHoverRadius)) + surge * 1.4, 2.0);
   float heatCap = min(uHover.z + uPulseBoost * 1.4, 2.0);
   float breath = 1.0 + uFlicker * 0.6 * wobble(vec2(t * 2.1, 7.0), 3u);
-  float grow = uPresence;
 
   float edge = abs(base);
-  vec2 halo = aura(pr);
-  float ink = uInk;
-  float bloom = (halo.x * 0.16 + halo.y * 0.08) * (1.0 - ink * 0.65) * uGlow * (1.0 + heat * 1.2);
-  float body = (1.0 - smoothstep(-0.75, 0.75, base)) * uFill * (0.06 + 1.2 * min(halo.x, 1.0)) * (1.0 + heat * 0.5);
+  float halo = aura(pr);
+  float bloom = halo * 0.16 * (1.0 - ink * 0.65) * uGlow * (1.0 + heat * 1.2);
+  float body = (1.0 - smoothstep(-0.75, 0.75, base)) * uFill * (0.06 + 1.2 * min(halo, 1.0)) * (1.0 + heat * 0.5);
   light += uGlowColor * bloom * grow * grow;
   energy += bloom * grow * grow;
 
@@ -260,6 +265,7 @@ void main() {
   alpha += tint * (1.0 - alpha);
   float grain = (fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) - 0.5) * min(alpha, 1.0 / 255.0);
   alpha = clamp(alpha + grain, 0.0, 1.0);
-  fragColor = vec4(clamp(color + grain, 0.0, alpha), alpha) * contourFade;
+  vec4 core = vec4(clamp(color + grain, 0.0, alpha), alpha) * coreFade;
+  fragColor = core + outerHalo * (1.0 - core.a);
 }
 `;

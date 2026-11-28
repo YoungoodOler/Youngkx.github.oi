@@ -73,8 +73,8 @@ export async function mountElectricLogo(
     image: shape.glow,
     width: shape.glowWidth,
     height: shape.glowHeight,
-    internalFormat: context.RG16F,
-    format: context.RG,
+    internalFormat: context.R16F,
+    format: context.RED,
   });
   const arcEnds = new Float32Array(arcCount * 4);
   const arcShape = new Float32Array(arcCount * 4);
@@ -86,7 +86,9 @@ export async function mountElectricLogo(
     uMap: { value: [0, 0, 1, shape.glowOffset] },
     uSize: { value: [shape.width, shape.height, shape.glowWidth, shape.glowHeight] },
     uResolution: { value: [1, 1] },
+    uCanvasOffset: { value: [0, 0] },
     uUnit: { value: 1 },
+    uHaloRadius: { value: 1 },
     uTime: { value: 0 },
     uPresence: { value: 0 },
     uHover: { value: hoverUniform },
@@ -119,19 +121,28 @@ export async function mountElectricLogo(
   function resize() {
     const width = Math.max(1, container.clientWidth);
     const height = Math.max(1, container.clientHeight);
+    fit = logoScale * Math.min(width / shape.logoWidth, height / shape.logoHeight);
+    const logoWidth = shape.logoWidth * fit;
+    const logoHeight = shape.logoHeight * fit;
+    const logoSize = Math.max(logoWidth, logoHeight);
+    const haloRadius = logoSize * 0.18;
+    const haloPadding = Math.ceil(haloRadius) + 2;
+    const canvasWidth = Math.max(width, Math.ceil(logoWidth) + 2 * haloPadding);
+    const canvasHeight = Math.max(height, Math.ceil(logoHeight) + 2 * haloPadding);
     renderer.dpr = Math.min(
       window.devicePixelRatio || 1,
       1.5,
-      Math.sqrt(160_000 / (width * height)),
+      Math.sqrt(160_000 / (canvasWidth * canvasHeight)),
     );
-    renderer.setSize(width, height);
-    fit = logoScale * Math.min(width / shape.logoWidth, height / shape.logoHeight);
+    renderer.setSize(canvasWidth, canvasHeight);
     left = width / 2 - (shape.pad + shape.logoWidth / 2) * fit;
     top = height / 2 - (shape.pad + shape.logoHeight / 2) * fit;
     uniforms.uMap.value = [left, top, fit, shape.glowOffset];
-    uniforms.uUnit.value = (Math.max(shape.logoWidth, shape.logoHeight) * fit) / 100;
+    uniforms.uResolution.value = [canvasWidth, canvasHeight];
+    uniforms.uCanvasOffset.value = [(canvasWidth - width) / 2, (canvasHeight - height) / 2];
+    uniforms.uUnit.value = logoSize / 100;
+    uniforms.uHaloRadius.value = haloRadius;
     uniforms.uHoverRadius.value = Math.max(cursorRadius, width * 0.22);
-    uniforms.uResolution.value = [width, height];
   }
 
   const pointer = { x: 0, y: 0, over: false };

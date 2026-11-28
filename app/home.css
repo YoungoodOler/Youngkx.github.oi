@@ -40,6 +40,11 @@
   aspect-ratio: 1.22;
 }
 
+.home-intro .electric-logo canvas {
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+}
+
 .home-intro .tech-text {
   display: grid;
   place-items: center;
