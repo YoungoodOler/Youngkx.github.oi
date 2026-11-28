@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import {
   createDefaultFriendLinksPayload,
   friendLinksPath,
+  friendLinksRevision,
   friendLinksTitle,
   organizeFriendLinks,
   validateUsefulLinksPayload,
@@ -35,7 +36,12 @@ export default function LinksPage() {
       .then((value) => {
         const validation = validateUsefulLinksPayload(value);
         if (!validation.ok) throw new Error(validation.error);
-        setDirectory(validation.data);
+        const latest = validation.data;
+        setDirectory((current) =>
+          friendLinksRevision(latest.updatedAt) >= friendLinksRevision(current.updatedAt)
+            ? latest
+            : current,
+        );
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -115,7 +121,7 @@ export default function LinksPage() {
               )}
               {loadError && (
                 <p className="friend-links-status" role="status">
-                  暂时显示默认链接。
+                  暂时显示上次发布的友链。
                 </p>
               )}
             </div>

@@ -1,6 +1,6 @@
 import {
   createDefaultFriendLinksPayload,
-  createEmptyUsefulLinksPayload,
+  friendLinksRevision,
   validateUsefulLinksPayload,
   type UsefulLinksPayload,
 } from '../lib/useful-links';
@@ -12,25 +12,63 @@ import { authorizeManagement, handleAdmin } from './admin';
 import { jsonResponse, readLimitedJson, type WorkerEnv } from './http';
 
 const linksKey = 'friend-links:v1';
+const linksSnapshot = createDefaultFriendLinksPayload();
 
 async function readLinks(env: Env): Promise<UsefulLinksPayload> {
   const stored = await env.LINKS.get<unknown>(linksKey, 'json');
-  if (stored === null) return createDefaultFriendLinksPayload();
+  if (stored === null) return linksSnapshot;
   const validation = validateUsefulLinksPayload(stored);
   if (!validation.ok) {
     console.error(JSON.stringify({ message: 'invalid links data in KV', error: validation.error }));
-    return createEmptyUsefulLinksPayload();
+    return linksSnapshot;
   }
-  return validation.data;
+  return friendLinksRevision(validation.data.updatedAt) >=
+    friendLinksRevision(linksSnapshot.updatedAt)
+    ? validation.data
+    : linksSnapshot;
 }
 
-async function handleLinksApi(request: Request, env: WorkerEnv, url: URL) {
+async function dispatchLinksPublish(token: string, updatedAt: string) {
+  try {
+    const response = await fetch(
+      'https://api.github.com/repos/YoungoodOler/Youngkx.github.oi/actions/workflows/publish-friend-links.yml/dispatches',
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'youngkx-friend-links',
+          'X-GitHub-Api-Version': '2026-03-10',
+        },
+        redirect: 'error',
+        body: JSON.stringify({ ref: 'main', inputs: { updated_at: updatedAt } }),
+        signal: AbortSignal.timeout(8_000),
+      },
+    );
+    await response.body?.cancel();
+    if (!response.ok) {
+      console.error(
+        JSON.stringify({ message: 'friend links dispatch failed', status: response.status }),
+      );
+    }
+  } catch {
+    console.error(JSON.stringify({ message: 'friend links dispatch request failed' }));
+  }
+}
+
+async function handleLinksApi(request: Request, env: WorkerEnv, url: URL, ctx: ExecutionContext) {
   if (url.pathname === '/api/links/admin') {
     if (request.method !== 'GET') return jsonResponse({ error: 'Method not allowed.' }, 405);
     return (await authorizeManagement(request, env)) ?? jsonResponse({ authorized: true });
   }
 
-  if (request.method === 'GET') return jsonResponse(await readLinks(env));
+  if (request.method === 'GET') {
+    const response = jsonResponse(await readLinks(env));
+    if (linksSnapshot.updatedAt)
+      response.headers.set('X-Friend-Links-Snapshot', linksSnapshot.updatedAt);
+    return response;
+  }
   if (request.method !== 'PUT') return jsonResponse({ error: 'Method not allowed.' }, 405);
   const authorizationError = await authorizeManagement(request, env);
   if (authorizationError) return authorizationError;
@@ -43,11 +81,19 @@ async function handleLinksApi(request: Request, env: WorkerEnv, url: URL) {
     const validation = validateUsefulLinksPayload(input);
     if (!validation.ok) return jsonResponse({ error: validation.error }, 400);
 
+    const updatedAt = new Date().toISOString();
     const payload: UsefulLinksPayload = {
       ...validation.data,
-      updatedAt: new Date().toISOString(),
+      updatedAt,
     };
     await env.LINKS.put(linksKey, JSON.stringify(payload));
+    if (
+      env.LINKS_PUBLISH_TOKEN &&
+      env.LINKS_LOCAL_PREVIEW !== 'true' &&
+      url.hostname === 'www.youngkx.cn'
+    ) {
+      ctx.waitUntil(dispatchLinksPublish(env.LINKS_PUBLISH_TOKEN, updatedAt));
+    }
     return jsonResponse(payload);
   } catch (error) {
     if (error instanceof Error && error.message === 'BODY_TOO_LARGE') {
@@ -68,7 +114,7 @@ const worker = {
     await sendPendingCommentEmails(env);
   },
 
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.hostname === 'youngkx.cn') {
@@ -111,7 +157,7 @@ const worker = {
 
     if (url.pathname === '/api/links' || url.pathname === '/api/links/admin') {
       try {
-        return await handleLinksApi(request, env, url);
+        return await handleLinksApi(request, env, url, ctx);
       } catch (error) {
         console.error(
           JSON.stringify({

@@ -1,6 +1,7 @@
 export type WorkerEnv = Env & {
   LINKS_LOCAL_PREVIEW?: string;
   LINKS_LOCAL_AUTH_ORIGIN?: string;
+  LINKS_PUBLISH_TOKEN?: string;
   RESEND_API_KEY?: string;
 };
 

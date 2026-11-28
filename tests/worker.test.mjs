@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import worker from '../cloudflare/worker.ts';
+import friendLinksSnapshot from '../content/friend-links.json';
 
 function createAssets() {
   return {
@@ -23,6 +24,7 @@ function createEnv(options = {}) {
     LINKS: options.links ?? createKv(),
     LINKS_ADMIN_TOKEN: options.token ?? 'test-admin-token',
     LINKS_LOCAL_PREVIEW: options.localPreview,
+    LINKS_PUBLISH_TOKEN: options.publishToken,
   };
 }
 
@@ -78,16 +80,21 @@ describe('Cloudflare Worker', () => {
     expect(await response.text()).toBe('asset response');
   });
 
-  it('starts the friend links directory with the GitHub profile when only legacy useful links exist', async () => {
+  it('serves the bundled snapshot when only legacy useful links exist', async () => {
     const env = createEnv({ links: createKv({ 'directory:v1': validDirectory }) });
     const response = await worker.fetch(new Request('https://www.youngkx.cn/api/links'), env);
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
-    const directory = await response.json();
-    expect(directory.groups.flatMap((group) => group.links)).toEqual([
-      expect.objectContaining({ title: 'GitHub', href: 'https://github.com/YoungoodOler' }),
-    ]);
+    expect(response.headers.get('X-Friend-Links-Snapshot')).toBe(friendLinksSnapshot.updatedAt);
+    expect(await response.json()).toEqual(friendLinksSnapshot);
+  });
+
+  it('keeps the bundled revision when KV serves an older copy', async () => {
+    const env = createEnv({ links: createKv({ 'friend-links:v1': validDirectory }) });
+    const response = await worker.fetch(new Request('https://www.youngkx.cn/api/links'), env);
+
+    expect(await response.json()).toEqual(friendLinksSnapshot);
   });
 
   it('requires the production admin token before saving', async () => {
@@ -142,6 +149,45 @@ describe('Cloudflare Worker', () => {
 
     expect(response.status).toBe(400);
     expect(env.LINKS.put).not.toHaveBeenCalled();
+  });
+
+  it('dispatches the saved revision to GitHub after writing it to KV', async () => {
+    const env = createEnv({ publishToken: 'workflow-test-token' });
+    const context = { waitUntil: vi.fn() };
+    const originalFetch = globalThis.fetch;
+    const dispatch = vi.fn(async () => {
+      expect(env.LINKS.put).toHaveBeenCalledOnce();
+      return new Response(null, { status: 204 });
+    });
+    globalThis.fetch = dispatch;
+    try {
+      const response = await worker.fetch(
+        new Request('https://www.youngkx.cn/api/links', {
+          method: 'PUT',
+          headers: {
+            Authorization: 'Bearer test-admin-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(validDirectory),
+        }),
+        env,
+        context,
+      );
+      const saved = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(context.waitUntil).toHaveBeenCalledOnce();
+      await context.waitUntil.mock.calls[0][0];
+      expect(dispatch).toHaveBeenCalledWith(
+        expect.stringContaining('/workflows/publish-friend-links.yml/dispatches'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ ref: 'main', inputs: { updated_at: saved.updatedAt } }),
+        }),
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   it('unlocks the manager only when the local preview flag is present', async () => {

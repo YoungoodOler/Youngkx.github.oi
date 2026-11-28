@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-28T08:51:07.829Z",
+  "ownerNote": "大家好呀！\n\n就把这里当作我的留言板了。\n\n有一天这里会充满留言的......QAQ\n\n如果你希望可以在这里挂上你自己的链接，请直接在留言板留言，我会给你加上。",
+  "groups": [
+    {
+      "id": "youngkx",
+      "title": "Youngkx",
+      "description": "",
+      "links": [
+        {
+          "id": "youngkx-github",
+          "title": "My GitHub",
+          "href": "https://github.com/YoungoodOler",
+          "description": "@YoungoodOler",
+          "avatar": "/avatar.webp"
+        },
+        {
+          "id": "efec7a01-e14b-4283-9514-bde350cb78a3",
+          "title": "My Luogu",
+          "href": "https://www.luogu.com.cn/user/1050158",
+          "description": "OI is a war fought without the gods knowing.",
+          "avatar": "/avatar.webp"
+        }
+      ]
+    },
+    {
+      "id": "friends",
+      "title": "Friends",
+      "description": "",
+      "links": [
+        {
+          "id": "eac5d07e-fee3-484c-8fcc-8edd57b305fd",
+          "title": "FENGYE-luogu",
+          "href": "https://www.luogu.com.cn/user/2288395",
+          "description": "等我熬过这千沟万壑，再来同你讲，今晚的月色，如此难得。",
+          "avatar": "https://cdn.luogu.com.cn/upload/usericon/2288395.png"
+        }
+      ]
+    },
+    {
+      "id": "friend-links",
+      "title": "友链",
+      "description": "",
+      "links": []
+    }
+  ]
+}

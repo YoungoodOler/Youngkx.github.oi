@@ -1,0 +1,82 @@
+name: Publish friend links
+
+on:
+  workflow_dispatch:
+    inputs:
+      updated_at:
+        description: Wait for this saved revision to reach the public API
+        type: string
+        required: false
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+
+concurrency:
+  group: publish-friend-links
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.repository == 'YoungoodOler/Youngkx.github.oi' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Read the saved friend links
+        id: snapshot
+        env:
+          LINKS_UPDATED_AT: ${{ inputs.updated_at }}
+        run: node --experimental-strip-types scripts/sync-friend-links.mjs
+
+      - name: Commit the source snapshot
+        if: steps.snapshot.outputs.deploy == 'true'
+        run: |
+          git add -- content/friend-links.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m 'Sync published friend links'
+          git push origin HEAD:refs/heads/main
+
+      - name: Install dependencies
+        if: steps.snapshot.outputs.deploy == 'true'
+        run: |
+          npm install --global "$(node -p 'require("./package.json").packageManager')"
+          npm ci
+
+      - name: Build the site
+        if: steps.snapshot.outputs.deploy == 'true'
+        run: |
+          npm run build
+          npm run perf:check
+
+      - name: Deploy to Cloudflare
+        if: steps.snapshot.outputs.deploy == 'true'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "::error::Set the CLOUDFLARE_API_TOKEN secret and CLOUDFLARE_ACCOUNT_ID variable."
+            exit 1
+          fi
+          remote_head="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
+          if [[ "$(git rev-parse HEAD)" != "$remote_head" ]]; then
+            echo "::error::main advanced during the build. The next run will build the latest commit."
+            exit 1
+          fi
+          npm run deploy

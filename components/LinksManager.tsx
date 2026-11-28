@@ -118,8 +118,8 @@ export default function LinksManager() {
     });
   };
 
-  const save = async () => {
-    const validation = validateUsefulLinksPayload(payload);
+  const savePayload = async (nextPayload: UsefulLinksPayload) => {
+    const validation = validateUsefulLinksPayload(nextPayload);
     if (!validation.ok) {
       setNotice({ tone: 'error', text: validation.error });
       return;
@@ -144,7 +144,10 @@ export default function LinksManager() {
       const saved = validateUsefulLinksPayload(value);
       if (!saved.ok) throw new Error(saved.error);
       setPayload(saved.data);
-      setNotice({ tone: 'success', text: '已保存更改。' });
+      setNotice({
+        tone: 'success',
+        text: preview ? '已保存更改。' : '已保存更改。源码将在后台同步并重新发布。',
+      });
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -163,17 +166,21 @@ export default function LinksManager() {
       setNotice({ tone: 'error', text: 'JSON 文件不能超过 256 KiB。' });
       return;
     }
+    setSaving(true);
     try {
       const validation = validateUsefulLinksPayload(JSON.parse(await file.text()));
       if (!validation.ok) {
         setNotice({ tone: 'error', text: validation.error });
         return;
       }
-      setPayload({ ...validation.data, groups: organizeFriendLinks(validation.data.groups) });
+      const imported = { ...validation.data, groups: organizeFriendLinks(validation.data.groups) };
       setEditingLinkId(null);
-      setNotice({ tone: 'success', text: '已导入，检查后点击保存。' });
+      setPayload(imported);
+      await savePayload(imported);
     } catch {
       setNotice({ tone: 'error', text: '所选文件不是有效的 JSON。' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -213,7 +220,7 @@ export default function LinksManager() {
                 className="manager-button"
                 type="button"
                 disabled={saving}
-                onClick={() => void save()}
+                onClick={() => void savePayload(payload)}
               >
                 {saving ? '正在保存…' : '保存更改'}
               </button>
@@ -234,7 +241,7 @@ export default function LinksManager() {
                     disabled={saving}
                     onClick={() => importRef.current?.click()}
                   >
-                    导入 JSON
+                    上传并保存 JSON
                   </button>
                 </div>
               </details>

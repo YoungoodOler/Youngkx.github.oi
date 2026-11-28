@@ -158,10 +158,7 @@ test('首页友链卡片进入独立目录页', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/links\/$/, { timeout: 5_000 });
   await expect(page.getByRole('heading', { name: 'Links 友链', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: /GitHub/ })).toHaveAttribute(
-    'href',
-    'https://github.com/YoungoodOler',
-  );
+  await expect(page.getByRole('heading', { name: 'Contact Me' })).toBeVisible();
   await expect(page.getByText('朋友们的网站与博客。')).toHaveCount(0);
   await expect(page.getByRole('link', { name: '申请友链' })).toHaveCount(0);
   await expect(page.locator('.global-particle-scene, .home-ascii-background')).toHaveCount(0);
@@ -173,7 +170,9 @@ test('友链目录将站点渲染为长方形小卡片', async ({ page }, testIn
     await route.fulfill({
       json: {
         version: 1,
-        updatedAt: '2026-08-14T00:00:00.000Z',
+        updatedAt: new Date(
+          Date.parse(createDefaultFriendLinksPayload().updatedAt ?? '2026-08-14') + 1000,
+        ).toISOString(),
         ownerNote: '这一段是站长写的手记。\n\n第二段。',
         groups: [
           {
@@ -308,10 +307,17 @@ test('友链页的右侧表单将留言发布到左侧列表', async ({ page, re
 test('友链管理页能直接新增友链并保存发布', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name.startsWith('mobile'), '桌面视口验证完整编辑流程');
   await useStoredTheme(page);
-  let savedPayload = { version: 1, updatedAt: null, groups: [] };
+  let savedPayload = { version: 1, updatedAt: null as string | null, groups: [] };
   await page.route('**/api/admin', (route) => route.fulfill({ json: { authorized: true } }));
   await page.route('**/api/links', async (route) => {
-    if (route.request().method() === 'PUT') savedPayload = route.request().postDataJSON();
+    if (route.request().method() === 'PUT') {
+      savedPayload = {
+        ...route.request().postDataJSON(),
+        updatedAt: new Date(
+          Date.parse(createDefaultFriendLinksPayload().updatedAt ?? '2026-08-14') + 1000,
+        ).toISOString(),
+      };
+    }
     await route.fulfill({ json: savedPayload });
   });
   await openPage(page, '/links/manage/');
@@ -352,6 +358,18 @@ test('友链管理页能直接新增友链并保存发布', async ({ page }, tes
   await expect(
     page.getByRole('region', { name: 'Friends' }).locator('.friend-link-avatar'),
   ).toBeVisible();
+
+  await openPage(page, '/links/manage/');
+  const uploaded = page.waitForRequest(
+    (request) => request.url().endsWith('/api/links') && request.method() === 'PUT',
+  );
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'friend-links.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ ...savedPayload, ownerNote: '从 JSON 上传的站长手记。' })),
+  });
+  expect((await uploaded).postDataJSON().ownerNote).toBe('从 JSON 上传的站长手记。');
+  await expect(page.getByText('源码将在后台同步并重新发布。')).toBeVisible();
 });
 
 test('主题切换保留粒子幕并快速应用新主题', async ({ page }) => {
